@@ -1,6 +1,9 @@
 ;; clarify syntax quote unquote
 ;; (load-file "syntaxquote.clj")
 
+(ns clojure-test
+  (:require clojure.string :refer [join] :as string))
+
 ;;
 ;; syntax quote unquote demythfied.
 ;;  http://www.learningclojure.com/2010/11/syntax-quote-kata-for-confused.html
@@ -168,9 +171,11 @@ y
 ;; map slicing : :keys [] to select keys :as a new map.
     (let [{:keys [name age] :as new-sliced-map} {:name "n" :gender "f" :age 18}] )
 
-;; word count
-    (reduce #(assoc %1 %2 (inc (get %1 %2 0))) {} “aabcdcdcd”)
-    (apply merge-with + (map (fn [c] {c 1}) “abcdaabccc”))
+;; map reduce : reduce to a Atom tot on top of init. Intermediate result is in tot.
+    (apply merge-with + (map (fn [c] {c 1}) "abcdabccc"))
+    (map (fn [m] (hash-map (-> m str keyword) 1)) "abcdabc")
+    (reduce (fn [t c] (assoc t (-> c str keyword) (inc (get t (-> c str keyword) 0)))) {} "abcdabc")
+    (reduce #(assoc %1 %2 (inc (get %1 %2 0))) {} "abcdcdcd")
 
 ;;
 ;; -> macro Vs. doto
@@ -191,10 +196,119 @@ y
             {:band "Bill Evans", :plays 979,  :loved 9}
             {:band "Magma",      :plays 2665, :loved 31}])
 
+(select-keys plays [:band :loved])
 (sort-by :band plays)
 (def sort-by-loved-ratio (partial sort-by #(/ (:plays %) (:loved %))))
 
 (defn columns [column-names]
   (fn [row]
     (vec (map row column-names))))
+
 (sort-by (columns [:plays :loved :band]) plays)
+
+(map #(update-in (select-keys % [:band]) [:rate] {}) plays)
+
+;;
+;; idiomatic way to change value in nested map using update-in
+;; the fn that applied to each map entry is used for crunch map entry value.
+;;
+(def person { :name {:first-name "John" :middle-name "Michael" :last-name "Smith" }})
+(update-in person [:name] assoc :first-name "Bob" :last-name "Doe")
+(update-in person [:name] merge {:first-name "Bob" :last-name "Doe"})
+(update-in person [:name] into {:first-name "Bob" :last-name "Doe"})
+(-> person
+    (assoc-in [:name :first-name] "Bob")
+    (assoc-in [:name :last-name]  "Doe"))
+
+(def foo {:bar {:baz {:quux 123}}})
+(update-in foo [:bar :baz :quux] inc)  ;; {:bar {:baz {:quux 124}}}
+
+(defn update-map-entry [m k args] 
+   (update-in m [(keyword k)] (fn [oldvalue] (if-not (nil? oldvalue) (hash-map) (clojure.string/join args)))))
+
+;;
+;; merge-with to A map using (f val-in-result val-in-later) e.g. conj to crunch atom into set
+;; the fn that applied to each map entry is used for crunch map entry value.
+;;
+(def data [{:a 1 :b "a"}
+           {:a 2 :b "b"}
+           {:a 3 :b "c"}
+           {:a 4 :b "a"}])
+
+(let [base {:a #{} :b #{}}]
+  (apply merge-with conj base data))   ;; the same key, conj the latter val into result val
+
+;;
+;; filter map 
+;;
+(def m {:a "x" :b "y" :c "z" :d "w"})
+(filter )
+
+;;
+;; create map
+;;
+(#(zipmap (map :categoryname %) %)
+ [{:categoryid 1, :categoryname "foo" } 
+  {:categoryid 2, :categoryname "bar" } 
+  {:categoryid 3, :categoryname "baz" }])
+ 
+;;
+;; timeline
+(def events
+  [
+   [1509 :marry   "Catherine of Aragon"]
+   [1527 :unmarry "Catherine of Aragon"]
+   [1533 :marry   "Anne Boleyn"]
+   [1536 :unmarry "Anne Boleyn"]
+   [1536 :marry   "Jane Seymour"]
+   [1537 :unmarry "Jane Seymour"]
+   [1540 :marry   "Anne of Cleves"]
+   [1540 :unmarry "Anne of Cleves"]
+   [1540 :marry   "Catherine Howard"]
+   [1542 :unmarry "Catherine Howard"]
+   [1543 :marry   "Catherine Parr"]])
+
+(def timeline
+  (let [events-by-year (group-by first events)]
+     (map #(map next (events-by-year %))
+       (iterate inc (reduce min (keys events-by-year))))))
+
+(take 30 timeline)
+
+;;
+;; group by firm and sum the Val and PE col
+;;
+(def a [{:firm "MSFT" :Val 10  :PE 3 }
+        {:firm "MSFT" :Val 15  :PE 4}
+        {:firm "GOG" :Val 15 :PE 3}
+        {:firm "YAH" :Val 8 :PE 1}])
+
+(for [m (group-by :firm a)]
+   (assoc (apply merge-with + (map #(dissoc % :firm) (val m))) :firm (key m)))
+
+
+(defn addv [e] (apply merge-with (fn [rslt latter] (if-not (= rslt latter) (+ rslt latter)(name rslt))) e))
+(for [m g] (addv (val m)))
+
+
+;;
+;; group by map keys
+(defn combine-by-coords
+  [values]
+  (let [grouped-by-x (group-by :x values)]
+     (persistent!
+     (reduce (fn [res x-val]
+               (assoc! res x-val (group-by :y (x-val grouped-by-x))))
+             (transient {})
+             (keys grouped-by-x)))))
+
+;;
+;; merge a list of maps into one
+;;
+(def data [{:humor :happy} {:humor :sad} {:humor :happy} {:weather :sunny}])
+(reduce (fn [m1 m2]
+    (reduce (fn [m [k v]]
+        (update-in m [k] (fnil conj []) v)) m1, m2)) 
+    {} data)
+    
+(apply merge-with into (map #(hash-map (first (keys %)) (vec (vals %))) data))
