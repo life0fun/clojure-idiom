@@ -2,9 +2,9 @@
 ;; data structure transforming between Atom, vector, list, array and map.
 ;; (load-file "map-idiom.clj")
 
-(ns clojure-test
-  (:require clojure.string :refer [join] :as string))
-
+(ns ns-map-idiom
+  ;;(:require clojure.string :refer [join] :as string))
+  (:require clojure.string))
 
 ;; function programming : focus on result, no precedure.
 ;; what is the input, A map or a list of map,
@@ -79,12 +79,64 @@
 
 (select-keys plays [:band :loved])
 (sort-by :band plays)
+
+(sort-by #(key %) {:a 1 :b 20 :c 4})   ;; sort-by seq a map and sort by key
+(sort-by #(val %) {:a 1 :b 20 :c 4})   ;; sort-by seq a map and sort by val
+
 (def sort-by-loved-ratio (partial sort-by #(/ (:plays %) (:loved %))))
+
+;; sort-by column sequence, like prim key, second key, etc
+(defn columns [colname]
+  (fn [row] (vec (map row colnames))))   ;; data structure as function. ({:a 1} :a) ([1 2] 1)
 
 (sort-by (columns [:plays :loved :band]) plays)
 
 (map #(update-in (select-keys % [:band]) [:rate] {}) plays)
 (map #( -> % (dissoc :play) (assoc :rate 10)) plays)
+
+;;
+;; find the min/max of certain key
+;;
+(reduce (fn [t this] (let [cp (:plays this)] (if (< cp t) cp t) )) 99999 plays)
+(reduce (fn [t this] (let [cp (:plays this)] (min cp t) )) 99999 plays)
+
+(defn min-by [f coll]
+  (when (seq coll)
+    (reduce
+      (fn [min this]
+        (if (< (f this) (f min))
+          this
+          min)) coll)))
+(min-by :loved plays)
+
+
+;;
+;; apply a fn to a set of keys in a map
+;;
+(defn keys-apply [f ks m]
+  "Takes a function, a set of keys, and a map and applies the function
+   to the map on the given keys.  A new map of the results of the function
+   applied to the keyed entries is returned."
+  (let [only (select-keys m ks)]
+    (zipmap (keys only) (map f (vals only)))))
+
+(keys-apply #(.toUpperCase %) #{:band :plays} (plays 0))
+
+;;
+;; apply a fn to a set of keys, return the original map with modified key
+;;
+(defn manip-map [f ks m]
+  "Takes a function, a set of keys, and a map and applies
+   the function to the map on the given keys.  A modified
+   version of the original map is returned with the results
+   of the function applied to each keyed entry."
+  (conj m (keys-apply f ks m)))
+
+(manip-map #(int (/ % 2)) #{:plays :loved} (plays 0)) ;; => {:band "Burial", :plays 489, :loved 4}
+
+;; use pure func
+(defn halve! [ks]
+  (map (partial manip-map #(int (/ % 2)) ks) plays))
 
 ;;
 ;; idiomatic way to change value in nested map using update-in
@@ -201,3 +253,29 @@
 
 (reduce (fn [t c] (reduce (fn [t1 c1] (update-in t [(first c1)] (fnil conj []) (second c1) )) t c)) {} data)
 (apply merge-with into (map #(hash-map (first (keys %)) (vec (vals %))) data))
+
+;;
+;; A star algorithm
+
+(defn astar [start-yx step-est cell-costs]
+  (let [size (count cell-costs)]
+    (loop [steps 0
+           routes (vec (replicate size (vec (replicate size nil))))
+           work-todo (sorted-set [0 start-yx])] 
+      (if (empty? work-todo)
+        [(peek (peek routes)) :steps steps]
+        (let [[_ yx :as work-item] 
+              (first work-todo)
+              rest-work-todo (disj work-todo work-item)
+              nbr-yxs (neighbors size yx)
+              cheapest-nbr (min-by :cost (keep #(get-in routes %) nbr-yxs))
+              newcost (path-cost (get-in cell-costs yx) cheapest-nbr)
+              oldcost (:cost (get-in routes yx))]
+
+          (if (and oldcost (>= newcost oldcost))
+            (recur (inc steps) routes rest-work-todo)
+            (recur (inc steps)
+                   (assoc-in routes yx {:cost newcost :yxs (conj (:yxs cheapest-nbr []) yx)})
+                   (into rest-work-todo
+                     (map (fn [w] (let [[y x] w] [(total-cost newcost step-est size y x) w]))
+                           nbr-yxs)))))))))
