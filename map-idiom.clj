@@ -246,6 +246,7 @@
 (reduce (fn [t c] (reduce (fn [t1 c1] (prn t1 c1)) t c))
   {} data)
 
+;; fnil, wrap a fn, when nil args passed to fn, replace with empty collection or 0
 (reduce (fn [m1 m2]         ;; reduce on a list of maps
     (reduce (fn [m [k v]]   ;; this reduce on each entry inside one map.
         (update-in m [k] (fnil conj []) v)) m1, m2))  ;; closure to ref to final atom
