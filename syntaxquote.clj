@@ -139,13 +139,28 @@ y
 
 (dummy-fn)
 
+;; macro used for resource management.
+;; (with-open [page stream]  (body) will close stream in try/catch/finally clause.
+;; generic resource manage that delegate resource release fn to close-fn that passed in as an argument.
+defmacro with-resource [binding close-fn & body]   ;; take resource, resource-release-fn, and exec body.
+  `(let ~binding
+    (try
+      (do ~@body)
+      (finally
+        (~close-fn ~(binding 0))))))
+
+(let [stream (joc-www)]
+  (with-resource [page stream]
+    #(.close %)
+    (.readLine page)))
+
 ;;
 ;; calling java from clojure and convert java collection into clojure data structure.
 ;; To call java method chain, use (doto x & form) : (doto (java.util.HashMap.) (.put :a 1) (.put :b 2))
-;; 
+;;
 ;; use (seq coll) or (into #{} coll) to convert java collection into clojure data structure.
 ;; use (clojure.set/intersection x y) to get set intersection
-;; 
+;;
 (defn stringMatch [s, keywords]   ;; s is a string, not a list.
   (let [ words (.split s " ")
          wordset (into #{} words)

@@ -1,9 +1,83 @@
 ;; Types, protocols, and records
 ;; (load-file "types.clj")
 
+;; when defining ns, include only the references that are used.
+;;:exclude, :only, :as, :refer-clojure, :import, :use, :load, and :require.
+;; ;use naked could corrupt the namespace.  (:use :only)
+;; :import working with java deftype defrecord
+;; :refer
+;; (ns my-ns
+;;   (:refer-clojure :exclude [defstruct])
+;;   (:use (clojure set xml))  ;; use other namespace without namespace qualification.
+;;   (:use [clojure.test :only (are is)])
+;;   (:require (clojure [zip :as z]))
+;;   (:import (java.util.Collection)))
 
-;;
-;; Clojure multimethods impl polymorphism based on arbitrary dispatch functions. multimethods are sometimes less than ideal.
+
+;; prototype inheritance
+;; the flexibility of UDP comes from each map contains a reference to a prototype 
+;; map used as a parent link to inherited fields.
+
+;; beget, set prototype inheritate chain of cur object to the passed in map.
+(defn beget [o p] (assoc o ::prototype p))
+;; get, lookup a key along the prototype chain.
+(defn get [m k]
+  (when m
+    (if-let [[_ v] (find m k)]
+      v
+      (recur (::prototype m) k))))  ;; recursive along prototype chain.
+
+(def cat {:likes-dogs true, :ocd-bathing true})
+(def morris (beget {:likes-9lives true} cat))
+(def post-traumatic-morris (beget {:likes-dogs nil} morris))
+
+(get cat :likes-dogs)    ;; true
+(get morris :likes-dogs)    ;; true
+(get post-traumatic-morris :likes-dogs)    ;; nil
+
+;; Multimethods provide a way to perform function polymorphism based on the result 
+;; of an arbitrary dispatch function.
+;; multimethods impl polymorphism based on arbitrary dispatch functions. multimethods are sometimes less than ideal.
+;; Dispatch is the runtime procedure for looking up which function to call based on the parameters given.
+;; single dispatch uses runtime implicit self parameter to lookup.
+;; multimethod can use any number of parameters for dispatch.
+
+;; when multimethod called with prototype map, map is queried using key.
+(defmulti  compiler :os)        ;; dispatch on :os key
+(defmethod compiler ::unix [m] (get m :c-compiler))
+(defmethod compiler ::osx  [m] (get m :c-compiler))
+
+(def clone (partial beget {}))
+(def unix   {:os ::unix, :c-compiler "cc", :home "/home", :dev "/dev"})
+(def osx  (-> (clone unix)
+              (put :os ::osx)
+              (put :c-compiler "gcc")
+              (put :home "/Users")))
+
+(compiler unix) ;=> "cc"
+(compiler osx) ;=> "gcc"
+
+;; true Multimethods on multiple keys
+;; juxt take a set of fn and apply args to each fn, ret a vector of result.
+(def each-math (juxt + * - /))
+(each-math 2 3)
+
+;; The dispatch values for the new compile-cmd methods are vectors composed of the
+;; results of looking up the :os key and calling the compiler function defined
+(defmulti  compile-cmd  (juxt :os compiler))
+(defmethod compile-cmd [::osx "gcc"] [m]
+  (str "/usr/bin/" (get m :c-compiler)))
+(defmethod compile-cmd :default [m]
+  (str "Unsure where to locate " (get m :c-compiler)))
+
+(compile-cmd osx)   ;;=> "/usr/bin/gcc"
+(compile-cmd unix)  ;;=> "Unsure where to"
+
+;; Using multimethods and the UDP is an interesting way to build abstractions.
+;; Multi- methods allowing for polymorphic dispatch based on arbitrary functions.
+;; Clojure also provides a simpler model for creating abstractions and gaining 
+;; the benefits of polymorphism—types, protocols, and records
+
 ;; Clojure provides facilities for creating logically grouped polymorphic functions types, records, and protocols.
 ;; Clojure polymorphism lives in the protocol functions, not in the classes, as compare to Monkey patch and Wrappers.
 ;; polymorphism and recur. Fn impl using recur is not polymorphism.
@@ -11,7 +85,6 @@
 
 (ns ns-type-protocol-records
   (:require clojure.string))
-
 
 ;; defrecord creates a TYPE.  (defrecord name [fields*] options* specs*)
 ;; record types are concrete classes
@@ -59,7 +132,7 @@
 ;;  Monkey patch: TreeNode.fixo-push = function() {}
 ;;  Wrapper : class TreeWrapper { private TreeNode, public fixo-push()}
 ;;
-(extend-type TreeNode
+(extend-type TreeNode    ;; extend-type to impl certain protocol.
   FIXO
     (fixo-push [node value]
         (xconj node value)))
@@ -75,7 +148,8 @@
         (fixo-push [2 3 4 5 6] 5/2)
 
 ;;
-;; Clojure-style mixins  vs JS Mixins 
+;; Clojure-style mixins vs JS Mixins  Only possible in prototype map chain.
+;; mixin are way to share code between unrelated classes. One object can borrow fns from another into it prototype chain.
 ;; (full blown fn, object map with extend, and functional mixin asCircle.call(object-to-be-extended.prototype))
 ;; Mixins in Clojure refer to the creation of discrete maps containing protocol function implementations 
 ;;
@@ -87,6 +161,15 @@
   (rev [s] (clojure.string/reverse s)))
 
 (rev "Works")  ;; => "skroW"
+
+;; Mixin to borrow fns from other objects with extend ([atype & proto+mmaps])
+;;
+(def rev-mixin {:rev clojure.string/reverse})
+(def upp-mixin {:upp (fn [this] (.toUpperCase this))})
+(def fully-mixed (merge upp-mixin rev-mixin))
+(extend String StringOps fully-mixed)   ;; extend mixin
+
+(-> "Works" upp rev)  ;; SKROW
 
 ;; clojure does not encourage inheritance. Use object map literal mix-in with extend function.
 ;; You can use a map with name maps to fn, and each Type extend the protocol impl map.
@@ -126,6 +209,7 @@
 
 ;;
 ;; diff between protocol and java interface
+;; protocol is multimethod dispatch, java IF is OO IF for duck-typing, decoupling.
 ;; java is hard object, java IF must be defined and implemented at the time it’s defined.
 ;; clojure and Js are soft objects. You can augment/extend object type at runtime !!!
 ;;
@@ -143,7 +227,15 @@
 ;; you actually have running code in a protocol that is used by other clojure code.
 ;; use definterface sparingly and prefer protocols unless absolutely necessary.
 
+;; protocols and interfaces can be extended to record types using the extend forms, 
+;; Protocol and interface method implementations can be written directly inside a defrecord form
+;; Putting method definitions inside the defrecord form also allows you to implement 
+;; Java interfaces and extend java.lang.Object, which isn’t possible using any extend form.
+;; Because interface methods can accept and return primitive values as well as boxed objects, 
+;; implementations of these in defrecord can also support primitives. This is important for 
+;; interoperability and can provide ultimate performance parity with Java code.
 
+;; record types are maps and implement everything maps should.
 ;; deftype is lower level similar to defrecord but doesn’t implement anything 
 ;; thus re-impl methods wont conflict existing ones.
 ;;
@@ -158,7 +250,6 @@
       (lazy-seq (cons i (seq this)))))
 
 (take 3 (InfiniteConstant. 5))
-
 
 ;;
 ;; final implementation of TreeNode using deftype, we can override ISeq and IPersistentStack 
@@ -177,3 +268,40 @@
 
 (def sample-tree2 (into (TreeNode. 3 nil nil) [5 2 4 6]))
 (seq sample-tree2)
+
+
+;; chess mover
+;; 1. move statement
+{:from "e7", :to "e8", :castle? false, :promotion \Q}
+
+(defn build-move [& pieces]
+  (apply hash-map pieces))
+
+(build-move :from "e7" :to "e8" :promotion \Q)
+
+(defrecord Move [from to castle? promotion]
+  Object
+  (toString [this]
+    (str "Move " (:from this)
+         " to " (:to this)
+         (if (:castle? this) " castle"
+         (if-let [p (:promotion this)]
+           (str " promote to " p)
+            "")))))
+
+(defn build-move [& {:keys [from to castle? promotion]}]
+  {:pre [from to]}
+    (Move. from to castle? promotion))
+
+(str (build-move :from "e2" :to "e4")) ;=> "Move e2 to e4"
+
+
+;; Visitor pattern
+;; A template for handling a functional composition in OOP.
+;; OOP wants to group code by classes, too many object, object explosion.
+;; We want code grouped by functions
+;; This makes it easier to add operations at a later time.
+;; Relies on Double Dispatch!!!
+;; Dispatch based on (VisitorType, ValueType) pairs.
+;; Often used to compute over AST’s (abstract syntax trees)
+;; Heavily used in compilers Remember visitPostOrder???
