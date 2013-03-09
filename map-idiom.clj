@@ -221,11 +221,20 @@
    (assoc (apply merge-with + (map #(dissoc % :firm) (val m))) :firm (key m)))
 
 
-(defn addv [e] 
+(defn addv [e]
   (apply merge-with (fn [rslt latter] 
     (if-not (= rslt latter) (+ rslt latter) (name rslt))) e))
 (for [m g] (addv (val m)))
 
+
+;;
+;; map diff, return mapping in m2 that's not m1
+(defn map-diff [m1 m2]
+  (into {}
+    (filter
+      (fn [[k v]]
+        (not= (get m1 k) v))
+      m2)))
 
 ;;
 ;; group by map keys
@@ -246,7 +255,7 @@
 (reduce (fn [t c] (reduce (fn [t1 c1] (prn t1 c1)) t c))
   {} data)
 
-;; fnil, wrap a fn, when nil args passed to fn, replace with empty collection or 0
+;; update-in fnil, wrap a fn, when nil args passed to fn, replace with empty collection or 0
 (reduce (fn [m1 m2]         ;; reduce on a list of maps
     (reduce (fn [m [k v]]   ;; this reduce on each entry inside one map.
         (update-in m [k] (fnil conj []) v)) m1, m2))  ;; closure to ref to final atom
@@ -255,9 +264,60 @@
 (reduce (fn [t c] (reduce (fn [t1 c1] (update-in t [(first c1)] (fnil conj []) (second c1) )) t c)) {} data)
 (apply merge-with into (map #(hash-map (first (keys %)) (vec (vals %))) data))
 
-;;
-;; A star algorithm
+;; reverse map
+(defn reverse-map
+  "{:a 1 :b 1 :c 2} -> {1 [:a :b] 2 :c}"
+  [amap]
+  (reduce (fn [m [k v]] 
+    (let [existing (get m v [])]
+      (assoc m v (conj existing k))))
+    {} amap))
 
+
+;; any intersection among a seq of sets
+;; first, convert sets into a list, then find items with cnt > 2
+(defn any-intersection [& sets]
+  (let [k->cnt (mapred (apply concat sets)]
+    (-> (filter (fn [[k v]] (> v 1)) k->cnt)
+        keys)))
+
+;; first, get all keys in a list, then for each key, merge values.
+(defn join-maps [& maps]
+  (let [all-keys (apply set/union (for [m maps] (-> m keys set)))]
+    (into {}
+      (for [k all-keys]
+        [k (for [m maps] (m k))]
+        ))))
+
+;; apply fn for each item in the list
+(defn fast-list-map [afn alist]
+  (let [ret (ArrayList.)]
+    (fast-list-iter [e alist]
+      (.add ret (afn e)))
+    ret ))
+
+;; iter over map with type hint.
+;;
+(defmacro fast-map-iter [[bind amap] & body]
+  `(let [iter# (map-iter ~amap)]
+    (while (iter-has-next? iter#)
+      (let [entry# (iter-next iter#)
+            ~bind (convert-entry entry#)]
+        ~@body
+        ))))
+
+
+;; list comprehension with grp by, ret a mapping key->List.
+(defn fast-group-by [afn alist]
+  (let [ret (HashMap.)]
+    (fast-list-iter [e alist]
+      (let [key (afn e)
+            ^List curr (get-with-default ret key (ArrayList.))]
+        (.add curr e)))
+    ret ))
+
+;;
+;; Astar algorithm
 (defn astar [start-yx step-est cell-costs]
   (let [size (count cell-costs)]
     (loop [steps 0

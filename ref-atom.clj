@@ -232,6 +232,7 @@ def cache (BasicCache. {}))
 
 (prn (get-urls '("http://lethain.com" "http://willarson.com")'))
 
+;;
 ;; Agent as a msg reply
 ;; using agents to send agents to other agents which creates a fully asynchronous programming model.
 ;; work pipeline where each agent performs some work on incoming message before passing it further down the line.
@@ -242,10 +243,12 @@ def cache (BasicCache. {}))
 (defn log [msg]
   (send logger #(cons %2 %1) msg))
 
+;; use reduce to create agent ref around agent, recursive. (agent (agent (agent )))
 (defn create-relay [n]
   (letfn [(next-agent [previous _] (agent previous))]
     (reduce next-agent nil (range 0 n))))
 
+;; first arg is agent
 (defn relay [relay msg]
   (letfn [(relay-msg [next-actor hop msg]
           (cond (nil? next-actor)  (log "finished relay")
