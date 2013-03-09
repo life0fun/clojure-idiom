@@ -114,8 +114,8 @@
     (handle [exchange]
       (.sendResponseHeaders exchange HttpURLConnection/HTTP_OK 0)
       (doto (.getResponseBody exchange)
-          (.write (.getBytes txt))
-          (.close)))))    ;; Close over txt
+            (.write (.getBytes txt))
+            (.close)))))    ;; Close over txt
 
 (def server
   (new-server 3001 "/joy/hello" (default-handler "Hello Cleveland")))

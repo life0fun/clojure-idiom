@@ -67,7 +67,7 @@
                      :steve {:username "steve" :password "boldwin" :session "test2"}
                      :cane {:username "cane" :password "john" :session "test3"}}))
 
-;; (assoc-in map [ks] value)
+;; (assoc-in @atom=map [ks] value)
 (swap! database assoc-in [:henk :session] "test + swap")
 
 ;; update can add new key (update-in map [ks] f args)
