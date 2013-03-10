@@ -60,7 +60,6 @@
         ;launch side-effects here
     )))
 
-
 ;;
 ;; Atom {} = concurrentHashMap<K, FutureTask<T>>, CAS. reset! swap!  equals putIfAbsent
 ;;
@@ -312,7 +311,7 @@ def cache (BasicCache. {}))
   (doall
     (map-indexed
       (fn [image i]
-        (future (upload-image image (format "myimage-%s.jpg" i))))
+        (future (upload-image image (format "myimage-%s.jpg" i))))  ;; future a closure expr.
       images)))
 
 ;; submit the future and wait for the result.

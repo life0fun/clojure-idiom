@@ -118,3 +118,22 @@
 (java-binsearch [1 3 5 6 8 9] 3)
 
 
+
+;;
+;; mutual recursion is idea for state machine transition
+
+;; trampoline(fn & args) change recur fn to  recur #(fn) to achieve TCO
+
+(defn my-even? [n]
+  (letfn [(e? [n]
+            (if (zero? n)
+              true
+              #(o? (dec (Math/abs n)))))
+          (o? [n]
+            (if (zero? n)
+              false
+              #(e? (dec (Math/abs n)))))]
+          (trampoline e? n)))
+
+(defn my-odd? [n]
+  (not (my-even? n)))

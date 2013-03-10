@@ -58,6 +58,18 @@
 (compiler osx) ;=> "gcc"
 
 ;; true Multimethods on multiple keys
+;; without Multimethods dispatch, you will need a messy (cond ) form.
+;; this is the same as messy switch in OO and you need use subtype to encapsulate.
+
+(defn fee-amount [percentage user]
+  (float (* 0.01 percentage (:salary user))))
+(defn affiliate-fee-cond [user]
+  (cond                         ;; messy cond switch to different fns.
+    (= :google.com (:referrer user)) (fee-amount 0.01 user)
+    (= :mint.com (:referrer user)) (fee-amount 0.03 user)
+    :default (fee-amount 0.02 user)))
+
+;; In FP, use multimethod dispatch to encapsulate polymorphism by dispatching to different fns.
 ;; juxt take a set of fn and apply args to each fn, ret a vector of result.
 (def each-math (juxt + * - /))
 (each-math 2 3)
@@ -65,10 +77,8 @@
 ;; The dispatch values for the new compile-cmd methods are vectors composed of the
 ;; results of looking up the :os key and calling the compiler function defined
 (defmulti  compile-cmd  (juxt :os compiler))
-(defmethod compile-cmd [::osx "gcc"] [m]
-  (str "/usr/bin/" (get m :c-compiler)))
-(defmethod compile-cmd :default [m]
-  (str "Unsure where to locate " (get m :c-compiler)))
+(defmethod compile-cmd [::osx "gcc"] [m] (str "/usr/bin/" (get m :c-compiler)))
+(defmethod compile-cmd :default [m] (str "Unsure where to locate " (get m :c-compiler)))
 
 (compile-cmd osx)   ;;=> "/usr/bin/gcc"
 (compile-cmd unix)  ;;=> "Unsure where to"
@@ -189,7 +199,6 @@
 
 (xseq (fixo-into (TreeNode. 5 nil nil) [2 4 6 7]))
 
-
 ;;
 ;; reify macro brings together function closures and protocol extend into a single form.
 ;; reify realizes a single instance of type, protocol, or interface, = abstractions.
@@ -296,12 +305,71 @@
 (str (build-move :from "e2" :to "e4")) ;=> "Move e2 to e4"
 
 
-;; Visitor pattern
+;; OO single dispatch problem: not work with more than one hierarchy.
+;; public interface People {
+;;    void pet(Dog d);
+;;    void pet(Cat c): 
+;; }
+;; now if you have dog and cat inherits from animal and you clal p.pet(new Animal("dog"))
+;; it wont work because single dispatch only dispatch this, not the first arguments.
+
+;; Visitor pattern for double dispatching.
+;; visitor pattern double dispatch on the first argument.
+;; the types of the receiver(this, self) and the first argument would be used to find the method 
+;; visitor pattern allows additional operations to be separated from the data object hierarchy.
+;; public void accept(NodeVisitor visitor) {
+;;     visitor.visitAssignment(this); }   ;; dispatch on the first argument, visitor, and pass the self.
+
 ;; A template for handling a functional composition in OOP.
 ;; OOP wants to group code by classes, too many object, object explosion.
 ;; We want code grouped by functions
 ;; This makes it easier to add operations at a later time.
 ;; Relies on Double Dispatch!!!
+
 ;; Dispatch based on (VisitorType, ValueType) pairs.
 ;; Often used to compute over AST’s (abstract syntax trees)
-;; Heavily used in compilers Remember visitPostOrder???
+;; Heavily used in compilers Remember visitPostOrder
+
+
+
+;; redis protocol with using multimethod dispatching.
+;; the first char is control char the direct which type the response is.
+
+(defmulti parse-reply reply-type :default :unknown)
+(defmethod parse-reply :unknown
+  [#^BufferedReader reader]
+    (throw (Exception. (str "Unknown reply type:"))))
+(defmethod parse-reply \-
+  [#^BufferedReader reader]
+    (let [error (read-line-crlf reader)]
+      (throw (Exception. (str "Server error: " error)))))
+(defmethod parse-reply \+
+  [#^BufferedReader reader]
+  (read-line-crlf reader))
+(defmethod parse-reply \$
+  [#^BufferedReader reader]
+  (let [line (read-line-crlf reader)
+        length (parse-int line)]
+    (if (< length 0)
+      nil
+      (let [#^chars cbuf (char-array length)]
+        (do
+          (do-read reader cbuf 0 length)
+          (read-crlf reader) ;; CRLF
+          (String. cbuf))))))
+(defmethod parse-reply \*
+  [#^BufferedReader reader]
+  (let [line (read-line-crlf reader)
+        count (parse-int line)]
+    (if (< count 0)
+      nil
+      (loop [i count
+        replies []]
+        (if (zero? i)
+          replies
+          (recur (dec i) (conj replies (read-reply reader))))))))
+(defmethod parse-reply \:
+  [#^BufferedReader reader]
+  (let [line (trim (read-line-crlf reader))
+        int (parse-int line)]
+    int))

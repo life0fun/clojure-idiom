@@ -316,6 +316,44 @@
         (.add curr e)))
     ret ))
 
+
+;;
+;; thread-last ->> and thread-first ->
+;; thread-first an obj into a series of simple fns.
+;; thread-last a collection to map/red/filter fns as they take collection as last arguments.
+
+;; list users in ny, group by employer
+(def jay {:name "jay fields" :employer "drw.com" :current-city "new york"})
+(def john {:name "john dydo" :employer "drw.com" :current-city "new york"})
+(def mike {:name "mike ward" :employer "drw.com" :current-city "chicago"})
+(def chris {:name "chris george" :employer "thoughtworks.com" :current-city "new york"})
+
+;; update-in take coll as the first arg, need to use anonym fn to wrap update-in
+;; the anonym fn take coll as last arg and pass the coll to update-in as first arg.
+(->> [jay john mike chris]
+  (filter (comp (partial = "new york") :current-city))
+  (group-by :employer)     ;; group-by ret a map with key col and a val vector
+  (#(update-in % ["drw.com"] (partial map :name))))
+
+;; use thread-first to cater for update-in take coll as first arg.
+(-> [jay john mike chris]
+  (->> (filter (comp (partial = "new york") :current-city))
+       (group-by :employer))
+  (update-in ["drw.com"] (partial map :name)))
+
+(-> [jay john mike chris]
+  (->> (filter (comp (partial = "new york") :current-city)))
+  (->> (group-by :employer))
+  (update-in ["drw.com"] (partial map :name)))
+
+;; use let to sequentially assign intermediate variables.
+(let [people [jay john mike chris]
+      new-yorkers (filter #(= "new york" (:current-city %)) people)
+      by-employer (group-by :employer new-yorkers)]   
+
+(assoc by-employer "drw.com" (map :name (get by-employer "drw.com"))))
+
+
 ;;
 ;; Astar algorithm
 (defn astar [start-yx step-est cell-costs]
