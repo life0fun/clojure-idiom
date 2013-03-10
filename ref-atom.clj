@@ -61,6 +61,7 @@
     )))
 
 
+;;
 ;; Atom {} = concurrentHashMap<K, FutureTask<T>>, CAS. reset! swap!  equals putIfAbsent
 ;;
 (def database (atom {:henk {:username "henk" :password "johnson" :session "test"}
@@ -169,6 +170,7 @@ def cache (BasicCache. {}))
                           slowly                ;; apply this fn to keys to get result.
                           (BasicCache. {}))))
 
+;;
 ;; Agent: more than executor service as it maintain an identity value.
 ;; two thread-pools : unbounded thread pool and Bounded thread pool.
 ;; send : action queued with send are applied by a limited thread pool.
@@ -273,8 +275,8 @@ def cache (BasicCache. {}))
 ;; 2. whoever hold the promise, when trying to defer it, before you delivery the promise, will block.
 ;; 3. you done calculation, delivery the result to the promise object, and whoever de-ref it will get the result.
 
-;; future as callback.
-;; you submit computation to executor service, get a future.
+;; use future to submit tasks to executor pool.
+;; task is an expr to be evaled; the expr is a closure that wraps some computation. Closure contains task's args 
 ;; you de-ref the future, will be blocked if future not calculated. Otherwise, you get the result back.
 ;; future<T> f = executor.submit(new Callable<T>(){public T call(){}})
 ;; f.get()
@@ -285,7 +287,68 @@ def cache (BasicCache. {}))
 (def f (future (dosync ( (Thread/sleep 200) @some-ref ))))
 (deref f)
 
+;;
+;; 1. what really means by submit tasks to executors to get future.
+;; 2. task is a fn expr, eval the expr means execute the fn.
+;; 3. how task fn expr is a closure that carries the context/arguments to execute.
+;;
+(require [aws.sdk.s3 :as s3])
 
+(def credentials
+  {:access-key "my s3 access key" :secret-key "super secret key"})
+
+(def bucket-name "user-images")
+
+(defn update-image [image filename]
+  (with-open [os (ByteArrayOutputStream.)]
+    (ImageIO/write image "jpg" os)
+    (let [request (s3/put-object credentials bucket-name filename
+                                 (clojure.java.io/input-stream (.toByteArray os)))]
+      {:finished true :request request})))
+
+;; list comprehension of all images, map each item with an anonym fn to wrap it and 
+;; call upload-image from inside a future.
+(defn upload-images [images]
+  (doall
+    (map-indexed
+      (fn [image i]
+        (future (upload-image image (format "myimage-%s.jpg" i))))
+      images)))
+
+;; submit the future and wait for the result.
+(def f (upload-images images))
+(map deref f)
+
+
+;;
+;; promise, one thread create a promise, give it to other threads
+(def guest-count (promise))
+
+;; the other thread can poll the promise, or wait for callback event inside a future.
+(future (manager-duties guest-count))
+
+(defn talk-to-guests []
+  (prn "Talking to guests"))
+
+(defn train-wait-staff []
+  (prn "Training wait staff"))
+
+(defn check-party-guest-count [p]
+  (if (realized? p)   ;; ret true if a val has been produced for a promise.
+    (deref p)
+    (prn "Don't know the guest count yet, call later")))
+
+;; periodically check whether promise is realized.
+(defn manager-duties [cnt]
+  (talk-to-guests)
+  (train-wait-staff)
+  (if-let [count (check-party-guest-count cnt)]
+  (prn (format "Total guest count is %s" count))
+  (do
+    (Thread/sleep 1000)
+    (manager-duties cnt))))
+
+;;
 ;; locking macro
 (defn make-safe-array [t sz]
   (let [a (make-array t sz)]
