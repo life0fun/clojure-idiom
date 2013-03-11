@@ -1,0 +1,11 @@
+* Lexical Closures
+
+ which are constructs that allow functions to close
+over lexically scoped variables. When this closing over is done to
+local variables, they become private to the closure. This makes it a
+simple way to hide local state. 
+
+
+Combining closures with first class functions makes it easy to
+implement arbitrary control structures in your code (like while
+loops).

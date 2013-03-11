@@ -7,6 +7,13 @@
 ;; instance reted from proxy is a proper proxy that does method dispatch based on look up map.
 
 
+;; java object member method is not high order fn. use macro memfn to convert.
+(map #(.getBytes %) ["amit" "rob" "kyle"])
+(map (memfn getBytes) ["amit" "rob" "kyle"])
+
+(.subSequence "Clojure" 2 5)
+((memfn subSequence start end) "Clojure" 2 5)
+
 ;; clojure generates a proxy for a class in which each method looks up the function implementing a method in a map.
 ;; Based on the method name, the corresponding function is retrieved from a map and invoked with the this reference and the argument(s)
 ;; proxy just intercepts method calls and wraps it with extra info or dispatch it to delegates.

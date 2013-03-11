@@ -207,7 +207,18 @@ defmacro with-resource [binding close-fn & body]   ;; take resource, resource-re
 (map #(-> % keyword prn) ['a 'b])     ;; [:a :b]
 
 
+;;
+;; with macro to manage resource in try/catch/finally block.
+;;
+(defmacro with-rabbit [[mq-host mq-username mq-password] & exprs]
+  `(with-open [connection# (new-connection ~mq-host ~mq-username ~mq-password)]
+     (binding [*rabbit-connection* connection#]
+       (do ~@exprs))))
 
+(defn send-message [routing-key message-object]
+  (with-open [channel (.createChannel *rabbit-connection*)]
+      (.basicPublish channel "" routing-key nil
+                     (.getBytes (str message-object)))))
 
-
-
+(with-rabbit ["localhost" "guest" "guest"]
+  (send-message "chapter14-test" "chapter 14 test method"))

@@ -1,181 +1,82 @@
-0    [main] INFO  backtype.storm.zookeeper  - Starting inprocess zookeeper at port 2000 and dir /var/folders/hg/373yfnq53m37_3fldlg86hth1wcwgs/T//c6d72ba5-090f-46b8-a094-10989eace2c7
-402  [main] INFO  backtype.storm.daemon.nimbus  - Starting Nimbus with conf {"dev.zookeeper.path" "/tmp/dev-storm-zookeeper", "topology.tick.tuple.freq.secs" nil, "topology.fall.back.on.java.serialization" true, "topology.max.error.report.per.interval" 5, "zmq.linger.millis" 0, "topology.skip.missing.kryo.registrations" true, "ui.childopts" "-Xmx768m", "storm.zookeeper.session.timeout" 20000, "nimbus.reassign" true, "topology.trident.batch.emit.interval.millis" 50, "nimbus.monitor.freq.secs" 10, "java.library.path" "/usr/local/lib:/opt/local/lib:/usr/lib", "topology.executor.send.buffer.size" 1024, "storm.local.dir" "/var/folders/hg/373yfnq53m37_3fldlg86hth1wcwgs/T//623d9db6-bf3c-4a5d-8b52-5bd5b4688043", "supervisor.worker.start.timeout.secs" 120, "topology.enable.message.timeouts" true, "nimbus.cleanup.inbox.freq.secs" 600, "nimbus.inbox.jar.expiration.secs" 3600, "drpc.worker.threads" 64, "topology.worker.shared.thread.pool.size" 4, "nimbus.host" "localhost", "storm.zookeeper.port" 2000, "transactional.zookeeper.port" nil, "topology.executor.receive.buffer.size" 1024, "transactional.zookeeper.servers" nil, "storm.zookeeper.root" "/storm", "supervisor.enable" true, "storm.zookeeper.servers" ["localhost"], "transactional.zookeeper.root" "/transactional", "topology.acker.executors" 1, "topology.transfer.buffer.size" 1024, "topology.worker.childopts" nil, "drpc.queue.size" 128, "worker.childopts" "-Xmx768m", "supervisor.heartbeat.frequency.secs" 5, "topology.error.throttle.interval.secs" 10, "zmq.hwm" 0, "drpc.port" 3772, "supervisor.monitor.frequency.secs" 3, "topology.receiver.buffer.size" 8, "task.heartbeat.frequency.secs" 3, "topology.tasks" nil, "topology.spout.wait.strategy" "backtype.storm.spout.SleepSpoutWaitStrategy", "topology.max.spout.pending" nil, "storm.zookeeper.retry.interval" 1000, "topology.sleep.spout.wait.strategy.time.ms" 1, "nimbus.topology.validator" "backtype.storm.nimbus.DefaultTopologyValidator", "supervisor.slots.ports" [6700 6701 6702 6703], "topology.debug" false, "nimbus.task.launch.secs" 120, "nimbus.supervisor.timeout.secs" 60, "topology.message.timeout.secs" 30, "task.refresh.poll.secs" 10, "topology.workers" 1, "supervisor.childopts" "-Xmx256m", "nimbus.thrift.port" 6627, "topology.stats.sample.rate" 0.05, "worker.heartbeat.frequency.secs" 1, "topology.acker.tasks" nil, "topology.disruptor.wait.strategy" "com.lmax.disruptor.BlockingWaitStrategy", "nimbus.task.timeout.secs" 30, "storm.zookeeper.connection.timeout" 15000, "topology.kryo.factory" "backtype.storm.serialization.DefaultKryoFactory", "drpc.invocations.port" 3773, "zmq.threads" 1, "storm.zookeeper.retry.times" 5, "topology.state.synchronization.timeout.secs" 60, "supervisor.worker.timeout.secs" 30, "nimbus.file.copy.expiration.secs" 600, "drpc.request.timeout.secs" 600, "storm.local.mode.zmq" false, "ui.port" 8080, "nimbus.childopts" "-Xmx1024m", "storm.cluster.mode" "local", "topology.optimize" true, "topology.max.task.parallelism" nil}
-417  [main] INFO  backtype.storm.daemon.nimbus  - Using default scheduler
-504  [main] INFO  com.netflix.curator.framework.imps.CuratorFrameworkImpl  - Starting
-581  [main-EventThread] INFO  backtype.storm.zookeeper  - Zookeeper state update: :connected:none
-618  [main] INFO  com.netflix.curator.framework.imps.CuratorFrameworkImpl  - Starting
-733  [main] INFO  com.netflix.curator.framework.imps.CuratorFrameworkImpl  - Starting
-743  [main-EventThread] INFO  backtype.storm.zookeeper  - Zookeeper state update: :connected:none
-748  [main] INFO  com.netflix.curator.framework.imps.CuratorFrameworkImpl  - Starting
-754  [main] INFO  com.netflix.curator.framework.imps.CuratorFrameworkImpl  - Starting
-760  [main-EventThread] INFO  backtype.storm.zookeeper  - Zookeeper state update: :connected:none
-772  [main] INFO  com.netflix.curator.framework.imps.CuratorFrameworkImpl  - Starting
-797  [main] INFO  backtype.storm.daemon.supervisor  - Starting Supervisor with conf {"dev.zookeeper.path" "/tmp/dev-storm-zookeeper", "topology.tick.tuple.freq.secs" nil, "topology.fall.back.on.java.serialization" true, "topology.max.error.report.per.interval" 5, "zmq.linger.millis" 0, "topology.skip.missing.kryo.registrations" true, "ui.childopts" "-Xmx768m", "storm.zookeeper.session.timeout" 20000, "nimbus.reassign" true, "topology.trident.batch.emit.interval.millis" 50, "nimbus.monitor.freq.secs" 10, "java.library.path" "/usr/local/lib:/opt/local/lib:/usr/lib", "topology.executor.send.buffer.size" 1024, "storm.local.dir" "/var/folders/hg/373yfnq53m37_3fldlg86hth1wcwgs/T//be966e17-e71f-4ea7-97b5-8bd34e85ef85", "supervisor.worker.start.timeout.secs" 120, "topology.enable.message.timeouts" true, "nimbus.cleanup.inbox.freq.secs" 600, "nimbus.inbox.jar.expiration.secs" 3600, "drpc.worker.threads" 64, "topology.worker.shared.thread.pool.size" 4, "nimbus.host" "localhost", "storm.zookeeper.port" 2000, "transactional.zookeeper.port" nil, "topology.executor.receive.buffer.size" 1024, "transactional.zookeeper.servers" nil, "storm.zookeeper.root" "/storm", "supervisor.enable" true, "storm.zookeeper.servers" ["localhost"], "transactional.zookeeper.root" "/transactional", "topology.acker.executors" 1, "topology.transfer.buffer.size" 1024, "topology.worker.childopts" nil, "drpc.queue.size" 128, "worker.childopts" "-Xmx768m", "supervisor.heartbeat.frequency.secs" 5, "topology.error.throttle.interval.secs" 10, "zmq.hwm" 0, "drpc.port" 3772, "supervisor.monitor.frequency.secs" 3, "topology.receiver.buffer.size" 8, "task.heartbeat.frequency.secs" 3, "topology.tasks" nil, "topology.spout.wait.strategy" "backtype.storm.spout.SleepSpoutWaitStrategy", "topology.max.spout.pending" nil, "storm.zookeeper.retry.interval" 1000, "topology.sleep.spout.wait.strategy.time.ms" 1, "nimbus.topology.validator" "backtype.storm.nimbus.DefaultTopologyValidator", "supervisor.slots.ports" (1 2 3), "topology.debug" false, "nimbus.task.launch.secs" 120, "nimbus.supervisor.timeout.secs" 60, "topology.message.timeout.secs" 30, "task.refresh.poll.secs" 10, "topology.workers" 1, "supervisor.childopts" "-Xmx256m", "nimbus.thrift.port" 6627, "topology.stats.sample.rate" 0.05, "worker.heartbeat.frequency.secs" 1, "topology.acker.tasks" nil, "topology.disruptor.wait.strategy" "com.lmax.disruptor.BlockingWaitStrategy", "nimbus.task.timeout.secs" 30, "storm.zookeeper.connection.timeout" 15000, "topology.kryo.factory" "backtype.storm.serialization.DefaultKryoFactory", "drpc.invocations.port" 3773, "zmq.threads" 1, "storm.zookeeper.retry.times" 5, "topology.state.synchronization.timeout.secs" 60, "supervisor.worker.timeout.secs" 30, "nimbus.file.copy.expiration.secs" 600, "drpc.request.timeout.secs" 600, "storm.local.mode.zmq" false, "ui.port" 8080, "nimbus.childopts" "-Xmx1024m", "storm.cluster.mode" "local", "topology.optimize" true, "topology.max.task.parallelism" nil}
-811  [main] INFO  com.netflix.curator.framework.imps.CuratorFrameworkImpl  - Starting
-820  [main-EventThread] INFO  backtype.storm.zookeeper  - Zookeeper state update: :connected:none
-826  [main] INFO  com.netflix.curator.framework.imps.CuratorFrameworkImpl  - Starting
-896  [main] INFO  backtype.storm.daemon.supervisor  - Starting supervisor with id 164f5e96-e2ad-4e58-be07-a7d04a23f177 at host 192.168.0.102
-903  [main] INFO  backtype.storm.daemon.supervisor  - Starting Supervisor with conf {"dev.zookeeper.path" "/tmp/dev-storm-zookeeper", "topology.tick.tuple.freq.secs" nil, "topology.fall.back.on.java.serialization" true, "topology.max.error.report.per.interval" 5, "zmq.linger.millis" 0, "topology.skip.missing.kryo.registrations" true, "ui.childopts" "-Xmx768m", "storm.zookeeper.session.timeout" 20000, "nimbus.reassign" true, "topology.trident.batch.emit.interval.millis" 50, "nimbus.monitor.freq.secs" 10, "java.library.path" "/usr/local/lib:/opt/local/lib:/usr/lib", "topology.executor.send.buffer.size" 1024, "storm.local.dir" "/var/folders/hg/373yfnq53m37_3fldlg86hth1wcwgs/T//1c6a90d5-e906-441c-be9b-98630342856a", "supervisor.worker.start.timeout.secs" 120, "topology.enable.message.timeouts" true, "nimbus.cleanup.inbox.freq.secs" 600, "nimbus.inbox.jar.expiration.secs" 3600, "drpc.worker.threads" 64, "topology.worker.shared.thread.pool.size" 4, "nimbus.host" "localhost", "storm.zookeeper.port" 2000, "transactional.zookeeper.port" nil, "topology.executor.receive.buffer.size" 1024, "transactional.zookeeper.servers" nil, "storm.zookeeper.root" "/storm", "supervisor.enable" true, "storm.zookeeper.servers" ["localhost"], "transactional.zookeeper.root" "/transactional", "topology.acker.executors" 1, "topology.transfer.buffer.size" 1024, "topology.worker.childopts" nil, "drpc.queue.size" 128, "worker.childopts" "-Xmx768m", "supervisor.heartbeat.frequency.secs" 5, "topology.error.throttle.interval.secs" 10, "zmq.hwm" 0, "drpc.port" 3772, "supervisor.monitor.frequency.secs" 3, "topology.receiver.buffer.size" 8, "task.heartbeat.frequency.secs" 3, "topology.tasks" nil, "topology.spout.wait.strategy" "backtype.storm.spout.SleepSpoutWaitStrategy", "topology.max.spout.pending" nil, "storm.zookeeper.retry.interval" 1000, "topology.sleep.spout.wait.strategy.time.ms" 1, "nimbus.topology.validator" "backtype.storm.nimbus.DefaultTopologyValidator", "supervisor.slots.ports" (4 5 6), "topology.debug" false, "nimbus.task.launch.secs" 120, "nimbus.supervisor.timeout.secs" 60, "topology.message.timeout.secs" 30, "task.refresh.poll.secs" 10, "topology.workers" 1, "supervisor.childopts" "-Xmx256m", "nimbus.thrift.port" 6627, "topology.stats.sample.rate" 0.05, "worker.heartbeat.frequency.secs" 1, "topology.acker.tasks" nil, "topology.disruptor.wait.strategy" "com.lmax.disruptor.BlockingWaitStrategy", "nimbus.task.timeout.secs" 30, "storm.zookeeper.connection.timeout" 15000, "topology.kryo.factory" "backtype.storm.serialization.DefaultKryoFactory", "drpc.invocations.port" 3773, "zmq.threads" 1, "storm.zookeeper.retry.times" 5, "topology.state.synchronization.timeout.secs" 60, "supervisor.worker.timeout.secs" 30, "nimbus.file.copy.expiration.secs" 600, "drpc.request.timeout.secs" 600, "storm.local.mode.zmq" false, "ui.port" 8080, "nimbus.childopts" "-Xmx1024m", "storm.cluster.mode" "local", "topology.optimize" true, "topology.max.task.parallelism" nil}
-913  [main] INFO  com.netflix.curator.framework.imps.CuratorFrameworkImpl  - Starting
-925  [main-EventThread] INFO  backtype.storm.zookeeper  - Zookeeper state update: :connected:none
-935  [main] INFO  com.netflix.curator.framework.imps.CuratorFrameworkImpl  - Starting
-955  [main] INFO  backtype.storm.daemon.supervisor  - Starting supervisor with id 7b43d0e3-f3e2-4279-afeb-5c0ac659359a at host 192.168.0.102
-1185 [main] INFO  backtype.storm.daemon.nimbus  - Received topology submission for word-count with conf {"topology.max.task.parallelism" nil, "topology.acker.executors" 1, "topology.kryo.register" nil, "topology.kryo.decorators" (), "topology.name" "word-count", "storm.id" "word-count-1-1361259836", "topology.debug" false}
-1209 [main] INFO  backtype.storm.daemon.nimbus  - Activating word-count: word-count-1-1361259836
-1344 [main] INFO  backtype.storm.scheduler.EvenScheduler  - Available slots: (["7b43d0e3-f3e2-4279-afeb-5c0ac659359a" 4] ["7b43d0e3-f3e2-4279-afeb-5c0ac659359a" 5] ["7b43d0e3-f3e2-4279-afeb-5c0ac659359a" 6] ["164f5e96-e2ad-4e58-be07-a7d04a23f177" 1] ["164f5e96-e2ad-4e58-be07-a7d04a23f177" 2] ["164f5e96-e2ad-4e58-be07-a7d04a23f177" 3])
-1396 [main] INFO  backtype.storm.daemon.nimbus  - Setting new assignment for topology id word-count-1-1361259836: #backtype.storm.daemon.common.Assignment{:master-code-dir "/var/folders/hg/373yfnq53m37_3fldlg86hth1wcwgs/T//623d9db6-bf3c-4a5d-8b52-5bd5b4688043/nimbus/stormdist/word-count-1-1361259836", :node->host {"7b43d0e3-f3e2-4279-afeb-5c0ac659359a" "192.168.0.102"}, :executor->node+port {[2 2] ["7b43d0e3-f3e2-4279-afeb-5c0ac659359a" 4], [3 3] ["7b43d0e3-f3e2-4279-afeb-5c0ac659359a" 4], [4 4] ["7b43d0e3-f3e2-4279-afeb-5c0ac659359a" 4], [5 5] ["7b43d0e3-f3e2-4279-afeb-5c0ac659359a" 4], [6 6] ["7b43d0e3-f3e2-4279-afeb-5c0ac659359a" 4], [7 7] ["7b43d0e3-f3e2-4279-afeb-5c0ac659359a" 4], [8 8] ["7b43d0e3-f3e2-4279-afeb-5c0ac659359a" 4], [9 9] ["7b43d0e3-f3e2-4279-afeb-5c0ac659359a" 4], [10 10] ["7b43d0e3-f3e2-4279-afeb-5c0ac659359a" 4], [11 11] ["7b43d0e3-f3e2-4279-afeb-5c0ac659359a" 4], [12 12] ["7b43d0e3-f3e2-4279-afeb-5c0ac659359a" 4], [1 1] ["7b43d0e3-f3e2-4279-afeb-5c0ac659359a" 4]}, :executor->start-time-secs {[2 2] 1361259836, [3 3] 1361259836, [4 4] 1361259836, [5 5] 1361259836, [6 6] 1361259836, [7 7] 1361259836, [8 8] 1361259836, [9 9] 1361259836, [10 10] 1361259836, [11 11] 1361259836, [12 12] 1361259836, [1 1] 1361259836}}
-1933 [Thread-10] INFO  backtype.storm.daemon.supervisor  - Downloading code for storm id word-count-1-1361259836 from /var/folders/hg/373yfnq53m37_3fldlg86hth1wcwgs/T//623d9db6-bf3c-4a5d-8b52-5bd5b4688043/nimbus/stormdist/word-count-1-1361259836
-2316 [Thread-10] INFO  backtype.storm.daemon.supervisor  - Finished downloading code for storm id word-count-1-1361259836 from /var/folders/hg/373yfnq53m37_3fldlg86hth1wcwgs/T//623d9db6-bf3c-4a5d-8b52-5bd5b4688043/nimbus/stormdist/word-count-1-1361259836
-2359 [Thread-11] INFO  backtype.storm.daemon.supervisor  - Launching worker with assignment #backtype.storm.daemon.supervisor.LocalAssignment{:storm-id "word-count-1-1361259836", :executors ([2 2] [3 3] [4 4] [5 5] [6 6] [7 7] [8 8] [9 9] [10 10] [11 11] [12 12] [1 1])} for this supervisor 7b43d0e3-f3e2-4279-afeb-5c0ac659359a on port 4 with id ca7c6af2-1948-4457-8d02-63e4941a8452
-2368 [Thread-11] INFO  backtype.storm.daemon.worker  - Launching worker for word-count-1-1361259836 on 7b43d0e3-f3e2-4279-afeb-5c0ac659359a:4 with id ca7c6af2-1948-4457-8d02-63e4941a8452 and conf {"dev.zookeeper.path" "/tmp/dev-storm-zookeeper", "topology.tick.tuple.freq.secs" nil, "topology.fall.back.on.java.serialization" true, "topology.max.error.report.per.interval" 5, "zmq.linger.millis" 0, "topology.skip.missing.kryo.registrations" true, "ui.childopts" "-Xmx768m", "storm.zookeeper.session.timeout" 20000, "nimbus.reassign" true, "topology.trident.batch.emit.interval.millis" 50, "nimbus.monitor.freq.secs" 10, "java.library.path" "/usr/local/lib:/opt/local/lib:/usr/lib", "topology.executor.send.buffer.size" 1024, "storm.local.dir" "/var/folders/hg/373yfnq53m37_3fldlg86hth1wcwgs/T//1c6a90d5-e906-441c-be9b-98630342856a", "supervisor.worker.start.timeout.secs" 120, "topology.enable.message.timeouts" true, "nimbus.cleanup.inbox.freq.secs" 600, "nimbus.inbox.jar.expiration.secs" 3600, "drpc.worker.threads" 64, "topology.worker.shared.thread.pool.size" 4, "nimbus.host" "localhost", "storm.zookeeper.port" 2000, "transactional.zookeeper.port" nil, "topology.executor.receive.buffer.size" 1024, "transactional.zookeeper.servers" nil, "storm.zookeeper.root" "/storm", "supervisor.enable" true, "storm.zookeeper.servers" ["localhost"], "transactional.zookeeper.root" "/transactional", "topology.acker.executors" 1, "topology.transfer.buffer.size" 1024, "topology.worker.childopts" nil, "drpc.queue.size" 128, "worker.childopts" "-Xmx768m", "supervisor.heartbeat.frequency.secs" 5, "topology.error.throttle.interval.secs" 10, "zmq.hwm" 0, "drpc.port" 3772, "supervisor.monitor.frequency.secs" 3, "topology.receiver.buffer.size" 8, "task.heartbeat.frequency.secs" 3, "topology.tasks" nil, "topology.spout.wait.strategy" "backtype.storm.spout.SleepSpoutWaitStrategy", "topology.max.spout.pending" nil, "storm.zookeeper.retry.interval" 1000, "topology.sleep.spout.wait.strategy.time.ms" 1, "nimbus.topology.validator" "backtype.storm.nimbus.DefaultTopologyValidator", "supervisor.slots.ports" (4 5 6), "topology.debug" false, "nimbus.task.launch.secs" 120, "nimbus.supervisor.timeout.secs" 60, "topology.message.timeout.secs" 30, "task.refresh.poll.secs" 10, "topology.workers" 1, "supervisor.childopts" "-Xmx256m", "nimbus.thrift.port" 6627, "topology.stats.sample.rate" 0.05, "worker.heartbeat.frequency.secs" 1, "topology.acker.tasks" nil, "topology.disruptor.wait.strategy" "com.lmax.disruptor.BlockingWaitStrategy", "nimbus.task.timeout.secs" 30, "storm.zookeeper.connection.timeout" 15000, "topology.kryo.factory" "backtype.storm.serialization.DefaultKryoFactory", "drpc.invocations.port" 3773, "zmq.threads" 1, "storm.zookeeper.retry.times" 5, "topology.state.synchronization.timeout.secs" 60, "supervisor.worker.timeout.secs" 30, "nimbus.file.copy.expiration.secs" 600, "drpc.request.timeout.secs" 600, "storm.local.mode.zmq" false, "ui.port" 8080, "nimbus.childopts" "-Xmx1024m", "storm.cluster.mode" "local", "topology.optimize" true, "topology.max.task.parallelism" nil}
-2368 [Thread-11] INFO  com.netflix.curator.framework.imps.CuratorFrameworkImpl  - Starting
-2384 [Thread-11-EventThread] INFO  backtype.storm.zookeeper  - Zookeeper state update: :connected:none
-2389 [Thread-11] INFO  com.netflix.curator.framework.imps.CuratorFrameworkImpl  - Starting
-2646 [Thread-11] INFO  backtype.storm.daemon.executor  - Loading executor 1:[2 2]
-2654 [Thread-11] INFO  backtype.storm.daemon.executor  - Loaded executor tasks 1:[2 2]
-2689 [Thread-11] INFO  backtype.storm.daemon.executor  - Finished loading executor 1:[2 2]
-2689 [Thread-18] INFO  backtype.storm.daemon.executor  - Opening spout 1:(2)
-2695 [Thread-18] INFO  backtype.storm.daemon.executor  - Opened spout 1:(2)
-2700 [Thread-18] INFO  backtype.storm.daemon.executor  - Activating spout 1:(2)
-2710 [Thread-11] INFO  backtype.storm.daemon.executor  - Loading executor 2:[3 3]
-2711 [Thread-11] INFO  backtype.storm.daemon.executor  - Loaded executor tasks 2:[3 3]
-2713 [Thread-20] INFO  backtype.storm.daemon.executor  - Opening spout 2:(3)
-2718 [Thread-20] INFO  backtype.storm.daemon.executor  - Opened spout 2:(3)
-2719 [Thread-20] INFO  backtype.storm.daemon.executor  - Activating spout 2:(3)
-2722 [Thread-11] INFO  backtype.storm.daemon.executor  - Finished loading executor 2:[3 3]
-2730 [Thread-11] INFO  backtype.storm.daemon.executor  - Loading executor 3:[4 4]
-2731 [Thread-11] INFO  backtype.storm.daemon.executor  - Loaded executor tasks 3:[4 4]
-2736 [Thread-22] INFO  backtype.storm.daemon.executor  - Preparing bolt 3:(4)
-2737 [Thread-11] INFO  backtype.storm.daemon.executor  - Finished loading executor 3:[4 4]
-2742 [Thread-22] INFO  backtype.storm.daemon.executor  - Prepared bolt 3:(4)
-2752 [Thread-11] INFO  backtype.storm.daemon.executor  - Loading executor 3:[5 5]
-2753 [Thread-11] INFO  backtype.storm.daemon.executor  - Loaded executor tasks 3:[5 5]
-2756 [Thread-24] INFO  backtype.storm.daemon.executor  - Preparing bolt 3:(5)
-2758 [Thread-24] INFO  backtype.storm.daemon.executor  - Prepared bolt 3:(5)
-2758 [Thread-11] INFO  backtype.storm.daemon.executor  - Finished loading executor 3:[5 5]
-2778 [Thread-11] INFO  backtype.storm.daemon.executor  - Loading executor 4:[6 6]
-2794 [Thread-11] INFO  backtype.storm.daemon.executor  - Loaded executor tasks 4:[6 6]
-2796 [Thread-26] INFO  backtype.storm.daemon.executor  - Preparing bolt 4:(6)
-2796 [Thread-11] INFO  backtype.storm.daemon.executor  - Finished loading executor 4:[6 6]
-2801 [Thread-26] INFO  backtype.storm.daemon.executor  - Prepared bolt 4:(6)
-2810 [Thread-11] INFO  backtype.storm.daemon.executor  - Loading executor 4:[7 7]
-2811 [Thread-11] INFO  backtype.storm.daemon.executor  - Loaded executor tasks 4:[7 7]
-2812 [Thread-11] INFO  backtype.storm.daemon.executor  - Finished loading executor 4:[7 7]
-2812 [Thread-28] INFO  backtype.storm.daemon.executor  - Preparing bolt 4:(7)
-2815 [Thread-28] INFO  backtype.storm.daemon.executor  - Prepared bolt 4:(7)
-2819 [Thread-11] INFO  backtype.storm.daemon.executor  - Loading executor 5:[8 8]
-2820 [Thread-11] INFO  backtype.storm.daemon.executor  - Loaded executor tasks 5:[8 8]
-2845 [Thread-30] INFO  backtype.storm.daemon.executor  - Preparing bolt 5:(8)
-2863 [Thread-30] INFO  backtype.storm.daemon.executor  - Prepared bolt 5:(8)
-2879 [Thread-11] INFO  backtype.storm.daemon.executor  - Finished loading executor 5:[8 8]
-2902 [Thread-11] INFO  backtype.storm.daemon.executor  - Loading executor 5:[9 9]
-2904 [Thread-11] INFO  backtype.storm.daemon.executor  - Loaded executor tasks 5:[9 9]
-2909 [Thread-32] INFO  backtype.storm.daemon.executor  - Preparing bolt 5:(9)
-2912 [Thread-32] INFO  backtype.storm.daemon.executor  - Prepared bolt 5:(9)
-2913 [Thread-11] INFO  backtype.storm.daemon.executor  - Finished loading executor 5:[9 9]
-2926 [Thread-11] INFO  backtype.storm.daemon.executor  - Loading executor 6:[10 10]
-2928 [Thread-11] INFO  backtype.storm.daemon.executor  - Loaded executor tasks 6:[10 10]
-2930 [Thread-34] INFO  backtype.storm.daemon.executor  - Preparing bolt 6:(10)
-2938 [Thread-34] INFO  backtype.storm.daemon.executor  - Prepared bolt 6:(10)
-2939 [Thread-11] INFO  backtype.storm.daemon.executor  - Finished loading executor 6:[10 10]
-2947 [Thread-11] INFO  backtype.storm.daemon.executor  - Loading executor 6:[11 11]
-2948 [Thread-11] INFO  backtype.storm.daemon.executor  - Loaded executor tasks 6:[11 11]
-2949 [Thread-11] INFO  backtype.storm.daemon.executor  - Finished loading executor 6:[11 11]
-2949 [Thread-36] INFO  backtype.storm.daemon.executor  - Preparing bolt 6:(11)
-2951 [Thread-36] INFO  backtype.storm.daemon.executor  - Prepared bolt 6:(11)
-2960 [Thread-11] INFO  backtype.storm.daemon.executor  - Loading executor __acker:[12 12]
-2961 [Thread-11] INFO  backtype.storm.daemon.executor  - Loaded executor tasks __acker:[12 12]
-2962 [Thread-38] INFO  backtype.storm.daemon.executor  - Preparing bolt __acker:(12)
-2962 [Thread-11] INFO  backtype.storm.daemon.executor  - Finished loading executor __acker:[12 12]
-2965 [Thread-38] INFO  backtype.storm.daemon.executor  - Prepared bolt __acker:(12)
-2971 [Thread-11] INFO  backtype.storm.daemon.executor  - Loading executor 1:[1 1]
-2972 [Thread-11] INFO  backtype.storm.daemon.executor  - Loaded executor tasks 1:[1 1]
-2981 [Thread-40] INFO  backtype.storm.daemon.executor  - Opening spout 1:(1)
-2983 [Thread-40] INFO  backtype.storm.daemon.executor  - Opened spout 1:(1)
-2983 [Thread-40] INFO  backtype.storm.daemon.executor  - Activating spout 1:(1)
-2983 [Thread-11] INFO  backtype.storm.daemon.executor  - Finished loading executor 1:[1 1]
-2984 [Thread-11] INFO  backtype.storm.daemon.worker  - Launching receive-thread for 7b43d0e3-f3e2-4279-afeb-5c0ac659359a:4
-2999 [Thread-11] INFO  backtype.storm.daemon.worker  - Worker has topology config {"storm.id" "word-count-1-1361259836", "dev.zookeeper.path" "/tmp/dev-storm-zookeeper", "topology.tick.tuple.freq.secs" nil, "topology.fall.back.on.java.serialization" true, "topology.max.error.report.per.interval" 5, "zmq.linger.millis" 0, "topology.skip.missing.kryo.registrations" true, "ui.childopts" "-Xmx768m", "storm.zookeeper.session.timeout" 20000, "nimbus.reassign" true, "topology.trident.batch.emit.interval.millis" 50, "nimbus.monitor.freq.secs" 10, "java.library.path" "/usr/local/lib:/opt/local/lib:/usr/lib", "topology.executor.send.buffer.size" 1024, "storm.local.dir" "/var/folders/hg/373yfnq53m37_3fldlg86hth1wcwgs/T//1c6a90d5-e906-441c-be9b-98630342856a", "supervisor.worker.start.timeout.secs" 120, "topology.enable.message.timeouts" true, "nimbus.cleanup.inbox.freq.secs" 600, "nimbus.inbox.jar.expiration.secs" 3600, "drpc.worker.threads" 64, "topology.worker.shared.thread.pool.size" 4, "nimbus.host" "localhost", "storm.zookeeper.port" 2000, "transactional.zookeeper.port" nil, "topology.executor.receive.buffer.size" 1024, "transactional.zookeeper.servers" nil, "storm.zookeeper.root" "/storm", "supervisor.enable" true, "storm.zookeeper.servers" ["localhost"], "transactional.zookeeper.root" "/transactional", "topology.acker.executors" 1, "topology.kryo.decorators" (), "topology.name" "word-count", "topology.transfer.buffer.size" 1024, "topology.worker.childopts" nil, "drpc.queue.size" 128, "worker.childopts" "-Xmx768m", "supervisor.heartbeat.frequency.secs" 5, "topology.error.throttle.interval.secs" 10, "zmq.hwm" 0, "drpc.port" 3772, "supervisor.monitor.frequency.secs" 3, "topology.receiver.buffer.size" 8, "task.heartbeat.frequency.secs" 3, "topology.tasks" nil, "topology.spout.wait.strategy" "backtype.storm.spout.SleepSpoutWaitStrategy", "topology.max.spout.pending" nil, "storm.zookeeper.retry.interval" 1000, "topology.sleep.spout.wait.strategy.time.ms" 1, "nimbus.topology.validator" "backtype.storm.nimbus.DefaultTopologyValidator", "supervisor.slots.ports" (4 5 6), "topology.debug" false, "nimbus.task.launch.secs" 120, "nimbus.supervisor.timeout.secs" 60, "topology.kryo.register" nil, "topology.message.timeout.secs" 30, "task.refresh.poll.secs" 10, "topology.workers" 1, "supervisor.childopts" "-Xmx256m", "nimbus.thrift.port" 6627, "topology.stats.sample.rate" 0.05, "worker.heartbeat.frequency.secs" 1, "topology.acker.tasks" nil, "topology.disruptor.wait.strategy" "com.lmax.disruptor.BlockingWaitStrategy", "nimbus.task.timeout.secs" 30, "storm.zookeeper.connection.timeout" 15000, "topology.kryo.factory" "backtype.storm.serialization.DefaultKryoFactory", "drpc.invocations.port" 3773, "zmq.threads" 1, "storm.zookeeper.retry.times" 5, "topology.state.synchronization.timeout.secs" 60, "supervisor.worker.timeout.secs" 30, "nimbus.file.copy.expiration.secs" 600, "drpc.request.timeout.secs" 600, "storm.local.mode.zmq" false, "ui.port" 8080, "nimbus.childopts" "-Xmx1024m", "storm.cluster.mode" "local", "topology.optimize" true, "topology.max.task.parallelism" nil}
-3000 [Thread-11] INFO  backtype.storm.daemon.worker  - Worker ca7c6af2-1948-4457-8d02-63e4941a8452 for storm word-count-1-1361259836 on 7b43d0e3-f3e2-4279-afeb-5c0ac659359a:4 has finished loading
-11416 [main] INFO  backtype.storm.daemon.nimbus  - Shutting down master
-11420 [main] INFO  backtype.storm.daemon.nimbus  - Shut down master
-11462 [main] INFO  backtype.storm.daemon.supervisor  - Shutting down supervisor 164f5e96-e2ad-4e58-be07-a7d04a23f177
-11463 [Thread-7] INFO  backtype.storm.event  - Event manager interrupted
-11464 [Thread-8] INFO  backtype.storm.event  - Event manager interrupted
-11467 [main] INFO  backtype.storm.daemon.supervisor  - Shutting down 7b43d0e3-f3e2-4279-afeb-5c0ac659359a:ca7c6af2-1948-4457-8d02-63e4941a8452
-11468 [main] INFO  backtype.storm.process-simulator  - Killing process 861d3e27-9299-4229-b8f6-5b341f278e9a
-11468 [main] INFO  backtype.storm.daemon.worker  - Shutting down worker word-count-1-1361259836 7b43d0e3-f3e2-4279-afeb-5c0ac659359a 4
-11468 [main] INFO  backtype.storm.daemon.worker  - Shutting down receive thread
-11468 [main] INFO  backtype.storm.messaging.loader  - Shutting down receiving-thread: [word-count-1-1361259836, 4]
-11468 [main] INFO  backtype.storm.messaging.loader  - Waiting for receiving-thread:[word-count-1-1361259836, 4] to die
-11468 [Thread-41] INFO  backtype.storm.messaging.loader  - Receiving-thread:[word-count-1-1361259836, 4] received shutdown notice
-11469 [main] INFO  backtype.storm.messaging.loader  - Shutdown receiving-thread: [word-count-1-1361259836, 4]
-11469 [main] INFO  backtype.storm.daemon.worker  - Shut down receive thread
-11469 [main] INFO  backtype.storm.daemon.worker  - Terminating zmq context
-11469 [main] INFO  backtype.storm.daemon.worker  - Shutting down executors
-11469 [main] INFO  backtype.storm.daemon.executor  - Shutting down executor 1:[2 2]
-11470 [Thread-18] INFO  backtype.storm.util  - Async loop interrupted!
-11470 [Thread-17] INFO  backtype.storm.util  - Async loop interrupted!
-11471 [main] INFO  backtype.storm.daemon.executor  - Shut down executor 1:[2 2]
-11471 [main] INFO  backtype.storm.daemon.executor  - Shutting down executor 2:[3 3]
-11471 [Thread-20] INFO  backtype.storm.util  - Async loop interrupted!
-11471 [Thread-19] INFO  backtype.storm.util  - Async loop interrupted!
-11471 [main] INFO  backtype.storm.daemon.executor  - Shut down executor 2:[3 3]
-11479 [main] INFO  backtype.storm.daemon.executor  - Shutting down executor 3:[4 4]
-11479 [Thread-22] INFO  backtype.storm.util  - Async loop interrupted!
-11479 [Thread-21] INFO  backtype.storm.util  - Async loop interrupted!
-11480 [main] INFO  backtype.storm.daemon.executor  - Shut down executor 3:[4 4]
-11480 [main] INFO  backtype.storm.daemon.executor  - Shutting down executor 3:[5 5]
-11480 [Thread-24] INFO  backtype.storm.util  - Async loop interrupted!
-11480 [Thread-23] INFO  backtype.storm.util  - Async loop interrupted!
-11480 [main] INFO  backtype.storm.daemon.executor  - Shut down executor 3:[5 5]
-11481 [main] INFO  backtype.storm.daemon.executor  - Shutting down executor 4:[6 6]
-11481 [Thread-26] INFO  backtype.storm.util  - Async loop interrupted!
-11481 [Thread-25] INFO  backtype.storm.util  - Async loop interrupted!
-11481 [main] INFO  backtype.storm.daemon.executor  - Shut down executor 4:[6 6]
-11481 [main] INFO  backtype.storm.daemon.executor  - Shutting down executor 4:[7 7]
-11481 [Thread-28] INFO  backtype.storm.util  - Async loop interrupted!
-11481 [Thread-27] INFO  backtype.storm.util  - Async loop interrupted!
-11482 [main] INFO  backtype.storm.daemon.executor  - Shut down executor 4:[7 7]
-11482 [main] INFO  backtype.storm.daemon.executor  - Shutting down executor 5:[8 8]
-11482 [Thread-30] INFO  backtype.storm.util  - Async loop interrupted!
-11482 [Thread-29] INFO  backtype.storm.util  - Async loop interrupted!
-11482 [main] INFO  backtype.storm.daemon.executor  - Shut down executor 5:[8 8]
-11483 [main] INFO  backtype.storm.daemon.executor  - Shutting down executor 5:[9 9]
-11483 [Thread-32] INFO  backtype.storm.util  - Async loop interrupted!
-11484 [Thread-31] INFO  backtype.storm.util  - Async loop interrupted!
-11484 [main] INFO  backtype.storm.daemon.executor  - Shut down executor 5:[9 9]
-11484 [main] INFO  backtype.storm.daemon.executor  - Shutting down executor 6:[10 10]
-11484 [Thread-33] INFO  backtype.storm.util  - Async loop interrupted!
-11485 [Thread-34] INFO  backtype.storm.util  - Async loop interrupted!
-11486 [main] INFO  backtype.storm.daemon.executor  - Shut down executor 6:[10 10]
-11486 [main] INFO  backtype.storm.daemon.executor  - Shutting down executor 6:[11 11]
-11486 [Thread-36] INFO  backtype.storm.util  - Async loop interrupted!
-11488 [Thread-35] INFO  backtype.storm.util  - Async loop interrupted!
-11488 [main] INFO  backtype.storm.daemon.executor  - Shut down executor 6:[11 11]
-11488 [main] INFO  backtype.storm.daemon.executor  - Shutting down executor __acker:[12 12]
-11488 [Thread-37] INFO  backtype.storm.util  - Async loop interrupted!
-11489 [Thread-38] INFO  backtype.storm.util  - Async loop interrupted!
-11489 [main] INFO  backtype.storm.daemon.executor  - Shut down executor __acker:[12 12]
-11489 [main] INFO  backtype.storm.daemon.executor  - Shutting down executor 1:[1 1]
-11490 [Thread-40] INFO  backtype.storm.util  - Async loop interrupted!
-11490 [Thread-39] INFO  backtype.storm.util  - Async loop interrupted!
-11491 [main] INFO  backtype.storm.daemon.executor  - Shut down executor 1:[1 1]
-11491 [main] INFO  backtype.storm.daemon.worker  - Shut down executors
-11491 [main] INFO  backtype.storm.daemon.worker  - Shutting down transfer thread
-11491 [Thread-42] INFO  backtype.storm.util  - Async loop interrupted!
-11491 [main] INFO  backtype.storm.daemon.worker  - Shut down transfer thread
-11492 [main] INFO  backtype.storm.daemon.worker  - Shutting down default resources
-11492 [main] INFO  backtype.storm.daemon.worker  - Shut down default resources
-11499 [main] INFO  backtype.storm.daemon.worker  - Disconnecting from storm cluster state context
-11502 [main] INFO  backtype.storm.daemon.worker  - Shut down worker word-count-1-1361259836 7b43d0e3-f3e2-4279-afeb-5c0ac659359a 4
-11505 [main] INFO  backtype.storm.daemon.supervisor  - Shut down 7b43d0e3-f3e2-4279-afeb-5c0ac659359a:ca7c6af2-1948-4457-8d02-63e4941a8452
-11505 [main] INFO  backtype.storm.daemon.supervisor  - Shutting down supervisor 7b43d0e3-f3e2-4279-afeb-5c0ac659359a
-11505 [Thread-10] INFO  backtype.storm.event  - Event manager interrupted
-11505 [Thread-11] INFO  backtype.storm.event  - Event manager interrupted
-11510 [main] INFO  backtype.storm.testing  - Shutting down in process zookeeper
-11512 [main] INFO  backtype.storm.testing  - Done shutting down in process zookeeper
-11512 [main] INFO  backtype.storm.testing  - Deleting temporary path /var/folders/hg/373yfnq53m37_3fldlg86hth1wcwgs/T//623d9db6-bf3c-4a5d-8b52-5bd5b4688043
-11514 [main] INFO  backtype.storm.testing  - Deleting temporary path /var/folders/hg/373yfnq53m37_3fldlg86hth1wcwgs/T//c6d72ba5-090f-46b8-a094-10989eace2c7
-11515 [main] INFO  backtype.storm.testing  - Deleting temporary path /var/folders/hg/373yfnq53m37_3fldlg86hth1wcwgs/T//be966e17-e71f-4ea7-97b5-8bd34e85ef85
-11517 [main] INFO  backtype.storm.testing  - Deleting temporary path /var/folders/hg/373yfnq53m37_3fldlg86hth1wcwgs/T//1c6a90d5-e906-441c-be9b-98630342856a
+1    [main] ERROR org.apache.zookeeper.server.NIOServerCnxn  - Thread Thread[main,5,main] died
+java.lang.RuntimeException: Unable to resolve symbol: tuple in this context, compiling:(wordcount/wordcount.clj:85)
+	at clojure.lang.Compiler.analyze(Compiler.java:6281)
+	at clojure.lang.Compiler.analyze(Compiler.java:6223)
+	at clojure.lang.Compiler$HostExpr$Parser.parse(Compiler.java:903)
+	at clojure.lang.Compiler.analyzeSeq(Compiler.java:6455)
+	at clojure.lang.Compiler.analyze(Compiler.java:6262)
+	at clojure.lang.Compiler.analyzeSeq(Compiler.java:6443)
+	at clojure.lang.Compiler.analyze(Compiler.java:6262)
+	at clojure.lang.Compiler.analyze(Compiler.java:6223)
+	at clojure.lang.Compiler$HostExpr$Parser.parse(Compiler.java:903)
+	at clojure.lang.Compiler.analyzeSeq(Compiler.java:6455)
+	at clojure.lang.Compiler.analyze(Compiler.java:6262)
+	at clojure.lang.Compiler.analyzeSeq(Compiler.java:6443)
+	at clojure.lang.Compiler.analyze(Compiler.java:6262)
+	at clojure.lang.Compiler.access$100(Compiler.java:37)
+	at clojure.lang.Compiler$LetExpr$Parser.parse(Compiler.java:5883)
+	at clojure.lang.Compiler.analyzeSeq(Compiler.java:6455)
+	at clojure.lang.Compiler.analyze(Compiler.java:6262)
+	at clojure.lang.Compiler.analyzeSeq(Compiler.java:6443)
+	at clojure.lang.Compiler.analyze(Compiler.java:6262)
+	at clojure.lang.Compiler.analyze(Compiler.java:6223)
+	at clojure.lang.Compiler$BodyExpr$Parser.parse(Compiler.java:5618)
+	at clojure.lang.Compiler$FnMethod.parse(Compiler.java:5054)
+	at clojure.lang.Compiler$FnExpr.parse(Compiler.java:3674)
+	at clojure.lang.Compiler.analyzeSeq(Compiler.java:6453)
+	at clojure.lang.Compiler.analyze(Compiler.java:6262)
+	at clojure.lang.Compiler.analyzeSeq(Compiler.java:6443)
+	at clojure.lang.Compiler.analyze(Compiler.java:6262)
+	at clojure.lang.Compiler.analyze(Compiler.java:6223)
+	at clojure.lang.Compiler$BodyExpr$Parser.parse(Compiler.java:5618)
+	at clojure.lang.Compiler$FnMethod.parse(Compiler.java:5054)
+	at clojure.lang.Compiler$FnExpr.parse(Compiler.java:3674)
+	at clojure.lang.Compiler.analyzeSeq(Compiler.java:6453)
+	at clojure.lang.Compiler.analyze(Compiler.java:6262)
+	at clojure.lang.Compiler.analyzeSeq(Compiler.java:6443)
+	at clojure.lang.Compiler.analyze(Compiler.java:6262)
+	at clojure.lang.Compiler.access$100(Compiler.java:37)
+	at clojure.lang.Compiler$DefExpr$Parser.parse(Compiler.java:518)
+	at clojure.lang.Compiler.analyzeSeq(Compiler.java:6455)
+	at clojure.lang.Compiler.analyze(Compiler.java:6262)
+	at clojure.lang.Compiler.analyze(Compiler.java:6223)
+	at clojure.lang.Compiler.eval(Compiler.java:6515)
+	at clojure.lang.Compiler.eval(Compiler.java:6500)
+	at clojure.lang.Compiler.load(Compiler.java:6952)
+	at clojure.lang.RT.loadResourceScript(RT.java:359)
+	at clojure.lang.RT.loadResourceScript(RT.java:350)
+	at clojure.lang.RT.load(RT.java:429)
+	at clojure.lang.RT.load(RT.java:400)
+	at clojure.core$load$fn__4890.invoke(core.clj:5415)
+	at clojure.core$load.doInvoke(core.clj:5414)
+	at clojure.lang.RestFn.invoke(RestFn.java:408)
+	at clojure.core$load_one.invoke(core.clj:5227)
+	at clojure.core$load_lib.doInvoke(core.clj:5264)
+	at clojure.lang.RestFn.applyTo(RestFn.java:142)
+	at clojure.core$apply.invoke(core.clj:603)
+	at clojure.core$load_libs.doInvoke(core.clj:5298)
+	at clojure.lang.RestFn.applyTo(RestFn.java:137)
+	at clojure.core$apply.invoke(core.clj:603)
+	at clojure.core$require.doInvoke(core.clj:5381)
+	at clojure.lang.RestFn.invoke(RestFn.java:408)
+	at user$eval1.invoke(NO_SOURCE_FILE:1)
+	at clojure.lang.Compiler.eval(Compiler.java:6511)
+	at clojure.lang.Compiler.eval(Compiler.java:6500)
+	at clojure.lang.Compiler.eval(Compiler.java:6477)
+	at clojure.core$eval.invoke(core.clj:2797)
+	at clojure.main$eval_opt.invoke(main.clj:297)
+	at clojure.main$initialize.invoke(main.clj:316)
+	at clojure.main$null_opt.invoke(main.clj:349)
+	at clojure.main$main.doInvoke(main.clj:427)
+	at clojure.lang.RestFn.invoke(RestFn.java:421)
+	at clojure.lang.Var.invoke(Var.java:419)
+	at clojure.lang.AFn.applyToHelper(AFn.java:163)
+	at clojure.lang.Var.applyTo(Var.java:532)
+	at clojure.main.main(main.java:37)
+Caused by: java.lang.RuntimeException: Unable to resolve symbol: tuple in this context
+	at clojure.lang.Util.runtimeException(Util.java:170)
+	at clojure.lang.Compiler.resolveIn(Compiler.java:6766)
+	at clojure.lang.Compiler.resolve(Compiler.java:6710)
+	at clojure.lang.Compiler.analyzeSymbol(Compiler.java:6671)
+	at clojure.lang.Compiler.analyze(Compiler.java:6244)
+	... 72 more

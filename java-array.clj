@@ -1,7 +1,8 @@
 ;; java collection
 ;; (load-file "java-array.clj")
 
-;; here we are talking about JVM mutable arrays.
+;; here we are talking about JVM arrays: a mutable container 
+;; (alength tokens) (aget tokens 2) (aset tokens 2 "actionable")
 ;;
 ;; types of array : primitive and reference
 ;; primitive array : boolean-array byte-array char-array double-array float-array int-array long-array object-array short-array

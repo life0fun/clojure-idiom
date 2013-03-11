@@ -366,3 +366,16 @@ def cache (BasicCache. {}))
 
 ;; use java explicit lock if you do customize locking strategy, e.g., lock striping, etc.
 (import 'java.util.concurrent.locks.ReentrantLock')
+
+
+;; Watching for mutation.
+;; add an event listener that gets notified when val of stateful var changes.
+;; (add-watch ) allow you to register callback to be invoked when state changed.
+
+(def adi (atom 0))
+(defn on-change [the-key the-ref old-value new-value]
+  (println "Hey, seeing change from" old-value "to" new-value))
+
+(add-watch adi :adi-watcher on-change)
+(swap! adi inc)
+(remove-watch adi :adi-watcher)

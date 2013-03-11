@@ -1,0 +1,1046 @@
+* Introduction to Clojure
+
+="The greatest single programming language ever designed"=
+
+*-- Alan Kay on Lisp*
+
+
+="Lisp is worth learning for the profound enlightenment experience you
+will have when you finally get it; that experience will make you a
+better programmer for the rest of your days, even if you never
+actually use Lisp itself a lot."=
+
+*-- Eric Raymond*
+
+
+="Any sufficiently complicated C or Fortran program contains an ad-hoc,
+informally-specified, bug-ridden, slow implementation of half of
+Common Lisp."=
+
+*-- Philip Greenspun*
+
+
+="The key to performance is elegance, not battalions of special cases."=
+
+*-- Jon Bentley and Doug McIlroy*
+
+Clojure is the new Lisp on the block. This chapter is a high-level
+overview of Clojure, and talks about what it can do and a little bit
+of how it does it. There is some code in this chapter, but it can be
+glossed over because the next few chapters will get into a lot more
+detail about how to code in Clojure. By the end of this chapter you
+should have a feel for the power of this new language, and you'll be
+ready for the remainder of this part of the book.
+
+** Clojure - the reincarnation of Lisp 
+
+When someone says that Lisp is the world's most powerful programming
+language, some folks actually agree (even if they refer to the speaker
+as a smug Lisp weenie.) What other programming language can lay claim to
+something similar and get away with it? C++? Java? Ruby?
+
+Many people think of Lisp as a dead language, one that no one really
+uses anymore. At the same time, people hear of Lisp being used for
+some very powerful software systems in various domains - NASA's
+Pathfinder mission planning software, algorithmic trading at hedge
+funds, airline reservations, data mining, natural language processing,
+expert systems, bio-informatics, robotics, electronic design
+automation, and so on.
+
+Lisp has the reputation of being a dark art, indeed, it has been
+referred to as a secret weapon by several successful startups. All
+this is for good reason, and this chapter attempts to explain this
+mysticism by talking about a new Lisp called Clojure. This new
+language is not only a very practical Lisp, but has added to its
+effectiveness by embracing the functional paradigm, by providing lazy
+evaluation, by incorporating concurrency semantics into its core, and
+by being hosted on the JVM.
+
+
+** How we got here
+
+LISt Processing (LISP) was designed in 1958 by John McCarthy who lists
+the Turing award among his many achievements. Its design arose from
+requirements in the field of artificial intelligence, specifically
+from a need to operate on symbolic expressions (instead of numbers)
+and to represent these expressions as lists of symbols. Lisp was also
+designed with function composition as a means of managing complexity,
+which means that functions are first-class citizens of the language
+and can be passed around like values and can be composed of each
+other. This is different from languages like Java and Ruby. Finally,
+Lisp was created with a "code as data" ideology which meant that code
+could be manipulated as easily as regular data. This combination of
+features, as we shall see, results in tremendous power.
+
+However, over the next few years, circumstances conspired against
+Lisp. A lot of money was invested in AI research during the 70's and
+80's, but AI ultimately delivered very little of all it had
+promised. Because Lisp had become associated with the field of
+artificial intelligence, when the AI boom ended, so did the popularity
+of the language. Many blamed the "failure" of AI on Lisp, and the
+stigma has been difficult to lose.
+
+Many Lisps have been born since those early days, and many Lisps have
+passed into oblivion. Some are still being used today, especially
+certain dialects of Common Lisp like SBCL, CMUCL, and Allegro CL. And
+several computer science schools use Scheme as a teaching language, a
+role that it's admirably suited for.
+
+There have also been several attempts at a Lisp hosted on the JVM -
+JScheme, Kawa, ABLC, and others. Again, for a variety of reasons,
+these never became particularly popular. Clojure is the latest attempt
+at reviving Lisp on the JVM, and Rich Hickey, its creator, has done an
+incredible job. Clojure, finally, could be the Lisp that
+survives. Indeed, it could be the future of Lisp and of dynamic
+programming languages.
+
+** How this book teaches Clojure
+
+The philosophy of this book rests on two main pillars - an emphasis on
+first principles, and on being extremely hands-on. This means we will
+see lots of code examples. Programming in Clojure requires a new way
+of thinking, one that's probably very different from what you're used
+to as a Java or Ruby programmer. The focus on the basics of Lisp,
+functional programming, and the new facilities provided by Clojure
+attempts to address this need.
+
+The second point is addressed by showing real examples that
+demonstrate various concepts in Clojure. We will build a fairly
+non-trivial system up from scratch over the course of this book. We
+won't necessarily do it in the order that one might do it in the real
+world, but we'll write plenty of code as we learn about different
+features of Clojure.
+
+We're going to build a web-application that allows users to track
+their expenses. It will have the usual set of CRUD features - create
+and administer an account, input and manage expense transactions, and
+so on. The system will generate and display reports of their spending
+habits and will compare their spending with other users in similar
+categories. All this will require both real-time data look-ups as well
+as batch processing. The system will also be built in a scalable
+manner, in order to accomodate the growing needs of this obviously
+popular service.
+
+** Understanding Clojure syntax
+
+When most people think of learning a new programming language, they
+first think of syntax. Syntax is what makes languages look different
+from each other, indeed, it is often a reason why some people like (or
+dislike!) certain languages.
+
+Syntax, howerver, is only skin-deep. Concrete syntax, which is the
+"rules" that the language imposes on the programmer in terms of what
+each construct looks like, is actually not that important. Compilers
+generate a data-structure called an abstract syntax tree after parsing
+the code written in the concrete syntax of the language. The actual
+source code of the program is discarded once the AST is generated. For
+all other phases of compilation (e.g. sematic analysis), only the AST
+is required. One might say, therefore, that syntax is fundamentally
+for humans. That's not to say that human convenience is not important
+- but this syntax shouldn't get in the way of what is possible with a
+computer language.
+
+Clojure is an extremely simple language to learn, in fact from a
+syntax point of view, there is nearly nothing to it. Most expresions
+in Clojure are in the form of a list where each list is made up of
+symbols or other lists. A symbol is anything that appears in the
+program text. That is all!. All code looks pretty much the
+same, and except for a few special forms, evaluation is just a matter
+of applying the value of the first symbol to the values of the
+remaining symbols.
+
+This simplicity is also its strength and is what makes Lisp's famous
+macro system possible. Macros are tiny, in-line code-generators that
+can be used by any programmer to generate arbitrary code on the
+fly. This is one of the reasons why Clojure is so different from other
+languages, and why it's so powerful. We'll learn more about macros in
+a later section.
+
+*** Why Clojure has all those parentheses
+
+Many people get turned off at the sight of Clojure code - all those
+parentheses can be daunting at first sight! Let's see why they're
+actually no big deal, and in fact, that they're a large source of
+Clojure's power.
+
+*** How XML is like Lisp
+
+XML has been used for many purposes, including as a programming
+language. XSLT is one such example. Just as a thought experiment,
+let's use XML to create our own programming language. It might look
+something like -
+
+<src lang=xml>
+
+<program>
+  <function name=addToStock>
+    <param name=counter></param>
+    <callFunction name=increment>
+      <argument value=counter></argument>
+    </callFunction>
+  </function>
+
+  <function name=removeFromStock>
+    <param name=item></param>
+    <callFunction name=decrementFromStockFile>
+      <argument value=item></argument>
+    </callFunction>
+  </funtion>
+</program>
+
+</src>
+
+This program should be understandable by anyone who has used any kind
+of XML based programming tool. For example, Ant build files look
+somewhat similar in some respects. With a little imagination, one
+could envision a system that can read this file and execute the code
+described within it.
+
+These days, however, everyone likes to criticize XML for being kludgy
+and verbose. So let's try to clean it up by removing non essential
+things from the above example. First, if we assume that these are
+source code files, we don't need the root <code>program</code>
+tag. Also, let's get rid of all closing tags, since we can still write
+a parser that understands the program structure without named closing
+tags. The resulting code might look like -
+
+
+<src lang=xml>
+
+  <function name=addToStock>
+    <param name=counter></>
+    <callFunction name=increment>
+      <argument value=counter></>
+    </>
+  </>
+
+  <function name=removeFromStock>
+    <param name=item></>
+    <callFunction name=decrementFromStockFile>
+      <argument value=item></>
+    </>
+  </>
+
+</src>
+
+Let's make another couple of improvements - let's just use starting
+angle brackets to denote the start of statements (no closing angle
+brackets until the very end of the statement), and let's use a simple
+closing angle bracket to denote the ends. The code might now look like
+this -
+
+<src lang=xml>
+
+  <function name=addToStock
+    <param name=counter >
+    <callFunction name=increment
+      <argument value=counter >
+    >
+  >
+
+  <function name=removeFromStock
+    <param name=item >
+    <callFunction name=decrementFromStockFile
+      <argument value=item >
+    >
+  >
+
+</src>
+
+For our final set of changes, let's cook up a couple of rules. When
+defining a function, we will use the special <code>define</code>
+construct which is always followed by a set of symbols between
+brackets - these symbols begin with the name of the function being
+defined and is followed by its parameters. The <code>define</code>
+construct doesn't need an extra closing bracket since it ends with the
+body of the function definition.
+
+Also the first symbol in any non-special statement is
+always the name of a function, so we don't need to call that fact
+out. The following symbols are always parameters, so we don't need to
+call that fact out either. The resulting code might look like this -
+
+<src lang=xml>
+
+  <define < addToStock counter >
+    <increment counter > >
+
+  <define < removeFromStock item >
+    <decrementFromStockFile item > >
+
+</src>
+
+This is still quite readable, and still follows rules that a parser
+can use to decode. For a bit of flourish, let's switch to using the
+nicer, curvier parenthesis instead of the pointy angle brackets -
+
+<src lang=xml>
+
+  (define (addToStock counter)
+    (increment counter))
+
+  (define (removeFromStock item)
+    (decrementFromStockFile item))
+
+</src>
+
+Believe it or not, this is Scheme (a Lisp dialect) syntax. Most Lisps
+look very similar, with minor differences about how many parenthesis
+are used, and where they go.
+
+The reason the parenthesis exist is the same reason tags exist in XML,
+and that is that we're defining a tree structure which contains (in
+this case) the source code of the program. Just like XML can be
+manipulated (or generated) with ease, so can Lisp programs. This is
+because they're just data-structures themselves. As mentioned earlier,
+this code manipulation and generation is done using the macro system.
+
+
+*** The reader
+
+It is useful to know what the Clojure reader is and what it does. The
+reader is what reads source code and converts it into Clojure data
+structures. It is these data-structures (made up of lists, vectors and
+hash-maps) that are evaluated to execute the code.
+
+This is the reason that Clojure code can be manipulated
+programmatically with such ease. After all, Clojure code is converted
+into simple Clojure data-structures which can be manipulated
+just like other any other data. Indeed, on paper, Clojure code appears
+to be written in those same data-structures. For instance -
+
+<src lang=xml>
+
+(defn my-own-function [an-argument another-argument]
+  (println "The arguments were:" an-argument another-argument)
+  (process-these an-argument another-argument))
+
+</src>
+
+This can be thought of as a list. The first symbol is
+<code>define</code> and it is followed by a vector of two symbols -
+<code>an-argument</code> and <code>another-argument</code>. The next
+element of the list is another list that begins with
+<code>println</code>, is followed by a string, and so on. 
+
+This data-structure is just like any other, and can be manipulated as
+required using the macro system. In essence, the parentheses (or any
+delimiter chosen in its place, like the XML tags from earlier) allow
+the code to be written in the abstract syntax tree (AST)
+representation directly. In the case of Clojure this AST is made up of
+Clojure's own data-structures. Languages that are designed this way
+are called homoiconic (*homo* is same, *iconic* is
+representation). Homoiconicity is why Clojure has such a simple syntax
+and, as we saw, a reason why it's so powerful.
+
+*** Lists, vectors, and hashes
+
+OK, so I lied a little bit. Clojure does have a little bit more syntax
+than other Lisps, but happily, this extra syntax improves readability.
+
+In order to make it easier to read and write Clojure code, it uses two
+other types of brackets - square brackets and braces, in addition to
+the parenthesis. As usual, simple lists are denoted using parentheses,
+and most of your Clojure code will use lists.
+
+<src lang=lisp>
+  (do
+    (process-element (first all-the-xs))
+    (process-element (last all-the-ys))
+    (find-max all-the-numbers))
+</src>
+
+Vectors are denoted using square brackets. Vectors are just like lists
+and can be used like them, except that they can be indexed by
+integers. Clojure uses vectors to denote function arguments or binding
+forms.
+
+<src lang=lisp>
+  (defn do-something [an-argument another-argument]
+    (do-something-with-both an-argument another-argument)
+    (return-answer an-argument another-argument))
+</src>
+
+Hash-maps are denoted using braces. Hash-maps behave just like you
+would expect - they are collections of key-value pairs where values
+can be indexed by their keys. Here's what that looks like -
+
+<src lang=lisp>
+  (def a-map {
+    :first-key "first-value"
+    :second-key "second-value"
+    "third-key" :third-value
+    "fourth-key" 4
+  })
+</src>
+
+The combination of these three notations, i.e. using parenthesis,
+square brackets and braces, makes Clojure easy to read when compared
+to other Lisps. 
+
+*** Onwards!
+
+You should now have an idea of what Clojure code looks like, and even
+why it looks like it does. With the question of the strange syntax out
+of th way, we can start talking about the other features that Clojure
+offers.
+
+** The source of Clojure's power
+
+Computers only understand one language - binary code. All other
+programming languages, including assembly (symbolic representation of
+the computer's instruction set), are at a higher level than native
+machine code. The reason these other langauges exist is so that
+programmers don't have to deal with cryptic sequences of ones and
+zeroes. High-level languages increase the productivity of the
+programmer.
+
+Programming languages vary greatly in power. Low-level languages, like
+assembly language and the C programming language, are useful for
+certain tasks like writing operating systems and device drivers. For
+most other programming tasks, software engineers favor high-level
+languages like C++, Java, Ruby or Python. Each programing language has
+a different philosophy (for instance, static or dynamic, strongly or
+weakly typed), hence the resulting programmer productivity is
+different.
+
+The Lisp family of languages offer the ultimate in programmer
+productivity for a large class of problems, and this is due to some
+very good reasons. Since Clojure is a Lisp, it shares all these
+qualities. It adds its own set of features as well, and we'll explore
+some of these now.
+
+*** Dynamic programming
+
+Clojure is a dynamic language which means that many more things are
+determinded at a program's run time rather than when a compiler looks
+at the source code. This allows programs to be written in ways that
+wouldn't be possible in static languages. For example, many static
+languages require type declarations when using variables or defining
+functions, whereas Clojure does not. As another example, Clojure has
+an *eval* function which allows code to be loaded up and executed at run
+time. This feature is absent in nearly all static languages. Clojure's
+macro system wouldn't be possible if it weren't a dynamic language.
+
+*** Functional  programming
+
+Clojure functions are first class which means that functions can be
+passed as parameters to other functions, can be created dynamically
+and can be returned from functions. They can also be stored inside of
+other data-structures just like regular data. Clojure also provides
+lexical closures which is a powerful construct that allows for very
+expressive code.
+
+This functional aspect of Clojure makes it easy to write code using
+higher-level constructs like *map*, *reduce*, and *filter,* which apply
+arbitrary functions to lists of data. Such functional code has fewer
+bugs than equivalent code in imperative languages like Ruby or Java,
+since the code is far more declarative in nature. After all, lesser
+code leaves lesser scope for programming error.
+
+Let's look at an example -
+
+<src lang=lisp>
+(def post-headers [{:title "first one ever" :length 430} 
+                   {:title "second baby step" :length 650} 
+                   {:title "three is company" :length 720} 
+                   {:title "fourth for the road" :length 190} 
+                   {:title "five again" :length 280}])
+
+(defn long-post-headers [threshold-length headers]
+  (let [is-long? (fn [header]
+                   (> (header :length) threshold-length))]
+    (filter is-long? headers)))
+
+(defn long-post-titles [threshold-length headers]
+  (map :title (long-post-headers threshold-length headers)))
+
+(long-post-titles 300 post-headers)
+</src>
+
+The output of the last function call is -
+
+<src lang=lisp>
+("first one ever" "second baby step" "three is company")
+</src>
+
+This is how a lot of functional code looks - mapping over sequences to
+collect things, filtering from sequences using predicate[1] functions,
+etc. Notice also how you can define local functions like
+<code>is-long?</code>, and how it functions as a closure around the
+<code>threshold-length</code> parameter.
+
+*** Immutability
+
+Clojure supports another aspect of functional programming - that of
+immutability. What this means is that all of Clojure's core data
+structures are immutable, that is to say, once created they can't
+change. When something needs to "change", a new object is created
+which includes the change and is returned. (Clojure's implementation
+of this immutability is extremely performant and thus does not slow
+down programs). What this means in practice is that an entire class of
+bugs related to mutating state is eliminated from your code. The only
+way a function can "do something" is to return a new data-structure -
+and in this way each function is independent and can be written,
+debugged, and tested independently.
+
+<src lang=lisp>
+(def initial-expenses [{:amount 12.99 :merchant "amazon"}])
+
+(def updated-expenses (conj expenses {:amount 199.95 :merchant "frys"}))
+</src>
+
+That last function call returns a *new* sequence with the two expenses in
+it and is assigned to <code>updated-expenses</code>. The old sequence
+<code>expenses</code> remains unchanged. As we shall see, this
+immutability greatly aids Clojure's support of concurrency-safe
+multi-threaded programs.
+
+By the way, in case you're wondering how you can possibly write
+real-world code with everything being immutable, relax! Clojure has
+fantastic support for explicit state management, and we'll see this
+soon.
+
+
+*** Lazy evaluation
+
+Most programming languages like Ruby and Java are eager. This means
+that when a method or constructor is called, it is executed
+immediately, and the result is returned. However, sometimes it is
+desirable to defer such evaluation. An example where this is needed is
+to avoid unnecessary computation (say an expensively calculated value
+is never used).
+
+Clojure solves this problem within its core. Most of Clojure is lazy -
+most of its core functions produce lazy data-structures that aren't
+realized until actually needed. Examples of such commonly used
+functions are map, reduce, filter, etc. Further, this also implies
+that a chain of such functions calls return values that are also lazy!
+This laziness is a source of great power and we'll see more of it in
+action later.
+
+As an example of this power, laziness allows the programmer to create
+what are essentially infinite lists of data. These infinite data
+structures are called streams, and are a very different way to model
+the world. For instance, "objects" can be modeled a series of events,
+as opposed to a snap-shot of the world.
+
+Here's a classic example which is a bit trivial but simple to
+understand. We will create a sequence of all fibonacci numbers. Yes,
+all - an infinite sequence like this is not possible in languages like
+Java or Ruby. Further, since this sequence is lazy, elements will be
+calculated only as needed.
+
+<src lang=lisp>
+(defn next-terms [term-1 term-2]
+  (let [term-3 (+ term-1 term-2)]
+    (lazy-seq 
+      (cons term-3 
+            (next-terms term-2 term-3)))))
+
+(defn fibonacci [t1 t2]
+  (concat [t1 t2] 
+          (next-terms t1 t2)))
+
+(take 15 (fibonacci 0 1))
+</src>
+
+This last function call is what realizes the lazy sequence of
+fibonacci numbers. The result is -
+<src lang=lisp>
+(0 1 1 2 3 5 8 13 21 34 55 89 144 233 377)
+</src>
+
+First of all, let's talk about the magic ingredient here,
+<code>lazy-seq</code>. It is a macro that doesn't evaluate its body
+immediately, but returns a "sequence-like" object. This object will
+evaluate the body only when actually needed (and will also cache
+the result for subsequent uses thus saving CPU cycles).
+
+The important thing to realize about this code is that without
+<code>lazy-seq</code>, there would be no useful way of using
+<code>next-terms</code>. You can see this by directly calling
+<code>next-terms</code> - it will run in an infinite loop until the
+program runs out of memory. However, by using certain macros like
+<code>take</code>, Clojure can intelligently produce the required
+number of elements from such infinite sequences.
+
+Languages like Java and Ruby need lots of boiler plate code that
+implements something like the lazy-load pattern to do something
+similar, if it can be done at all. Most of Clojure is already lazy,
+thus making code written in it automatically lazy. Such code then
+transparently benefits from this behavior.
+
+
+*** Metaprogramming with macros
+
+Languages like Ruby have good support for metaprogramming which, is
+the idea of programs manipulating other programs or
+themselves. Metaprogramming is used for several purposes, for instance
+to reduce duplication in code, or to build domain-specific
+abstractions into the language. Clojure, like other Lisps, takes
+metaprogramming to a new level by providing a complete macro system
+(not to be confused with macros of the C programming language!).
+
+Clojure's macros are a hook into its compiler and they allow a
+programmer to do things that would be considered magic in other
+languages. Specifically, a macro accepts a data-structure that
+represents Clojure code. To be clearer, it doesn't accept a block or a
+function, but the actual code as a list of symbols and other
+data-structures. The macro can then use normal Clojure code to
+manipulate the incoming code (represented in a regular data-structure)
+to produce arbitrarily transformed code (again as a regular
+data-structure) which is what gets returned by the macro. This is
+called macro-expansion, and the result of this expansion is what gets
+evaluated.
+
+Remember that thanks to its "strange" syntax, all Clojure code looks
+the "same". This makes code generation far easier than in other
+languages that have non-regular syntax. To generate code, you just
+generate lists of symbols! The absense of formal syntax and the power
+of the macro system is what makes Clojure so well-suited to creating
+domain-specific-languages (DSLs). In Clojure, creating mini-languages
+on top of the core language is a common approach to programming. It is
+the whole reason why Lisp is considered a *programmable* programming
+language.
+
+An example of using macros is to add new syntax to Clojure
+itself. Such usage supports the idea of building language-level
+constructs that are indistinguishable from those that exist in the
+core language. To be sure, much of the Clojure language is implemented
+as Clojure macros, and for the most part, the programmer doesn't have
+to care. Here's an example of a simple macro -
+
+<src lang=lisp>
+(defmacro with-connection [[connection hostname port] & exprs]
+  `(with-open [~connection (connect ~hostname ~port)]
+     (do ~@exprs)))
+</src>
+
+Without getting too much into the details of what's going on here,
+this is an example of a macro that does two things - it removes
+duplication in code (from all the places that need to create a
+connection) and it automatically closes the connection before exiting
+the code block. We'll learn how this works in much more detail in a
+future chapter. Examples of the usage of this macro might look like -
+
+<src lang=lisp>
+(with-connection [conn-to-scoreboard "localhost" 9000]
+  (let [latest-scores (get-latest-scores conn-to-scoreboard)]
+    (display-scores latest-scores)
+    (update-teams conn-to-scoreboard)
+    ;; other stuff with conn-to-scoreboard))
+</src>
+
+Clojure macros can do much more, however, and we will explore them in
+great depth soon. For now it is worth noting that they are one of the
+crucial features of Clojure that distinguishes it from most other
+languages. Macros are the ultimate form of metaprogramming.
+
+*** The REPL
+
+Clojure includes an interactive environment that allows code to be
+typed in and run. It gives quick feedback and is thus very helpful in
+incrementally writing code to solve the problem at hand. This
+interactive environment is called the REPL, which stands for
+read-eval-print-loop.
+
+Many Clojure editors integrate with the REPL. This allows programmers
+to use the IDE's text editing features to write the code the way
+they're used to. The integration provides a convenient way to evaluate
+code written in the editor inside of the REPL. Since the REPL is a
+long-running process, the edit-evaluate-test-edit cycle can keep going
+as long as the programmer wants. The workflow becomes an uninterrupted
+flow of feedback-driven editing and REPL interaction. The ability to
+work this way makes the REPL an important contributer to the increased
+productivity of working in Clojure.
+
+
+*** Concurrency and the multi-core future 
+
+Moore's law states that the number of transistors that can be placed
+on a single integrated circuit doubles every 18-24 months. This is
+what has been happening to CPUs over the past two to three decades and
+this gave us an exponential increase in processor speed. However,
+advances in CPU speed can't proceed in this manner forever. Indeed
+Moore's law has pretty much already reached its limit in providing
+performance enhancements.
+
+Over the past few years, instead of increasing the speed of invidual
+processor cores, companies like Intel have started to increase the
+number of processor cores that go into a single CPU. This has caused
+software performance to become tied to Amdahl's law which relates the
+possible performance of a running computation to the number of
+parallel processing units available. As the number of cores available
+on a CPU grows, software will need to make use of them, this will soon
+become a crucial way to make programs run faster.
+
+Multi-threaded programming essentially means trouble as any one who
+has written multi-threaded code knows. At least two things are related
+to this issue - getting multi-threaded programs to behave correctly,
+and using all available cores to speed up the program. Clojure helps
+with both.
+
+****  Software Transactional Memory
+
+
+Clojure's state management system addresses the issue of correctness
+of multi-threaded programs. Not only does the language provide simple
+ways to handle mutation, but it also provides constructs that allow
+and enforce safe mutation.
+
+Clojure implements a multiversion concurrency control (MVCC) based
+software transactional memory (STM) model. What this means in simpler
+terms is that mutating the value of an object can only be done inside
+a transaction (think database transaction).
+
+This has two advantages. The first is that code becomes
+self-documenting. When the value of something needs to change in a
+thread-safe manner, the programmer must be explicit and use a special
+Clojure construct for it - the *ref*. The other advantage is that if a
+you attempt to modify the value inside a *ref* without an STM
+transaction, the Clojure run-time will throw an exception. This is how
+Clojure enforces the use of the transaction semantics and helps keep
+code thread-safe.
+
+When a transaction needs to commit, and another thread has already
+committed a change to a shared ref, the later transaction is rolled
+back. Clojure's STM system even retries the failed transaction several
+times, and as far as the programmer is concerned, all this happens
+transparently. Here's an example of this in action -
+
+<src lang=elisp>
+
+(def total-expenditure (ref 0))
+
+;; The following will throw a "No transaction running" IllegalStateException
+;; exception
+
+(defn add-amount [amount]
+  (ref-set total-expenditure (+ amount @total-expenditure)))
+
+
+;; The following will work fine because it will do the update inside a
+;; transaction
+
+(defn add-amount [amount]
+  (dosync 
+    (ref-set total-expenditure (+ amount @total-expenditure))))
+
+</src>
+
+The <code>@total-expenditure</code> is a reader macro in action. It
+expands to <code>(deref total-expenditure)</code> and it gets the
+value out of the object that the ref is pointing to.
+
+This language-level support for concurrency-safe state management is
+what makes Clojure powerful for multi-threaded applications. This is
+true whether code runs on a single core or on a multi-core CPU. Just
+by using a <code>ref</code> and by making sure that updates are always
+performed inside a <code>dosync</code> block, access to the variable
+protected by the ref becomes thread-safe.
+
+****  Agents
+
+Now let's look at writing programs that can work faster by leveraging
+multiple processor cores. Typically, programs use multiple threads to
+achieve such performance gains. Java programs, for instance, use the
+Thread class to implement this and the programmer has to manually
+synchronize code that accesses common state by using locks to ensure
+thread-safety. As we've seen, Clojure helps in this aspect of
+programming thanks to the thread-safe state-management features built
+into the core of the language. Clojure programs are guaranteed not to
+dead-lock.
+
+Programs that want to process work asynchronously or simply scale up
+using multiple cores can use Clojure's agent system. A Clojure agent
+is a language construct that makes it trivial to run code
+asynchronously on a separate thread. These threads automatically run
+on all available cores, and there's no extra work required in using a
+CPU with more cores. Let's take a quick look -
+
+<src lang=lisp>
+(def generate-report [report-type start-date end-date]
+  ;; blah blah
+  ;; this is a non-trivial computation that generates  
+  ;; and then stores the requested report as desired)
+
+(defn generate-all-reports [start-date end-date]
+  (let [weekly-agent (agent :weekly-report)
+        monthly-agent (agent :monthly-report)
+        yearly-agent (agent :monthly-report)]
+    (send weekly-agent generate-report start-date end-date)
+    (send monthly-agent generate-report start-date end-date)
+    (send yearly-agent generate-report start-date end-date)))
+
+(generate-all-reports "2009-05-22" "2009-05-31")
+</src> 
+
+This might seem complicated, but it really isn't. We'll learn a lot
+more about the agent system in a later chapter. With a simple call to
+<code>send</code>, each call to the <code>generate-report</code>
+function is run in a seperate thread. These threads are assigned from
+an internally maintained pool of executor threads.
+
+When Clojure's agent system is combined with its STM-based state
+management system, powerful multi-threaded applications can be written
+very easily. 
+
+*** The JVM
+
+Clojure is hosted on the Java Virtual Machine. This means that it's
+ultimately a Java program and that JVM bytecode is native to it. The
+design of Clojure embraces interoperability with other Java libraries
+as one of its central goals. In practice this means several things.
+
+The obvious advantage is that the programmer has instant access to the
+thousands of existing Java libraries from within Clojure. This
+substantially boosts productivity when compared with other Lisps (and
+indeed other programming languages) since there's probably a Java
+library for most systems and frameworks.
+
+Another advantage that comes from running on the JVM is that Clojure
+can be embedded into Java programs, thereby providing an incredibly
+powerful scripting capability to the end-user. We'll see this in
+action later in the book.
+
+Often a combination of these two ideas leads to a system design where
+parts of the code are written in Java and other parts are written in
+Clojure. Clojure itself can be used as a glue language to bring the
+whole system together. This may be especially useful when legacy
+applications are involved.
+
+One final advantage of being a JVM language is that of the JVM
+itself. Sun and the open-source community have together invested
+thousands of man-years into improving the JVM, and today it is one of
+the most efficient virtual machines. The HotSpot optimizer does
+amazing things to speed up code running on top of it, and Clojure
+benefits from all this innovation.
+
+Despite being incredibly dynamic, Clojure code gets compiled to Java
+bytecode, and runs as fast or nearly as fast as Java code itself. This
+gives programmers all of Clojure's benefits without any major
+performance costs.
+
+**** Extensibility
+
+One final point about Clojure being hosted on the JVM. Thanks to the
+internal design of the language, Clojure is easily extensible. This
+means that programmers can add to the core of Clojure in a very
+natural manner. As an example, consider that Clojure's internal data
+structures like lists, vectors, and hash-maps all behave in the same
+way - as sequences. Operations like map, reduce, filter etc. all just
+work, no matter what kind of sequence is passed to them. Internally,
+they all do this because they all implement the ISeq interface.
+
+The great thing about such a clean design is that anyone can add new
+data-structure that also implement the same ISeq interface. If your
+problem domain involves dealing with a stream of financial charges,
+for instance, one can imagine creating a new kind of sequence that
+would then work seamlessly with the core Clojure functions. Or, as
+another example, the Clojure-based Incater project provides matrices
+that implement the ISeq interface. A matrix consists of a sequence of
+rows, and each row is a one-dimensional row matrix.
+
+This extensibility really pays off when existing (or even new) Java
+code needs to work with Clojure. Just by implementing the ISeq
+interface, the new data-structure becomes "native" to Clojure, and
+behaves just like core Clojure data-structures.
+
+
+** Clojure and the Java Virtual Machine
+
+When Clojure was being designed, one of the goals was extreme
+practicality. In today's world, practicality as a programming language
+demands seamless inter-operability with Java. Clojure achieves this
+goal remarkably well.
+
+*** Calling Java from Clojure
+
+It's trivial to use Java libraries from Clojure. Once you import the
+required classes using the <code>import></code> form, you can then use
+them almost like other Clojure code. Here's an example -
+
+<src lang=elisp>
+
+(import '(com.thoughtworks.selenium DefaultSelenium))
+
+(defn start-new-selenium [] 
+  (let [s (DefaultSelenium. "localhost" 4444 "chrome*" "http://localhost:3000")]
+    (.start s)
+    s))
+
+</src>
+
+Clojure provides a few syntactic conveniences to help use Java
+classes. The <code>DefaultSelenium.</code> (notice the period at the
+end) invokes the constructor of the class. Similarly the
+<code>.start</code> calls the instance method <code>start</code> on
+the newly contructed selenium object. 
+
+There are ways of creating new instances of Java classes, accessing
+static members of Java classes, calling methods on Java objects, and
+other helper macros which make using Java classes and objects from
+within Clojure very easy. You can even implement interfaces using pure
+Clojure code.
+
+
+*** Calling Clojure from Java
+
+Calling a Clojure script from inside a Java program is easy
+too. Clojure is itself a Java program, so it's as simple as
+using any other Java library, and knowing the API.
+
+Here's an example -
+
+<src lang=java>
+import clojure.lang.RT;
+import clojure.lang.Var;
+
+// blah blah blah
+
+RT.loadResourceScript("clojure/file/from/the/classpath/clojure_script.clj");
+Var aClojureFunction = RT.var("a-clojure-name-space", "a-clojure-function");
+aClojureFunction.invoke("an argument" "another one");
+
+</src> 
+
+There's a lot more you can do here, including compiling all your
+Clojure code into Java bytecode and then using it like any other
+library. This is called AoT compilation (ahead of time) and we'll see
+all this and more in a future chapter.
+
+*** Type hints
+
+Clojure is an extremely dynamic language, but strives to be so without
+the typical cost associated with doing everything at run-time. You can
+help run Clojure programs faster by giving the evaluator type-hints
+about any Java class you're using. That way, Clojure will know how to
+call methods on objects of such classes without reflection. The added
+benefit is that the evaluator also throws an exception if an object
+of that type wasn't actually passed in.
+
+Using type hints is easy, here's an example -
+
+
+<src lang=elisp>
+
+(import '(com.thoughtworks.selenium DefaultSelenium))
+
+;; blah blah blah
+
+(defn start-this-selenium [#^DefaultSelenium selenium]
+  (.start s)
+  s)
+
+</src>
+
+The type-hint is the <code>#^</code> followed by the name of the
+class. Now, when the start method is being called, Clojure will do so
+without any reflection. This is much faster than without the
+type-hint.
+
+Typical programming workflow is to write the Clojure code, test and
+debug it until satisfied, and then add type-hints if performance is a
+concern. It's easy and quick.  
+
+
+** Clojure - beyond object orientation
+
+People new to Lisp and Clojure often ask where OO fits into the
+picture. They're disappointed to find that such languages have no
+"obvious" support for it. The truth is more nuanced. As an example,
+Clojure provides generic functions. In OO languages like Java or Ruby,
+method polymorphism is achieved by dispatching calls on the type of
+the object the method is called on - and this is decided at run-time.
+Generic functions, also called multi-methods, let the programmer
+decide how to dispatch functions at run-time. This is a far more
+powerful approach to polymorphism, and we'll learn about this later in
+the book.
+
+Clojure, as a language, is much more broad in its support for multiple
+paradigms. You can write procedural code if you want, or you can write
+your program in a functional style. If you want, Clojure programs can
+be written with an OO approach, indeed you can build your own
+object-oriented language on top of the core language. You could build
+an Erlang-style process-oriented language on top of Clojure if you
+wanted to. The idea of building languages on top of a Lisp-based one
+is not new. Before the term Domain Specific Languages (DSL) was
+coined, these were called little-languages or mini-languages. Clojure,
+like any self-respecting Lisp, is excellently suited for this style of
+programming. The macro system built into Clojure has a large role to
+play in this.
+
+Clojure is also very well suited for bottom-up design. Bottom-up
+design is an approach where higher-level components are built-up from
+a collection of lower-level ones. A problem domain is analyzed, and
+several low-level components are created that each represent a single
+concept. These pieces are then combined to create the higher-level
+components as demanded by the problem at hand. Bottom-up design is
+often used to solve a whole class of problems in a specific domain,
+rather than a specific instance of a problem. Systems built this way
+are more flexible, and can withstand more churn in requirements.
+
+Thanks to Clojure's functional paradigm (first-order functions and
+closures) and the associated function composition that it makes
+possible, it is a great language for designing systems in a bottom-up
+manner. In fact, Clojure programs are often "grown" up from the
+ground, by using this bottom-up decomposition of the domain, and is
+then combined with one or more little-languages built on top of it. It
+is common to see Clojure programs that first create a mini-language
+that allows concepts in the problem domain to be expressed at a
+high-level, and then the actual problem solved in this language
+instead. This is a powerful style of programming that results in
+systems that are more flexible, code that's more readable, and
+ultimately more maintainable. It is why Lisp is called a programmable
+programming language - and is why Clojure benefits from being a Lisp.
+
+
+** Summary - better, faster, smaller, cheaper
+
+As we saw, Lisp is a special language, and Clojure is a special
+Lisp. It is homoiconic with almost no syntax, and has a full macro
+system. It is a functional language with first-class functions and
+immutable data-structures, and it has concurrency semantics built into
+its core. It is hosted on the extremely mature and performant Java VM,
+which allows it to offer seamless interoperability with Java
+code. Also, being as fast or very nearly as fast as Java adds another
+powerful advantage to Clojure - that of raw speed.
+
+The combination of all this packs a tremendous productivity punch. The
+dynamic programming style that Clojure makes possible is especially
+well-suited to bottom-up design, and result in programs that can do a
+lot more with a lot fewer lines of code. Indeed, when compared with
+equivalent lines of Ruby code, Clojure code can be 2-3x smaller, while
+compared with Java, it can be nearly 5-10x smaller. Less code means less
+bugs too.
+
+Compared to other dynamic languages Clojure supports better rapid
+prototyping and incremental development of code. By combining the
+dynamism of the language and the hyper-productivity of the REPL, code
+can be developed quickly and in a more exploratory fashion. When
+xsbottom-up code is combined with the macro system, a powerful design
+pattern emerges - that of creating little languages on top of
+Clojure. This kind of meta-linguistic programming is extremely
+powerful, and we'll learn a lot more about this throughout the
+rest of this book.
+
+Further, the functional paradigm, along with immutable data
+structures removes another whole class of bugs associated with
+imperative, state-based code design. And the concurrency support built
+into Clojure makes the complicated task of writing multi-threaded
+programs that work correctly downright easy. All this means that Clojure
+programs more often work right the first time, and have less problems
+during their lifespans.
+
+Overall, using Clojure on a project can mean higher quality software,
+that runs faster and that can use multi-core CPUs efficiently and
+correctly. The resulting code-base is smaller which means that it is
+cheaper to develop and maintain. It is very possible that Clojure (or
+a variant of it) is the Lisp that survives, indeed, as the language of the
+future.
+
+Footnotes: 
+[1]  A predicate function is one that takes in a single argument, and
+     returns a boolean result based on some test
+
