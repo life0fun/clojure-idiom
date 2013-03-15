@@ -2,6 +2,7 @@
   (:use chapter14-rabbitmq)
   (:import (java.util UUID)))
 
+;; global mapping, the name of computation, and the args for it.
 (def workers (ref {}))
 (def worker-init-value :__worker_init__)
 (def WORKER-QUEUE "chapter14_workers_job_queue")

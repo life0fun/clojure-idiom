@@ -14,11 +14,15 @@
       (let [response-envelope (response-for worker-handler worker-args)]
         (if return-q (send-message return-q response-envelope))))))
 
+;;
+;; worker fn is defn inside defworker
+;;   (alter workers assoc worker-name# (fn ~args (do ~@exprs))))
+;;
 (defn handle-request-message [req-str]
   (try
    (let [req (read-string req-str)
          worker-name (req :worker-name) worker-args (req :worker-args) return-q (req :return-q)
-         worker-handler (@workers worker-name)]
+         worker-handler (@workers worker-name)]  ;; where does ref to workers pased in ??
      (if (not (nil? worker-handler))
        (do
          (println "Processing:" worker-name "with args:" worker-args)

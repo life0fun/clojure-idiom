@@ -329,7 +329,7 @@
 (def chris {:name "chris george" :employer "thoughtworks.com" :current-city "new york"})
 
 ;; update-in take coll as the first arg, need to use anonym fn to wrap update-in
-;; the anonym fn take coll as last arg and pass the coll to update-in as first arg.
+;; the anonym fn take coll as its only arg, implicitly the last arg, and pass the coll to update-in as first arg.
 (->> [jay john mike chris]
   (filter (comp (partial = "new york") :current-city))
   (group-by :employer)     ;; group-by ret a map with key col and a val vector
@@ -353,6 +353,12 @@
 
 (assoc by-employer "drw.com" (map :name (get by-employer "drw.com"))))
 
+;; myflatten without flatten
+(defn myflatten [l]
+  (reduce (fn [ret this]
+      (if-not (coll? this)
+        (concat ret [this])
+        (concat ret (myflatten this)))) [] l)))
 
 ;;
 ;; Astar algorithm
