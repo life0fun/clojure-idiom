@@ -1,9 +1,5 @@
-;; need to include chapter14-worker namespace for the definition for the worker fn.
-;; so when msg-Processing looping starts, it has worker fn in @workers ref.
-;; use worker ns brings in global mapping of workers.
-;;
-(ns chapter14-worker-process
-  (:use chapter14-rabbitmq chapter14-worker))
+(ns chapter14-worker-process-multicast
+  (:use chapter14-rabbitmq-multicast chapter14-worker-multicast))
 
 (defn response-for [worker-handler worker-args]
   (try
@@ -18,15 +14,11 @@
       (let [response-envelope (response-for worker-handler worker-args)]
         (if return-q (send-message return-q response-envelope))))))
 
-;;
-;; worker fn is defn inside defworker
-;;   (alter workers assoc worker-name# (fn ~args (do ~@exprs))))
-;;
 (defn handle-request-message [req-str]
   (try
    (let [req (read-string req-str)
          worker-name (req :worker-name) worker-args (req :worker-args) return-q (req :return-q)
-         worker-handler (@workers worker-name)]  ;; ref to worker is global mapping, included from worker ns.
+         worker-handler (@workers worker-name)]
      (if (not (nil? worker-handler))
        (do
          (println "Processing:" worker-name "with args:" worker-args)
@@ -38,3 +30,7 @@
   (doseq [request-message (message-seq WORKER-QUEUE)]
     (handle-request-message request-message)))
 
+(defn start-broadcast-listener []
+  (println "Listening to broadcasts.")
+  (doseq [request-message (message-seq BROADCAST-EXCHANGE FANOUT-EXCHANGE-TYPE BROADCAST-QUEUE)]
+    (handle-request-message request-message)))

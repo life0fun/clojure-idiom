@@ -1,13 +1,11 @@
 ;;
 ;; data structure transforming between Atom, vector, list, array and map.
 ;; (load-file "map-idiom.clj")
-;;
 
-;; :require ;use load code from other namespace.
-;; :import java package
-(ns ns-map-idiom
+(ns cljaction-test.map-idiom
   ;;(:require clojure.string :refer [join] :as string))
-  (:require clojure.string))
+  (:require clojure.string)
+  (:gen-class))
 
 ;; function programming : focus on result, no precedure.
 ;; what is the input, A map or a list of map,

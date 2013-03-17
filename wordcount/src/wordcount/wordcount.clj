@@ -82,16 +82,14 @@
 (defbolt split-sentence {"1" ["word"] "2" ["word" "index"]} {:prepare true}
   [conf context collector]  ; prepared bolt impl takes conf, context, collector
   (let [counts (atom 0)
-        words (.split (.getString tuple 0) " ")
        ]
     (bolt
       (execute [tuple]
-        (let [nprocessed (swap! counts inc)
-             ]
+        (let [ nprocessed (swap! counts inc) ]
           (if (odd? @nprocessed)
             (do
                 (prn "odd time " @nprocessed)
-                (emit-bolt! collector [w] :anchor tuple :stream "1"))
+                (emit-bolt! collector [w i] :anchor tuple :stream "1"))
             (do
                 (prn "even time " @nprocessed)
                 (emit-bolt! collector [w i] :anchor tuple :stream "2")))

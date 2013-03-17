@@ -1,5 +1,5 @@
-(ns chapter14-worker
-  (:use chapter14-rabbitmq)
+(ns cljaction-test.chapter14-worker
+  (:use cljaction-test.chapter14-rabbitmq)
   (:import (java.util UUID)))
 
 ;; global mapping, the name of computation, and the args for it.

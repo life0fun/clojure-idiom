@@ -1,12 +1,12 @@
-(ns chapter14-worker
-  (:use chapter14-rabbitmq)
+(ns chapter14-worker-multicast
+  (:use chapter14-rabbitmq-multicast)
   (:import (java.util UUID)))
 
-;; global mapping, the name of computation, and the args for it.
 (def workers (ref {}))
 (def worker-init-value :__worker_init__)
 (def WORKER-QUEUE "chapter14_workers_job_queue")
 (def BROADCAST-QUEUE "chapter14_workers_broadcast_queue")
+(def BROADCAST-EXCHANGE "chapter14_workers_fanex")
 
 (defn all-complete? [swarm-requests]
   (every? #(% :complete?) swarm-requests))
@@ -37,7 +37,7 @@
 
 (defn update-on-response [worker-ref return-q-name]
   (let [channel (.createChannel *rabbit-connection*)
-        consumer (consumer-for channel return-q-name)
+        consumer (consumer-for channel DEFAULT-EXCHANGE-NAME DEFAULT-EXCHANGE-TYPE return-q-name return-q-name)
 	on-response (fn [response-message] 
                       (dosync 
                        (ref-set worker-ref (read-string response-message))
@@ -81,7 +81,6 @@
      (if ~should-return
        (on-swarm ~worker-name ~worker-args))))
 
-;; bind global mapping from service name to worker fn
 (defmacro defworker [service-name args & exprs]
   `(let [worker-name# (keyword '~service-name)]
      (dosync 
@@ -92,5 +91,12 @@
   (let [request-object (request-envelope worker-name-keyword args)]
     (send-message WORKER-QUEUE request-object)))
 
-(defmacro fire-and-forget [worker-symbol args]
-  `(run-worker-without-return (keyword '~worker-symbol) ~args))
+(defmacro fire-and-forget [worker-symbol & args]
+  `(run-worker-without-return (keyword '~worker-symbol) '~args))
+
+(defn run-worker-on-all-servers [worker-name-keyword args]
+  (let [request-object (request-envelope worker-name-keyword args)]
+    (send-message BROADCAST-EXCHANGE FANOUT-EXCHANGE-TYPE BROADCAST-QUEUE request-object)))
+
+(defmacro run-worker-everywhere [worker-symbol & args]
+  `(run-worker-on-all-servers (keyword '~worker-symbol) '~args))
