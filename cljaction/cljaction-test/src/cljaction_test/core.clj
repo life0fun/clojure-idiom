@@ -6,6 +6,9 @@
 ;;
 (ns cljaction-test.core
 ;;  (:use chapter14_worker)
+  (:import [java.io FileReader]
+           [java.util Map Map$Entry List ArrayList Collection Iterator HashMap]
+           )
   (:use [cljaction-test.util])   ;; use util namespace's code
   (:gen-class :main true))
 

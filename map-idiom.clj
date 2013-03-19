@@ -57,7 +57,7 @@
 ;; map reduce : reduce to a Atom tot on top of init. Intermediate result is in tot.
 ;; trans string to intermediate  map list and using merge-with to get Atom map.
 ;; init a map, and reduce a list of char onto the init map.
-(apply merge-with + (map (fn [c] {c 1}) "abcdabccc"))
+(apply merge-with + (map (fn [c] {c 1}) "abcdabccc"))        ;; merge a map, same key + value.
 (map (fn [m] (hash-map (-> m str keyword) 1)) "abcdabc")
 (reduce (fn [ret this] (assoc ret (-> this str keyword) (inc (get ret (-> this str keyword) 0)))) {} "abcdabc")
 (reduce #(assoc %1 %2 (inc (get %1 %2 0))) {} "abcdcdcd")

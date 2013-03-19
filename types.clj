@@ -1,14 +1,17 @@
 ;; Types, protocols, and records
 ;; (load-file "types.clj")
 
+;; (:use mixed in all fns, symbols, and mappings from other _NameSpace_.)
+;; (:import [pkg1] [pkg2 fn1 ...]) import Java packages
+;; (:require [namespace_1 :ref local_namespace_])
 ;; when defining ns, include only the references that are used.
-;;:exclude, :only, :as, :refer-clojure, :import, :use, :load, and :require.
+;; :exclude, :only, :as, :refer-clojure, :import, :use, :load, and :require.
 ;; ;use naked could corrupt the namespace.  (:use :only)
 ;; :import working with java deftype defrecord
-;; :refer
+
 ;; (ns my-ns
 ;;   (:refer-clojure :exclude [defstruct])
-;;   (:use (clojure set xml))  ;; use other namespace without namespace qualification.
+;;   (:use (clojure set xml))  ;; mixed-in other namespace without namespace qualification.
 ;;   (:use [clojure.test :only (are is)])
 ;;   (:require (clojure [zip :as z]))
 ;;   (:import (java.util.Collection)))
