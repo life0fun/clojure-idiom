@@ -1,3 +1,5 @@
+;; clojure github
+;;
 ;; the diff between list/vec and use flatten and apply when calling fn with arg list.
 ;; (conj nil 4) returns (4)
 ;; (conj [] 4) return [4]
@@ -179,3 +181,66 @@
           (if fs
             (recur ((first fs) ret) (next fs))   ;; use next, not rest, as next is strict than rest(lazy)
             ret))))))
+
+;;
+;; juxtaposition
+(fn [f & fns]
+  (fn [& args]
+    (let [fs (list* f fns) ret []]
+      (loop [nxt (next fs) ret (conj ret (apply (first fs) args))] 
+        (if nxt
+          (recur (next nxt) (conj ret (apply (first nxt) args)))
+          ret)))))
+
+;;
+;; reductions
+;; (= (__ conj [1] [2 3 4]) [[1] [1 2] [1 2 3] [1 2 3 4]])
+;;
+(fn reduction
+  ([ f col ]
+    (reduction f (first col) (rest col)))
+  ([f init col]
+    (loop [c col reduceval init interim (conj [] reduceval)]
+      (if c
+        (let [ resl (f reduceval (first c))]
+          (recur (rest c) resl (conj interim resl)))
+      interim ))))
+
+;;
+;; lazy reductions
+;; do not use loop, instead, recursive call
+;; init actually is the intermediate result at each step. If you need it, then cons it to return seq.
+;; (= (take 5 (__ + (range))) [0 1 3 6 10])
+;;
+(fn reduction
+  ([ f col ]
+    (lazy-seq
+      (reduction f (first col) (rest col))))
+  ([f init col]
+    (lazy-seq
+      (if-not (seq col)
+        [init]
+        (let [rslt (f init (first col))]   ;; carry the intermediate result to recursion.
+          (cons init (reduction f rslt (rest col))))))))
+
+;;
+;; my own iterate (x f(x) f(f(x)))
+;; use lazy-seq to wrap the result. Like use lazy-seq to wrap the rabbitmq stream.
+;;
+(fn myiter [f init]
+  (let [rslt (f init)]
+    (cons init (lazy-seq (myiter f rslt)))))
+
+;;
+;; group-by
+;; use update-in and (fnil conj []) to create the ret map and loop carry interim result.
+;;
+(fn [f col]
+  (loop [c col grp {}]
+    (if c
+      (recur (next c) (update-in grp [(f (first c))] (fnil conj []) (first c)))
+      grp)))
+
+;;
+;;
+
