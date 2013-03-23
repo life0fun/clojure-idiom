@@ -4,8 +4,8 @@
 ;;
 
 (ns cljaction-test.util
-;;  (:use chapter14_worker)
-  (:gen-class))
+  (:use [cljaction-test.chapter14-worker])  ;; use chapter14_worker
+  )
 
 (defn debug []
   (prn "util debug print hello world"))

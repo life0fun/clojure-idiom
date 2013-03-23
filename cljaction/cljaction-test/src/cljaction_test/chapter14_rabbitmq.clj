@@ -1,12 +1,15 @@
-(ns chapter14-rabbitmq
+;;
+;; add cljaction-test ns path prefix.
+;;
+(ns cljaction-test.chapter14-rabbitmq
   (:import (com.rabbitmq.client ConnectionParameters ConnectionFactory QueueingConsumer)))
 
 (def *rabbit-connection*)
 
 (defn new-connection [q-host q-username q-password]
   (let [params (doto (ConnectionParameters.)
-		 (.setVirtualHost "/")
-		 (.setUsername q-username)
+         (.setVirtualHost "/")
+         (.setUsername q-username)
                  (.setPassword q-password))]
     (.newConnection (ConnectionFactory. params) q-host)))
 

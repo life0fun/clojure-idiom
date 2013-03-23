@@ -1,3 +1,5 @@
+;;
+;;
 (ns cljaction-test.chapter14-worker
   (:use cljaction-test.chapter14-rabbitmq)
   (:import (java.util UUID)))
