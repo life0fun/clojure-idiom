@@ -4,6 +4,12 @@
 ;; (conj nil 4) returns (4)
 ;; (conj [] 4) return [4]
 
+
+;;
+;; find indices of a val in a vector
+ (use '[clojure.contrib.seq-utils :only (positions)]')
+ (positions #{99} [0 99 3334 53 2 5 99 2 55 63])
+
 ;;
 ;; compress a sequence
 ;;
@@ -19,7 +25,6 @@
         (if-not (= (first x) (last ret))
           (recur (rest x) z)
           (recur (rest x) ret))))))
-
 
 ;;
 ;; pack a sequence.
@@ -241,6 +246,105 @@
       (recur (next c) (update-in grp [(f (first c))] (fnil conj []) (first c)))
       grp)))
 
+
 ;;
+;; Black Box testing of sequence.
+;; (= :map (__ {:}))
+;; (= [:map :set :vector :list] (map __ [{} #{} [] ()]))
 ;;
+(fn mytest-type [col]
+  (if (or (= 2 (count (flatten (vector (last col)))))  ;; use flatten to convert list.
+          (and (empty? col)
+               (= (into col {:test 1}) {:test 1})))    ;; insert empty map eqs itself.
+    :map
+    (if (= (count (conj col :test :test)) (+ 1 (count col)))
+      :set
+      (if (= (first (conj col :test1 :test2)) :test2)
+        :list
+        :vector))))
+
+
+;;
+;; sieve of prime number
+;; all are lazy seq, the magic is that seq needs to starts from 2, not 1.
+;;
+(fn sieve
+  ([n]
+    (sieve n (iterate inc 2)))
+  ([n l]
+    (let [hd (first l) bd (rest l)]
+      (if (zero? n)
+        []
+        (lazy-seq
+          (take n
+            (cons hd (sieve (- n 1) (filter #(not (zero? (mod % hd))) bd))) ))))))
+
+
+;;
+;; merge-with
+;;
+(fn [f & maps]
+  (loop [[m & cdr] maps ret {}]
+    (if (nil? (seq m))
+      ret
+      (recur cdr (reduce (fn [ret cur]
+                          (if (contains? ret (first cur))
+                            (update-in ret [(first cur)] f (second cur))
+                            (assoc ret (first cur) (second cur)))) ret m) ))))
+
+
+ ;;
+ ;; tic tac
+ ;; create lists using nth nth list logic and interleave.
+ ;; if-let as if else for intermediate value
+ ;;
+ (fn [col]
+   (letfn [(check [col]
+              (reduce (fn [ret c]
+                        (let [[x y z] c]
+                          (if (and (= x y z)
+                                   (or (= x :x )
+                                       (= x :o ))
+                              )
+                              x ret)))
+                          nil col))
+           (intlv [col]
+                  (partition 3 (apply interleave col)))
+           (diag [col]
+                 (for [x [0 1 2]] (nth (nth col x) x)))
+           (rdiag [col]
+                  (for [x [0 1 2]] (nth (nth col x) (- 2 x))))
+           ]
+     (if-let [ret (check col)]
+       ret
+       (if-let [ret (check (intlv col))]
+         ret
+         (if-let [ret (check (vector (diag col)))]
+           ret
+           (if-let [ret (check (vector (rdiag col)))]
+             ret
+             nil))))))
+
+
+;;
+;; totient
+;;
+(fn [n]
+  (letfn [(gcd [larger smaller]
+            (loop [l larger s smaller]
+              (if (not= 0 s)
+                (recur s (mod l s))
+                l)))]
+    (count (filter (fn [i] (= 1 (gcd i n))) (range 1 (inc n))))))
+
+;;
+;; trampoline
+(fn mytrampoline 
+  ([f]
+    (loop [ret (f)]      ;; or (let [ret (f)]      ;; use let, recur on fn call
+      (if (fn? ret)      ;;      (if (fn? ret)
+        (recur (ret))    ;;        (recur  ret)
+        ret)))           ;;        ret))
+  ([f & args]
+    (mytrampoline #(apply f args))))
 

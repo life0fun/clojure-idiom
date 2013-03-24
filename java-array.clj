@@ -1,6 +1,12 @@
 ;; java collection
 ;; (load-file "java-array.clj")
 
+;;
+;; list logic operation, (and list1 list2)
+(def data [[:x :e :e] [:o :x :e] [:o :e :x]])
+(for [x [0 1 2]] (nth (nth data x) x))        ;; get diagonal
+(for [x [0 1 2]] (nth (nth data x) (- 3 x)))  ;; reverse diagonal
+
 ;; here we are talking about JVM arrays: a mutable container 
 ;; (alength tokens) (aget tokens 2) (aset tokens 2 "actionable")
 ;;
