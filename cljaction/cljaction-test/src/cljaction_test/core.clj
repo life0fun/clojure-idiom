@@ -11,7 +11,6 @@
 ;; http://kotka.de/blog/2010/02/gen-class_how_it_works_and_how_to_use_it.html 
 ;;
 (ns cljaction-test.core
-;;  (:use chapter14_worker)
   (:require [clojure.string :as str])
   (:require [clojure.java.jdbc :as sql])
   (:import [java.io FileReader]
@@ -19,9 +18,12 @@
            )
   (:use [cljaction-test.util])   ;; use util namespace without fully qualified name.
   (:use [cljaction-test.chapter14-worker])  ;; use chapter14_worker
+  (:use [cljaction-test.chapter14-worker-usage])
   (:gen-class :main true))
+
 
 ;; main entry, refered from prj.clj and lein run will execute.
 (defn -main []
   (prn "hello world")
-  (debug))
+  (debug)
+  )

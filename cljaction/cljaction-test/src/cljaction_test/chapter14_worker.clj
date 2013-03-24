@@ -28,9 +28,9 @@
         (disconnect-all swarm-requests)
         (throw (RuntimeException. (str "Remote worker timeout exceeded " allowed-time " milliseconds!"))))
        (if (not all-complete)
-	 (do
-	   (Thread/sleep 100)
-	   (recur (all-complete? swarm-requests) (+ elapsed-time 100)))))))
+     (do
+       (Thread/sleep 100)
+       (recur (all-complete? swarm-requests) (+ elapsed-time 100)))))))
 
 (defmacro from-swarm [swarm-requests & expr]
   `(do
@@ -40,7 +40,7 @@
 (defn update-on-response [worker-ref return-q-name]
   (let [channel (.createChannel *rabbit-connection*)
         consumer (consumer-for channel return-q-name)
-	on-response (fn [response-message] 
+    on-response (fn [response-message] 
                       (dosync 
                        (ref-set worker-ref (read-string response-message))
                        (.queueDelete channel return-q-name)

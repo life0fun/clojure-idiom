@@ -1,5 +1,9 @@
-(ns chapter14-worker-example
-  (:use chapter14-rabbitmq chapter14-worker))
+;;
+;; use directive has to be one line at a time.
+;;
+(ns cljaction-test.chapter14-worker-example
+  (:use [cljaction-test.chapter14-worker])
+  (:use [ cljaction-test.chapter14-rabbitmq ]))
 
 (defworker long-computation-one [x y]
   (Thread/sleep 3000)

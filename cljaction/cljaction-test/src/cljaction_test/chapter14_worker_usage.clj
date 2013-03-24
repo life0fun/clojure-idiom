@@ -1,5 +1,7 @@
-(ns chapter14-worker-usage
-  (:use chapter14-rabbitmq chapter14-worker chapter14-worker-example))
+;;
+;;
+(ns cljaction-test.chapter14-worker-usage
+  (:use cljaction-test.chapter14-rabbitmq cljaction-test.chapter14-worker cljaction-test.chapter14-worker-example))
 
 (println "Dispatching...")
 (with-rabbit ["localhost" "guest" "guest"]
@@ -9,4 +11,4 @@
     (from-swarm [one two]
                 (println "one:" (one :value))
                 (println "two:" (two :value)))))
-(println "done!")  
+(println "done!")
