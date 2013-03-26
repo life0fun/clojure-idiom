@@ -367,6 +367,7 @@
 ;;
 ;; powerset.
 ;; to expand a seq, do NOT map, use reduce, as input is a seq, output is a single seq.
+;; pass partial result as arg to fn, recur on fn to top-down.
 ;;
 (fn powerset 
   ([coll]
@@ -379,6 +380,23 @@
                                         (conj this (first coll))))
                                    (conj ret (hash-set (first coll))) ret)))))
 
+;;
+;; k-comb, powerset filter at len k.
+;; trans fn taking partial result as args, and top-down built final result based on partial result step by step.
+;; (= (__ 2 #{[1 2 3] :a "abc" "efg"}) #{#{[1 2 3] :a} #{[1 2 3] "abc"} #{[1 2 3] "efg"}
+;;                                    #{:a "abc"} #{:a "efg"} #{"abc" "efg"}})
+;;
+(fn kcomb
+  ([k col]
+     (kcomb k col #{}))
+  ([k col pret]
+    (if (empty? col)
+      (into #{} (filter (fn [e] (= (count e) k)) pret))
+      (recur k (rest col)
+             (reduce (fn [ret this]
+               (conj ret
+                 (conj this (first col))))
+                   (conj pret (hash-set (first col))) pret)))))
 
 
 ;; partial flatten sequence
