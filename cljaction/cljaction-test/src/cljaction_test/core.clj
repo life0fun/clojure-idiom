@@ -5,6 +5,8 @@
 ;; from the namespace or :all to bring in all public vars."
 ;;
 ;; gen-class gen a java class that delegate java class .method to clj :prefix func. (.main to -main)
+;; clojure in action java interop has great depth in gen-class options.
+;;
 ;; for mutables, only single field available called state.
 ;; : with or without :gen-class, clj with gen a set of classes for each clj function.
 ;; args: :name, :init, :constructor :state,

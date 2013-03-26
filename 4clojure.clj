@@ -4,11 +4,23 @@
 ;; (conj nil 4) returns (4)
 ;; (conj [] 4) return [4]
 
-
 ;;
 ;; find indices of a val in a vector
+;; for string array, use string array's .indexOf method.
+;;
  (use '[clojure.contrib.seq-utils :only (positions)]')
  (positions #{99} [0 99 3334 53 2 5 99 2 55 63])
+ (def v ["one" "two" "three"])
+ (.indexOf v "two")
+
+;; use java.lang.String to process strings.
+(defn parse-line [line]
+  (let [tokens (.split (.toLowerCase line) " ")]
+      (map #(vector % 1) tokens)))
+(parse-line "Twas brillig and the slithy toves")
+
+(use 'clojure.contrib.io')
+(read-line "/Users/e51141/tmp/x")
 
 ;;
 ;; compress a sequence
@@ -199,21 +211,24 @@
 
 ;;
 ;; reductions
+;; carry the interim result inside loop/recur bindings.
+;; when loop condition not met, can ret the interim from loop binding directly.
+;; when using loop, not a lazy seq.
 ;; (= (__ conj [1] [2 3 4]) [[1] [1 2] [1 2 3] [1 2 3 4]])
 ;;
 (fn reduction
   ([ f col ]
     (reduction f (first col) (rest col)))
   ([f init col]
-    (loop [c col reduceval init interim (conj [] reduceval)]
+    (loop [c col reduceval init interim (conj [] reduceval)]  ;; carry partial result in loop bindings.
       (if c
         (let [ resl (f reduceval (first c))]
-          (recur (rest c) resl (conj interim resl)))
+          (recur (rest c) resl (conj interim resl)))   ;; carry interim inside bindings.
       interim ))))
 
 ;;
 ;; lazy reductions
-;; do not use loop, instead, recursive call
+;; lazy seq can not use loop, use recursive call, carry partial result as fn arguments.
 ;; init actually is the intermediate result at each step. If you need it, then cons it to return seq.
 ;; (= (take 5 (__ + (range))) [0 1 3 6 10])
 ;;
@@ -222,10 +237,10 @@
     (lazy-seq
       (reduction f (first col) (rest col))))
   ([f init col]
-    (lazy-seq
+    (lazy-seq           ;; lazy-seq to wrap result seq, can put inside cons expr also.
       (if-not (seq col)
         [init]
-        (let [rslt (f init (first col))]   ;; carry the intermediate result to recursion.
+        (let [rslt (f init (first col))]   ;; carry partial result as recursion arguments.
           (cons init (reduction f rslt (rest col))))))))
 
 ;;
@@ -241,11 +256,10 @@
 ;; use update-in and (fnil conj []) to create the ret map and loop carry interim result.
 ;;
 (fn [f col]
-  (loop [c col grp {}]
+  (loop [c col grp {}]   ;; carry partial result inside binding.
     (if c
       (recur (next c) (update-in grp [(f (first c))] (fnil conj []) (first c)))
       grp)))
-
 
 ;;
 ;; Black Box testing of sequence.
@@ -263,7 +277,6 @@
         :list
         :vector))))
 
-
 ;;
 ;; sieve of prime number
 ;; all are lazy seq, the magic is that seq needs to starts from 2, not 1.
@@ -274,11 +287,10 @@
   ([n l]
     (let [hd (first l) bd (rest l)]
       (if (zero? n)
-        []
+        []              ;; ret empty [] from leaf so recursion built-up result bottom up.
         (lazy-seq
           (take n
             (cons hd (sieve (- n 1) (filter #(not (zero? (mod % hd))) bd))) ))))))
-
 
 ;;
 ;; merge-with
@@ -339,7 +351,10 @@
 
 ;;
 ;; trampoline
-(fn mytrampoline 
+;; use loop [ret (f)]  and invoke the function during recur on loop.
+;; use let [ret (f)] and pass the value to recur on the fn recursive call.
+;;
+(fn mytrampoline
   ([f]
     (loop [ret (f)]      ;; or (let [ret (f)]      ;; use let, recur on fn call
       (if (fn? ret)      ;;      (if (fn? ret)
@@ -348,3 +363,39 @@
   ([f & args]
     (mytrampoline #(apply f args))))
 
+
+;;
+;; powerset.
+;; to expand a seq, do NOT map, use reduce, as input is a seq, output is a single seq.
+;;
+(fn powerset 
+  ([coll]
+    (powerset coll #{}))
+  ([coll ret]
+    (if (empty? coll)
+      (conj ret #{})
+        (recur (rest coll) (reduce (fn [ret this]
+                                    (conj ret
+                                        (conj this (first coll))))
+                                   (conj ret (hash-set (first coll))) ret)))))
+
+
+
+;; partial flatten sequence
+;; always look at head, cons partial result to the ret value of recursive rest body to form tot solution.
+;; no need to carry partial result during recursion
+;;
+;; (= (__ [[[[:a :b]]] [[:c :d]] [:e :f]])
+;;   [[:a :b] [:c :d] [:e :f]])
+;; (= (__ '((1 2)((3 4)((((5 6))))))))
+;; '((1 2)(3 4)(5 6))'
+
+(fn myfltn
+  ([col]
+    (myfltn col []))
+  ([col init]   ;; no need to carry partial result during recursion.
+    (if (and (coll? col)
+             (not (empty? col)))
+      (if (coll? (first col))
+        (concat (myfltn (first col)) (myfltn (rest col)))
+        (conj [] col) ))))    ;; when first  of col is not collection, one level nested. can ret.

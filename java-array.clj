@@ -1,14 +1,34 @@
 ;; java collection
 ;; (load-file "java-array.clj")
 
+;; first, import the java package.
+(ns java-array
+  (:import [java.text SimpleDateFormat]
+           [java.util Calendar TimeZone])
+  (:use clojure.contrib.io
+        clojure.contrib.seq-utils)
+
 ;;
 ;; list logic operation, (and list1 list2)
 (def data [[:x :e :e] [:o :x :e] [:o :e :x]])
 (for [x [0 1 2]] (nth (nth data x) x))        ;; get diagonal
 (for [x [0 1 2]] (nth (nth data x) (- 3 x)))  ;; reverse diagonal
 
-;; here we are talking about JVM arrays: a mutable container 
+;; use java array as a mutable container for intermediate result.
+ here we are talking about JVM arrays: a mutable container 
 ;; (alength tokens) (aget tokens 2) (aset tokens 2 "actionable")
+
+;; split a string into java array
+(def tokens (.split "clojure.in.action" "\\."))
+;; use amap to prn array
+(def z (amap tokens idx ret (aset ret idx (.concat "xx" (aget ret idx)))))
+(amap z idx ret (prn (aget ret idx)))
+
+(defn asum [#^floats xs]
+  (areduce xs i ret (float 0) (+ ret (aget xs i))))
+
+(asum (float-array [1 2 3]))
+
 ;;
 ;; types of array : primitive and reference
 ;; primitive array : boolean-array byte-array char-array double-array float-array int-array long-array object-array short-array
@@ -62,7 +82,6 @@
       (+ ret (aget dbl i)))))
 
 (asum-sq (float-array [1 2 3 4 5]))
-
 
 ;; using forName to determine
 (defmulti what-is class)
@@ -134,3 +153,46 @@
 ;; exceptions to mean can or might continue.
 ;; Clojure's take on checked exception.
 ;; By default, declare that all functions throw the root Exception or RuntimeException.
+
+
+
+
+;;
+;; use clojure for data process
+;;
+;; parse a string with java.lang.String
+(defn parse-line [line]
+  (let [tokens (.split (.toLowerCase line) " ")]
+    (map #(vector % 1) tokens)))
+
+(parse-line "Twas brillig and the slithy toves")
+
+;; combine a seq of key value pairs, group by reduce to a map.
+(defn combine [mapped]
+  (->> (apply concat mapped)
+       (group-by first)
+       (map (fn [[k v]]
+              {k (map second v)}))
+       (apply merge-with conj)))
+
+(use 'clojure.contrib.io')
+(combine (map parse-line (read-lines "/Users/e51141/tmp/x")))
+
+;; sum the tally count of a vec of value.
+(defn sum [[k v]]
+  {k (apply + v)})
+
+;; sum the val vector for each key, then merge keys
+(defn reduce-parsed-lines [collected-values]
+  (apply merge (map sum collected-values)))
+
+;; integrated solution
+(defn word-frequency [filename]
+  (->> (read-lines filename)
+    (map parse-line)
+      (combine)
+        (reduce-parsed-lines)))
+
+
+
+

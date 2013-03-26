@@ -1,13 +1,19 @@
 ;; java proxy
 ;; (load-file "java-proxy.clj")
 
+
+;; first, import the java package.
+(ns java-proxy
+  (:import [java.text SimpleDateFormat]
+           [java.util Calendar TimeZone]))
+
 ;; Clojure can do java bettern than java. Proxy is meant strictly for interoperability.
 ;; Proxy extend concrete class while reify abstracts type, protocol and interface.
 ;; extend only those instances where interoperability demands it.
 ;; instance reted from proxy is a proper proxy that does method dispatch based on look up map.
 
 
-;; java object member method is not high order fn. use macro memfn to convert.
+;; java object member function is not high order fn. use macro memfn to convert.
 (map #(.getBytes %) ["amit" "rob" "kyle"])
 (map (memfn getBytes) ["amit" "rob" "kyle"])
 
