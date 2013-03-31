@@ -2,9 +2,6 @@
 ;; data structure transforming between Atom, vector, list, array and map.
 ;; (load-file "map-idiom.clj")
 ;;
-
-;; :require ;use load code from other namespace.
-;; :import java package
 (ns ns-map-idiom
   ;;(:require clojure.string :refer [join] :as string))
   (:require clojure.string))
@@ -385,5 +382,5 @@
             (recur (inc steps)
                    (assoc-in routes yx {:cost newcost :yxs (conj (:yxs cheapest-nbr []) yx)})
                    (into rest-work-todo
-                     (map (fn [w] (let [[y x] w] [(total-cost newcost step-est size y x) w]))
+                     (map (fn [w] (let r[y x] w] [(total-cost newcost step-est size y x) w]))
                            nbr-yxs)))))))))

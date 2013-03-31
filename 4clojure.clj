@@ -201,6 +201,7 @@
 
 ;;
 ;; juxtaposition
+;;
 (fn [f & fns]
   (fn [& args]
     (let [fs (list* f fns) ret []]
@@ -211,8 +212,8 @@
 
 ;;
 ;; reductions
-;; carry the interim result inside loop/recur bindings.
-;; when loop condition not met, can ret the interim from loop binding directly.
+;; carry the interim result inside recur bindings.
+;; when loop condition not met, can ret the interim from recur binding directly.
 ;; when using loop, not a lazy seq.
 ;; (= (__ conj [1] [2 3 4]) [[1] [1 2] [1 2 3] [1 2 3 4]])
 ;;
@@ -220,7 +221,7 @@
   ([ f col ]
     (reduction f (first col) (rest col)))
   ([f init col]
-    (loop [c col reduceval init interim (conj [] reduceval)]  ;; carry partial result in loop bindings.
+    (loop [c col reduceval init interim (conj [] reduceval)]  ;; carry partial result in recur bindings.
       (if c
         (let [ resl (f reduceval (first c))]
           (recur (rest c) resl (conj interim resl)))   ;; carry interim inside bindings.
@@ -256,7 +257,7 @@
 ;; use update-in and (fnil conj []) to create the ret map and loop carry interim result.
 ;;
 (fn [f col]
-  (loop [c col grp {}]   ;; carry partial result inside binding.
+  (loop [c col grp {}]   ;; carry partial result inside recur binding.
     (if c
       (recur (next c) (update-in grp [(f (first c))] (fnil conj []) (first c)))
       grp)))
@@ -287,7 +288,7 @@
   ([n l]
     (let [hd (first l) bd (rest l)]
       (if (zero? n)
-        []              ;; ret empty [] from leaf so recursion built-up result bottom up.
+        []          ;; ret empty [] from leaf so recursion built-up result bottom up.
         (lazy-seq
           (take n
             (cons hd (sieve (- n 1) (filter #(not (zero? (mod % hd))) bd))) ))))))
@@ -417,3 +418,18 @@
       (if (coll? (first col))
         (concat (myfltn (first col)) (myfltn (rest col)))
         (conj [] col) ))))    ;; when first  of col is not collection, one level nested. can ret.
+
+;;
+;; pascal triangle.
+;; list transform, take the relationship between neighbor elements.
+;; traditional map etc only take individual items.
+;; create a new list by shifting the current list, then apply op on a list of vectors.
+;;
+(fn pascal
+  ([n]
+    (if (= n 1)
+      [1]
+        (if (= n 2)
+          [1 1]
+          (let [xs (pascal (dec n)) ys (rest xs)]
+            (cons 1 (conj (vec (map + (drop-last xs) ys)) 1)))))))

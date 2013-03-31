@@ -1,13 +1,56 @@
 # cljaction-test
+Testing using libs from cljour in action.
 
-FIXME: write description
+## Setup project
 
-## Usage
+### project.clj
 
-FIXME: write
+Lib format: group-id/artifact-id, version string.
+Clojure uses the following paths to resolve dependency library.
+    central (http://repo1.maven.org/maven2),
+    local (file:$HOME/macsrc/clj/cljaction/cljaction-test/local_jars/),
+    clojars (http://clojars.org/repo/)
 
-## License
+add lib coordinates (artifact-id and (if differing) group-id) go into your project.clj’s :dependencies vector.
+require the package into ns macro’s :require list. (ns package.namespace) = (src/package/namespace)
 
-Copyright (C) 2013 FIXME
+Specify main function for the project.
 
-Distributed under the Eclipse Public License, the same as Clojure.
+  :main cljaction-test.core)
+
+### Package is Namespace
+
+Package is namespece, and named after convention src/package/file.clj maps to
+(ns package.file)
+
+### Require, use, import and gen-class.
+
+Import java packages and each classes. [java.util Map List]
+Require or use other namespace's code as though its yours.
+Require can now take a :refer option. :refer takes a list of symbols to refer 
+from the namespace or :all to bring in all public vars."
+
+(ns cljaction-test.core
+  (:require [clojure.string :as str])
+  (:require [clojure.java.jdbc :as sql])
+  (:import [java.io FileReader]
+           [java.util Map Map$Entry List ArrayList Collection Iterator HashMap]
+           )
+  (:use [cljaction-test.util])   ;; use util namespace without fully qualified name.
+  (:use [cljaction-test.chapter14-worker])  ;; use chapter14_worker
+  (:use [cljaction-test.chapter14-worker-usage])
+  (:gen-class :main true))
+
+
+gen-class gen a java class that delegate java class .method to clj :prefix func. (.main to -main)
+clojure in action java interop has great depth in gen-class options.
+
+for mutables, only single field available called state.
+: with or without :gen-class, clj with gen a set of classes for each clj function.
+args: :name, :init, :constructor :state,
+http://kotka.de/blog/2010/02/gen-class_how_it_works_and_how_to_use_it.html 
+
+
+## Run
+lein compile
+lein run

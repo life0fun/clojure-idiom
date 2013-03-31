@@ -311,9 +311,9 @@
 ;; OO single dispatch problem: not work with more than one hierarchy.
 ;; public interface People {
 ;;    void pet(Dog d);
-;;    void pet(Cat c): 
+;;    void pet(Cat c);
 ;; }
-;; now if you have dog and cat inherits from animal and you clal p.pet(new Animal("dog"))
+;; now if you have dog and cat inherits from animal and you call p.pet(new Animal("dog"))
 ;; it wont work because single dispatch only dispatch this, not the first arguments.
 
 ;; Visitor pattern for double dispatching.

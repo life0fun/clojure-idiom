@@ -4,7 +4,7 @@
 ;;
 ;; path to resolve lib. Lib format: group-id/artifact-id, version string.
 ;;  central (http://repo1.maven.org/maven2),
-;;  local (file:/Users/e51141/macsrc/clj/cljaction/cljaction-test/local_jars/),
+;;  local (file:$HOME/macsrc/clj/cljaction/cljaction-test/local_jars/),
 ;;  clojars (http://clojars.org/repo/)
 ;;
 ;; add lib coordinates (artifact-id and (if differing) group-id) go into your project.clj’s :dependencies vector.

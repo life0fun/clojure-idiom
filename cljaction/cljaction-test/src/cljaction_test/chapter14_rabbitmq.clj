@@ -4,7 +4,7 @@
 (ns cljaction-test.chapter14-rabbitmq
   (:import (com.rabbitmq.client ConnectionParameters ConnectionFactory QueueingConsumer)))
 
-(def *rabbit-connection*)
+(def ^:dynamic *rabbit-connection*)
 
 (defn new-connection [q-host q-username q-password]
   (let [params (doto (ConnectionParameters.)
