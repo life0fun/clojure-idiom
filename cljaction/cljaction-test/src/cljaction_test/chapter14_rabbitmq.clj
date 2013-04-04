@@ -10,7 +10,7 @@
   (let [params (doto (ConnectionParameters.)
          (.setVirtualHost "/")
          (.setUsername q-username)
-                 (.setPassword q-password))]
+         (.setPassword q-password))]
     (.newConnection (ConnectionFactory. params) q-host)))
 
 (defmacro with-rabbit [[mq-host mq-username mq-password] & exprs]
@@ -23,6 +23,7 @@
     (.basicPublish channel "" routing-key nil (.getBytes (str message-object)))))
 
 (defn delivery-from [channel consumer]
+  ;; consumer.nextDelivery is a blocking call, will block here if no msg in queue.
   (let [delivery (.nextDelivery consumer)]
     (.basicAck channel (.. delivery getEnvelope getDeliveryTag) false)
     (String. (.getBody delivery))))
@@ -36,6 +37,7 @@
 (defn next-message-from [queue-name]
   (with-open [channel (.createChannel *rabbit-connection*)]
     (let [consumer (consumer-for channel queue-name)]
+      (println "next-message-from" queue-name)
       (delivery-from channel consumer))))
 
 (defn- lazy-message-seq [channel consumer]

@@ -20,7 +20,9 @@
            )
   (:use [cljaction-test.util])   ;; use util namespace without fully qualified name.
   (:use [cljaction-test.chapter14-worker])  ;; use chapter14_worker
-  (:use [cljaction-test.chapter14-worker-usage])
+  ;;(:use [cljaction-test.chapter14-worker-usage])
+  (:use [cljaction-test.chapter14-sender])
+  (:use [cljaction-test.chapter14-receiver])
   (:gen-class :main true))
 
 
@@ -28,4 +30,5 @@
 (defn -main []
   (prn "hello world")
   (debug)
-  )
+  (receiver-recv))
+  ;;(sender-single-msg))

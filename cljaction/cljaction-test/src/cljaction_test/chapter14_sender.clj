@@ -1,7 +1,8 @@
-(ns chapter14-sender
-  (:use chapter14-rabbitmq))
+(ns cljaction-test.chapter14-sender
+  (:use cljaction-test.chapter14-rabbitmq))
 
-(println "Sending...")
-(with-rabbit ["localhost" "guest" "guest"]
-  (send-message "chapter14-test" "chapter 14 test method"))
-(println "done!")
+(defn sender-single-msg []
+  (println "Sending...")
+  (with-rabbit ["localhost" "guest" "guest"]
+    (send-message "chapter14-test" "sending test message to chapter14-test queue"))
+  (println "done!"))

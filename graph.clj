@@ -51,7 +51,7 @@
 
 ;;
 ;; DFS. We need to transform fn recur to loop recur, as we need to recur bind and carry intermeidate result from each
-;; fn recur branch. In oo, ret val and call stack handles it. 
+;; fn recur branch. In oo, ret val and call stack handles it.
 ;;    largest = max( (for c in child) val = dfs(c))
 ;; In fn lang, need to loop with explicit stack until stack empty and bind carry intermediate result.
 ;; dfs traverse normally post-order, as we want to collect all results from children's explore.
@@ -66,7 +66,7 @@
     (loop [graph graph stack [root] discovered #{root} processed #{} partRslt []]
       (if (empty? stack)       ;; recur until stack empty
         [partRslt discovered]  ;; ret list of result and seen
-        (let [ curnode (peek stack)    ;; peek, not pop
+        (let [ curnode (peek stack)    ;; peek stack, not pop
                children (remove (fn [e] (contains? discovered e)) (graph curnode))
                child (first children)]
           (if child
@@ -78,7 +78,7 @@
 ;; dijkstra short-path
 ;; ret a lazy-seq of of [curnode {state}] where state map {node [dist parent]}
 ;; (graph u) ret a vec of nb for u. (dist u v) ret the dist between u-v
-;; alg: a priq list stores each node's dist to src, relaxed upon each iteration. Recur until node list Q is empty.
+;; alg: each node's dist to src is in a priq list. transform the list one step at the hd, relaxed create a new list. Recur until list empty.
 ;; In impl, the priq dist is a sorted-map by value with key is node and val is the dist to src node. Init it first.
 ;; each recur, head is min. pop head, update priq for head's each child, if src-child thru head is closer.
 ;;

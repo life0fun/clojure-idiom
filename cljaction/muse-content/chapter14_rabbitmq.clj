@@ -5,8 +5,8 @@
 
 (defn new-connection [q-host q-username q-password]
   (let [params (doto (ConnectionParameters.)
-		 (.setVirtualHost "/")
-		 (.setUsername q-username)
+         (.setVirtualHost "/")
+         (.setUsername q-username)
                  (.setPassword q-password))]
     (.newConnection (ConnectionFactory. params) q-host)))
 
