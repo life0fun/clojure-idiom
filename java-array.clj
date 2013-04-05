@@ -83,6 +83,16 @@
 
 (asum-sq (float-array [1 2 3 4 5]))
 
+
+;; sort a collection and convert back to vector for random access
+;;
+(defn sorted-vec
+  [coll]
+    (let [arr (into-array coll)]
+      (java.util.Arrays/sort arr)
+      (vec arr)))
+
+;;
 ;; using forName to determine
 (defmulti what-is class)
 (defmethod what-is (Class/forName "[Ljava.lang.String;""]") [a] "1d String")

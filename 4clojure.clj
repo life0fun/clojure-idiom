@@ -433,3 +433,25 @@
           [1 1]
           (let [xs (pascal (dec n)) ys (rest xs)]
             (cons 1 (conj (vec (map + (drop-last xs) ys)) 1)))))))
+
+
+;;
+;; lazy search the smallest item that appears in all sorted sequence.
+;;
+(fn smallest 
+  [& colv]
+  (let [veccols (vec colv)
+        hd (first (apply map vector colv))
+        minhd (apply min-key second (map-indexed vector hd))
+        smallestidx (first minhd)
+        smallestv (second minhd)
+       ]
+    (if (= (count hd) (count (filter #(= % smallestv) hd)))
+      smallestv
+      (recur (concat (take smallestidx veccols)
+             (drop (inc smallestidx) veccols)
+             (vector (rest (veccols smallestidx))) )))))
+
+(= 64 (__ (map #(* % % %) (range)) ;; perfect cubes
+          (filter #(zero? (bit-and % (dec %))) (range)) ;; powers of 2
+          (iterate inc 20))) ;; at least as large as 20

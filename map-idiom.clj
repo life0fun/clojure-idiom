@@ -185,7 +185,16 @@
  [{:categoryid 1, :categoryname "foo" } 
   {:categoryid 2, :categoryname "bar" } 
   {:categoryid 3, :categoryname "baz" }])
- 
+
+;;
+;; sort map by value using comparator
+;;
+(let [results {:A 1 :B 2 :C 2 :D 5 :E 1 :F 1}]
+  (into (sorted-map-by (fn [key1 key2]
+                         (compare [(get results key2) key2]
+                                  [(get results key1) key1])))
+        results))
+
 ;;
 ;; timeline
 (def events
