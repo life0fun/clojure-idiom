@@ -12,6 +12,71 @@
 (defn dbg [msg]
   (prn msg))
 
+
+;; Clojure has several ways of busting recursion
+;;   explicit tail calls with recur. (they must be truely tail calls so this wont work)
+;;   Lazy sequences as mentioned above.
+;;   trampolining where you return a function that does the work instead of doing it directly 
+;;   and then call a trampoline function that repeatedly calls its result until it turnes into a real value instead of a function.
+;;   memoizing the the case of fact this can really shorten the stack depth, though it is not generally applicable.
+
+
+;; lazy illustrated with fib seq
+;; bad idea
+(defn stack-consuming-fibo [n]
+  (cond
+    (= n 0) 0
+    (= n 1) 1
+    :else (+ (stack-consuming-fibo (- n 1))
+             (stack-consuming-fibo (- n 2)))))
+
+;; lazy-seq 
+(defn fib
+  ([idx pre cur]
+    (let [next (+ pre cur)]
+      (lazy-seq (cons next (fib (inc idx) cur next))))))
+
+(defn lazy-seq-fibo
+  ([]
+    (concat [0 1] (lazy-seq-fibo 0N 1N)))
+  ([a b]
+    (let [n (+ a b)]
+      (lazy-seq
+        (cons n (lazy-seq-fibo b n))))))
+
+;; The Fibonaccis are simply the first value of each pair.
+(defn fibo []
+  (map first (iterate (fn [[a b]] [b (+ a b)]) [0N 1N])))
+
+;; factorial with recur
+(defn fact [x]
+  (loop [n x f 1]
+    (if (= n 1)
+      f
+      (recur (dec n) (* f n)))))
+
+;; lazy-seq version
+(defn factorials []
+  (letfn [(factorial-seq [n fact]
+            (lazy-seq
+              (cons fact (factorial-seq (inc n) (* (inc n) fact)))))]
+    (factorial-seq 1 1)))
+
+;; factorial is just reduce of a list of consecutive num.
+(defn factorial [n]
+  (reduce * (range 1 (inc n))))
+
+;; call trampolining to repeatively call your fn that does the factorial.   
+;; trampolining where you return a function that does the work instead of doing it directly 
+;;   and then call a trampoline function that repeatedly calls its result until it turnes into a real value instead of a function.
+(defn fact [x]
+  (if (<= x 1)
+    1
+    #(* x (fact (- x 1)) )) )   ;; ret a fn instead of calc the factorial directly.
+
+(trampoline (fact 42))   ;; ask trampoline to repeatively call the fn.
+
+
 ;;
 ;; run-time cause PersistentQueue's multimethod dispatching to use this version of print-method.
 ;;
@@ -40,8 +105,8 @@
           (stepHd [graph q color]       ;; deq Q head and process each node
             (when-let [hd (peek q)]     ;; while q is not empty, reduce on the neighbor of header
               ;; process node early, process each edge, then process node late.
-              (cons hd           ;; bfs, all nodes in Q are reachable, add this round reachable to partial result
-                (lazy-seq        ;; stepHd fn rets a lazy seq of all reachable nodes
+              (lazy-seq        ;; stepHd fn rets a lazy seq of all reachable nodes
+                (cons hd           ;; bfs, all nodes in Q are reachable, add this round reachable to partial result
                   (let [hdnb (remove (fn [e] (contains? color e)) (graph hd))]  ;; at leaf level, an empty lazy-seq
                     ;;(prn "hd " hd " hdnb " hdnb " color " color q)
                     ;; recur call - pop head, add head's neighbor to queue, add head's neighbor to colormap(in stack visiting)

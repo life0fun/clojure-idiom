@@ -284,14 +284,14 @@
 ;;
 (fn sieve
   ([n]
-    (sieve n (iterate inc 2)))
+    (sieve n (iterate inc 2)))  ;; iter to gen a lazy list starting from 2, [2 3 4 ...]
   ([n l]
     (let [hd (first l) bd (rest l)]
       (if (zero? n)
-        []          ;; ret empty [] from leaf so recursion built-up result bottom up.
-        (lazy-seq
-          (take n
-            (cons hd (sieve (- n 1) (filter #(not (zero? (mod % hd))) bd))) ))))))
+        []          ;; ret empty [] from bottom for parent to cons result recursion bottom up.
+        (take n
+          (lazy-seq   ;; lazy-seq is cons head on the recursive self call result
+            (cons hd (sieve (- n 1) (filter #(not (zero? (mod % hd))) bd))) ))))))  ;; filter out all head's multipliers
 
 ;;
 ;; merge-with
@@ -498,16 +498,34 @@
 (=  (__ 1 [-10 [1 [2 3 [4 5 [6 7 [8]]]]]]) '(-10 (1 (2 3 (4))))')
 
 
-;; lazy seq of pronunciations
 ;;
+;; lazy seq of pronunciations
+;; lazy seq constructed by lazy-cons head onto a recursive call of itself that generates a lazy seq
+;;
+(fn lazy-pron
+  ([xs]
+    (lazy-pron xs nil []))
+  ([xs prev result]
+    (letfn [(stepHd [xs prev result]   ;; carry prev val to this iteration of head processing.
+              (if (empty? xs)
+                result
+                (if (= (first xs) prev)
+                  (recur (rest xs) prev (conj (vec (drop-last 2 result)) (inc (first (take-last 2 result))) prev))
+                  (recur (rest xs) (first xs) (conj result 1 (first xs)) ))))]
+      (let [curpron (stepHd xs prev result)]
+        (lazy-seq (cons curpron (lazy-pron curpron)))))))
+
+;; solution 2, recur loop, not recur stepHd fn itself.
 (fn lazy-pron [xs]
-  (letfn [(pron [xs]
-    (loop [xs xs
-                 prev nil
-                            result []]
-                                  (if (empty? xs)
-                                          result
-                                                  (if (= (first xs) prev)
-                                                            (recur (rest xs) prev (conj (vec (drop-last 2 result)) (inc (first (take-last 2 result))) prev))
-                                                                      (recur (rest xs) (first xs) (conj result 1 (first xs)))))))]
-                                                                          (lazy-seq (pron xs))))
+  (letfn [(stepHd [xs]
+            (loop [xs xs
+                   prev nil   ;; carry prev val to this iteration head processing.
+                   result []]
+              (if (empty? xs)
+                result
+                (if (= (first xs) prev)
+                  (recur (rest xs) prev (conj (vec (drop-last 2 result)) (inc (first (take-last 2 result))) prev))
+                  (recur (rest xs) (first xs) (conj result 1 (first xs)))))))]
+    (let [curpron (stepHd xs)]
+      (lazy-seq (cons curpron (lazy-pron curpron))) )))
+

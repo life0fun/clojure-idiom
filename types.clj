@@ -136,14 +136,18 @@
   (fixo-peek [fixo]))
 
 ;;
+;; Protocol is clojure style Mixin that impls polymorphism
+;; Protocol extends to class/type/IF with single dispatch of first arg, and extendible multiple dispatches.
 ;; Protocols are implemented using extend forms: extend, extend-type, extend-protocol.
 ;; this is exactly as javascript augment object by adding fns in prototype object chain.
 ;; Types extended to protocols.
 ;; concrete type and protocol can be from 3rd party and we can extend without any adapters, wrappers, monkey patching
 ;;
 ;; Clojure polymorphism lives in the protocol(interface) functions, not in the classes, as compare to Monkey patch and Wrappers.
+;; Monkey patch, not polymorphism. Wrapper: need to define beforeHandle.
 ;;  Monkey patch: TreeNode.fixo-push = function() {}
 ;;  Wrapper : class TreeWrapper { private TreeNode, public fixo-push()}
+;; Protocol enables run-time polymorphism that can integrate 3rd lib easily.
 ;;
 (extend-type TreeNode    ;; extend-type to impl certain protocol.
   FIXO
