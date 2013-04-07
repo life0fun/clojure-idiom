@@ -496,3 +496,18 @@
 (=  (__ 0 [1 2 [3 [4 5] 6] 7]) '()')
 (=  (__ 0 [0 0 [0 [0]]]) '(0 0 (0 (0)))')
 (=  (__ 1 [-10 [1 [2 3 [4 5 [6 7 [8]]]]]]) '(-10 (1 (2 3 (4))))')
+
+
+;; lazy seq of pronunciations
+;;
+(fn lazy-pron [xs]
+  (letfn [(pron [xs]
+    (loop [xs xs
+                 prev nil
+                            result []]
+                                  (if (empty? xs)
+                                          result
+                                                  (if (= (first xs) prev)
+                                                            (recur (rest xs) prev (conj (vec (drop-last 2 result)) (inc (first (take-last 2 result))) prev))
+                                                                      (recur (rest xs) (first xs) (conj result 1 (first xs)))))))]
+                                                                          (lazy-seq (pron xs))))
