@@ -455,3 +455,44 @@
 (= 64 (__ (map #(* % % %) (range)) ;; perfect cubes
           (filter #(zero? (bit-and % (dec %))) (range)) ;; powers of 2
           (iterate inc 20))) ;; at least as large as 20
+
+
+
+;; take a nest collection, and a sub collection of it that sum to certain number. maintain nested structure.
+;; For/loop comprehents flatten list. Nested collection, need explict loop or reduce and carry partial result along.
+;; for list comprehen
+;;
+(fn SequsHorribilis
+  ([tot xs]
+    (sequs tot xs []))
+
+    ([tot xs partResult]     ;; xs must be a seq when calling.
+      (loop [ remain tot
+              xs xs
+              partResult partResult]
+        (if (empty? xs)      ;; break out loop when empty list
+          partResult
+
+          (let [ hd (first xs)
+                 body (rest xs)
+                 t (type hd) ]
+            (if (or (= t clojure.lang.PersistentVector)
+                    (= t clojure.lang.PersistentList))
+              ;;
+              ;; if header is a collection, call this fn recursively to get result for header,
+              ;; and continue loop the rest of the list with the result from head conjed to partial result.
+              ;;
+              (let [headrslt (sequs remain hd [])  ;; call myself to get result for head collection.
+                    headtot (apply + (flatten headrslt))]
+                (recur (- remain headtot) body (conj partResult headrslt)))  ;; loop the rest with head's result conjed to partial result.
+              (if (>= remain hd)
+                (recur (- remain hd) body (conj partResult hd))
+                partResult)))))))
+
+(=  (__ 10 [1 2 [3 [4 5] 6] 7]) '(1 2 (3 (4)))')
+(=  (__ 30 [1 2 [3 [4 [5 [6 [7 8]] 9]] 10] 11]) '(1 2 (3 (4 (5 (6 (7))))))')
+(=  (__ 9 (range)) '(0 1 2 3)')
+(=  (__ 1 [[[[[1]]]]]) '(((((1)))))')
+(=  (__ 0 [1 2 [3 [4 5] 6] 7]) '()')
+(=  (__ 0 [0 0 [0 [0]]]) '(0 0 (0 (0)))')
+(=  (__ 1 [-10 [1 [2 3 [4 5 [6 7 [8]]]]]]) '(-10 (1 (2 3 (4))))')

@@ -21,7 +21,7 @@
 (defn stringMatch [s, keywords]   ;; s is a string, not a list.
   (let [ words (.split s " ")
          wordset (into #{} words)
-     sect (clojure.set/intersection wordset (set keywords))
+         sect (clojure.set/intersection wordset (set keywords))
        ]
 
      (if (empty? sect)
@@ -153,7 +153,7 @@
 (def foo {:bar {:baz {:quux 123}}})
 (update-in foo [:bar :baz :quux] inc)  ;; {:bar {:baz {:quux 124}}}
 
-(defn update-map-entry [m k args] 
+(defn update-map-entry [m k args]
    (update-in m [(keyword k)] (fn [oldvalue] (if-not (nil? oldvalue) (hash-map) (clojure.string/join args)))))
 
 ;;
@@ -264,7 +264,9 @@
 (reduce (fn [t c] (reduce (fn [t1 c1] (prn t1 c1)) t c))
   {} data)
 
+;;
 ;; update-in fnil, wrap a fn, when nil args passed to fn, replace with empty collection or 0
+;;
 (reduce (fn [m1 m2]         ;; reduce on a list of maps
     (reduce (fn [m [k v]]   ;; this reduce on each entry inside one map.
         (update-in m [k] (fnil conj []) v)) m1, m2))  ;; closure to ref to final atom
