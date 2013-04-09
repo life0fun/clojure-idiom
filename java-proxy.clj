@@ -1,17 +1,22 @@
 ;; java proxy
 ;; (load-file "java-proxy.clj")
-
+;; http://kotka.de/blog/2010/03/proxy_gen-class_little_brother.html
 
 ;; first, import the java package.
 (ns java-proxy
   (:import [java.text SimpleDateFormat]
-           [java.util Calendar TimeZone]))
+           [java.util Calendar TimeZone]
+           [java.io OutputStream FileOutputStream]))
 
 ;; Clojure can do java bettern than java. Proxy is meant strictly for interoperability.
 ;; Proxy extend concrete class while reify abstracts type, protocol and interface.
 ;; extend only those instances where interoperability demands it.
 ;; instance reted from proxy is a proper proxy that does method dispatch based on look up map.
 
+;; To extend a class, create a proxy stub of the class, and then wrap the proxy stub inside the clj fn. The clj fn rets the proxy stub object.
+;; The object instantiated by proxy gets stubs for the methods which just look up usual clojure functions in a map.
+;; This means proxy-methods are normal (though anonymous) clojure functions and in particular they close over their environment.
+;; If a method is not found in the proxy's map the stub throws an UnsupportedOperationException or calls the super's method.
 
 ;; java object member function is not high order fn. use macro memfn to convert.
 (map #(.getBytes %) ["amit" "rob" "kyle"])
@@ -28,10 +33,13 @@
 ;;   (method-redefinition-name [parameters]
 ;;       method-body))
 ;;
-(defn streaming-filter [o]
-  (proxy [FilterOutputStream] [o]
+(defn streaming-filter [os]
+  (proxy [FilterOutputStream] [os]
     (write [b]
       (proxy-super write (.getBytes (str "<strong>" (.toUpperCase (String .b)) "</strong>"))))))
+
+(def f (streaming-filter (FileOutputStream. "./java-proxy.clj")))
+(.write f "xxxx")
 
 ;;
 ;; proxy java object's toString
@@ -70,8 +78,16 @@
     ([x] (proxy-super diffArgs x)
     ([x y] (.doMoreStuff this, x, y)))))
 
+;; the magic this for dispatch. Do not redef this inside proxy-method
+;; While the methods for gen-class take the object as ﬁrst argument (and can thus it can be named whatever you like) 
+;; proxy captures the symbol this in a similar way Java does. So in a proxy method this will always refer to the instance at hand.
+(proxy [Object] []
+  (toString []
+    (let [this "huh?"]   ;; do NOT re-def this inside proxy-method
+      (proxy-super toString))))
 
-;; gen-class, need aot compiler to gen java class before hand.
+
+;; gen-class, need AOT compiler to gen java class before hand.
 ;; (compile 'joy.gui.DynaFrame')
 ;; clojure namespace as package name.  specify whatever you
 ;; We have only on single ﬁeld available called – surprise! – state.

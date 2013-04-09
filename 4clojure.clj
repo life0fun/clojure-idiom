@@ -351,7 +351,9 @@
     (count (filter (fn [i] (= 1 (gcd i n))) (range 1 (inc n))))))
 
 ;;
-;; trampoline
+;; trampoline [fn]
+;; you return a function that does the work instead of doing it directly and then 
+;; call a trampoline function that repeatedly calls its result until it turnes into a real value instead of a function
 ;; use loop [ret (f)]  and invoke the function during recur on loop.
 ;; use let [ret (f)] and pass the value to recur on the fn recursive call.
 ;;
@@ -500,7 +502,10 @@
 
 ;;
 ;; lazy seq of pronunciations
-;; lazy seq constructed by lazy-cons head onto a recursive call of itself that generates a lazy seq
+;; lazy-seq : replace recursive with laziness.
+;; wrap the recursive part of a function body with lazy-seq 
+;; to replace recursion with laziness.
+;; recursive part of fn body : (cons this_result (recursive-call (next iteration)))
 ;;
 (fn lazy-pron
   ([xs]
@@ -513,7 +518,7 @@
                   (recur (rest xs) prev (conj (vec (drop-last 2 result)) (inc (first (take-last 2 result))) prev))
                   (recur (rest xs) (first xs) (conj result 1 (first xs)) ))))]
       (let [curpron (stepHd xs prev result)]
-        (lazy-seq (cons curpron (lazy-pron curpron)))))))
+        (lazy-seq (cons curpron (lazy-pron curpron)))))))   ;; wrap recursion body to lazy-seq
 
 ;; solution 2, recur loop, not recur stepHd fn itself.
 (fn lazy-pron [xs]
@@ -528,4 +533,19 @@
                   (recur (rest xs) (first xs) (conj result 1 (first xs)))))))]
     (let [curpron (stepHd xs)]
       (lazy-seq (cons curpron (lazy-pron curpron))) )))
+
+;;
+;; create a map such that each key in the map is a keyword, and the value is a sequence of all the numbers (if any) 
+;; between it and the next keyword in the sequence.
+;;
+(fn keyvals [ l ]
+  (loop [lst l curk nil partRslt {} ]
+    (let [hd (first lst) body (rest lst)]
+      (if (nil? hd)
+        partRslt
+        (if (= clojure.lang.Keyword (type hd))
+          (recur body hd (assoc partRslt hd []))
+          (recur body curk (update-in partRslt [curk] (fnil conj []) hd)))))))
+
+(= {:a [1 2 3], :b [], :c [4]} (__ [:a 1 2 3 :b :c 4]))
 

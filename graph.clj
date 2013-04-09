@@ -21,6 +21,11 @@
 ;;   memoizing the the case of fact this can really shorten the stack depth, though it is not generally applicable.
 
 
+;; lazy-seq : replace recursive with laziness.
+;; wrap the recursive part of a function body with lazy-seq 
+;; to replace recursion with laziness.
+;; recursive part of fn body : (cons this_result (recursive-call (next iteration)))
+
 ;; lazy illustrated with fib seq
 ;; bad idea
 (defn stack-consuming-fibo [n]
@@ -30,7 +35,7 @@
     :else (+ (stack-consuming-fibo (- n 1))
              (stack-consuming-fibo (- n 2)))))
 
-;; lazy-seq 
+;; lazy-seq
 (defn fib
   ([idx pre cur]
     (let [next (+ pre cur)]
@@ -45,6 +50,7 @@
         (cons n (lazy-seq-fibo b n))))))
 
 ;; The Fibonaccis are simply the first value of each pair.
+;; iterate to gen a seq of pairs, use range to gen list of singles.
 (defn fibo []
   (map first (iterate (fn [[a b]] [b (+ a b)]) [0N 1N])))
 
