@@ -317,8 +317,7 @@
                         (let [[x y z] c]
                           (if (and (= x y z)
                                    (or (= x :x )
-                                       (= x :o ))
-                              )
+                                       (= x :o )))
                               x ret)))
                           nil col))
            (intlv [col]
@@ -549,3 +548,34 @@
 
 (= {:a [1 2 3], :b [], :c [4]} (__ [:a 1 2 3 :b :c 4]))
 
+
+;; decurry, accepts a curried fn of unknown arity n, ret an equivalent fn of n arguments
+;;
+(fn decurry [f]
+  (fn [ & xs] 
+    (loop [ argv xs partFn f]
+      (if (= 1 (count argv))
+        (partFn (first argv))
+        (recur (next argv) (partFn (first argv)))))))
+ 
+(= 10 ((__ (fn [a]
+             (fn [b]
+               (fn [c]
+                 (fn [d]
+                   (+ a b c d))))))
+       1 2 3 4))
+
+;;
+;; oscillating iterate: a function that takes an initial value and a variable number of functions.
+;;
+(fn oscilrate [v & fns ]
+  (let [ cycledfns (cycle fns) ]
+    (letfn [ (stepHd [v & fns]
+                     (let [ hdfn (first fns) nextv (hdfn v) ]
+                       (lazy-seq (cons nextv (apply stepHd nextv (rest fns)))))) ]
+            (cons v (apply stepHd v cycledfns)))))
+
+(= (take 12 (__ 0 inc dec inc dec inc)) [0 1 0 1 0 1 2 1 2 1 2 3])
+    
+    
+    
