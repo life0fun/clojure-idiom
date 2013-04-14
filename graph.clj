@@ -144,8 +144,10 @@
                children (remove (fn [e] (contains? discovered e)) (graph curnode))
                child (first children)]
           (if child   ;; if children not done, keep pushing stack topnode's children. Otherwise, pop topnode from stack.
-            (recur graph (conj stack child) (conj discovered child) processed partRslt)
-            (recur graph (pop stack) discovered (conj processed curnode) (conj partRslt curnode))))))))
+            ;;(recur graph (conj stack child) (conj discovered child) processed partRslt)  ;; path is from curnode to child
+            ;;(recur graph (pop stack) discovered (conj processed curnode) (conj partRslt curnode)) ))))))
+            (recur graph (conj stack child) (conj discovered child) processed (conj partRslt [curnode child]))  ;; path is from curnode to child
+            (recur graph (pop stack) discovered (conj processed curnode) partRslt )))))))
 
 ;; take a nest collection, and a sub collection of it that sum to certain number. maintain nested structure.
 ;; For/loop comprehents flatten list. Nested collection, need explict loop or reduce and carry partial result along.

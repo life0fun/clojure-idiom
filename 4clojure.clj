@@ -691,7 +691,7 @@
 	          {a 2 b 11}]))
 
 ;;
-;; word chain, Levenshtein algorithm
+;; word chain, get Levenshtein distance 1 neighors and TSP visit all nodes.
 ;; http://www.codeproject.com/Articles/13525/Fast-memory-efficient-Levenshtein-algorithm
 ;;
 (fn word-chain [wdset]
@@ -716,8 +716,47 @@
                                    (if (= nxtsrcidx srclen)
                                      mincurv     ;; the result is in last of cur-row after iterating all.
                                      (recur nxtsrcidx 0 (conj curRow mincurv) (conj [] (inc nxtsrcidx))))  ;; next src letter
-                                   (recur srcidx nxttgtidx preRow (conj curRow mincurv))))))))]
-                       
+                                   (recur srcidx nxttgtidx preRow (conj curRow mincurv))))))))
+          (nbmap [wdset]
+                 (reduce (fn [ret this]
+                           (assoc ret this (filter #(= 1 (levenshtein this %)) wdset))) {} wdset))
+          ;; This is travelling salesman problem. Not suitable for dfs or bfs. 
+          (dfs [cur nbmap]
+               (loop [partmap nbmap stack [cur] discovered #{cur} partRslt []]
+                 (if (= (count stack) (count (keys nbmap)))
+                   stack
+                   (if (empty? stack)        ;;  dfs stack from cur node done. return all explored nodes
+                     nil
+                     (let [topnod (peek stack)
+                           children (remove #(contains? discovered %) (nbmap cur))
+                           child (first children)]
+                       (if child
+                         (recur partmap (conj stack child) (conj discovered child) (conj partRslt [cur child]))
+                         ;; all children explored, pop stack top, back to parent.
+                         (recur partmap (pop stack) discovered partRslt)))))))
+                           
+          (travelsman [cur partmap]
+                  (if (and (= 1 (count partmap))
+                           (= cur (first (keys partmap))))
+                    [true [cur]]
+                    (loop [curnbs (partmap cur) filtermap (dissoc partmap cur)]  ;; loop all nbs, dissoc cur to avoid cycle
+                      (if (empty? curnbs)    ;; explored all neighbors of cur node, not found, ret false.
+                        [false []]
+                        (let [childresult (travelsman (first curnbs) filtermap)]
+                          (if (first childresult)
+                            [true (conj (second childresult) cur)]  
+                            (recur (next curnbs) filtermap)))))))]  ;; for each nb, recur to call travelsman
+    
+    (let [ sortednbmap (into {} (sort-by (comp count val) < (nbmap wdset)))]
+      (loop [src (keys sortednbmap)]
+        (if (empty? src)
+          false
+          (let [rslt (travelsman (first src) sortednbmap)]
+            (if (first rslt)
+              (prn rslt) ;; true
+              (recur (next src)))))))))
+
+(= true (__ #{"hat" "coat" "dog" "cat" "oat" "cot" "hot" "hog"}))               
                        
 
 
