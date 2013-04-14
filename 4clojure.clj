@@ -350,6 +350,12 @@
     (count (filter (fn [i] (= 1 (gcd i n))) (range 1 (inc n))))))
 
 ;;
+;; fib, iterate gen lazy seq by keeping apply fn to the intermediate results.
+;;
+(defn fibo [] (map first (iterate (fn [[a b]] [b (+ a b)]) [0N 1N])))
+
+
+;;
 ;; trampoline [fn]
 ;; you return a function that does the work instead of doing it directly and then 
 ;; call a trampoline function that repeatedly calls its result until it turnes into a real value instead of a function
@@ -420,6 +426,22 @@
         (concat (myfltn (first col)) (myfltn (rest col)))
         (conj [] col) ))))    ;; when first  of col is not collection, one level nested. can ret.
 
+;; decurry, accepts a curried fn of unknown arity n, ret an equivalent fn of n arguments
+;;
+(fn decurry [f]
+  (fn [ & xs] 
+    (loop [ argv xs partFn f]
+      (if (= 1 (count argv))
+        (partFn (first argv))
+        (recur (next argv) (partFn (first argv)))))))
+ 
+(= 10 ((__ (fn [a]
+             (fn [b]
+               (fn [c]
+                 (fn [d]
+                   (+ a b c d))))))
+       1 2 3 4))
+
 ;;
 ;; pascal triangle.
 ;; list transform, take the relationship between neighbor elements.
@@ -456,7 +478,6 @@
 (= 64 (__ (map #(* % % %) (range)) ;; perfect cubes
           (filter #(zero? (bit-and % (dec %))) (range)) ;; powers of 2
           (iterate inc 20))) ;; at least as large as 20
-
 
 
 ;; take a nest collection, and a sub collection of it that sum to certain number. maintain nested structure.
@@ -533,6 +554,75 @@
     (let [curpron (stepHd xs)]
       (lazy-seq (cons curpron (lazy-pron curpron))) )))
 
+
+;;
+;; Insert between two items, returns a new collection where the value is inserted between every two items
+;; first, tranform to ary of each pair dup, map add predicate each pair, remove the prev tail to cur head dup.
+;; The principle is used in count consecutive headers, or gen fib sequence.
+(defn fibo [] (map first (iterate (fn [[a b]] [b (+ a b)]) [0N 1N])))
+
+(fn [pred v coll]
+  (letfn [(take-pair [c] (if (next c) (take 2 c) c))
+          (by-pair [c]
+                   (let [pair (seq (take-pair c))]
+                     (when pair
+                       (lazy-seq (cons pair (by-pair (rest c)))))))]
+    (let [ matched-pairs 
+            (map (fn [e] 
+                   (if (pred (first e) (last e))
+                     (vector (first e) v (last e))
+                     e)) (by-pair coll)) ]
+      (reduce (fn [ret this] (apply conj ret (rest this))) (vec (first matched-pairs)) (rest matched-pairs)))))
+        
+    
+(= [0 1 :x 2 :x 3 :x 4]  (__ #(and (pos? %) (< % %2)) :x (range 5)))
+
+;;
+;; reduce not work for lazy seq, we need to lazy-seq con result from this iteration on top of the result of rest.
+;; many ways for recursion, recur fn, recur loop, or lazy-seq con stepHd.
+;;  - recur loop, (loop [lst l curk nil partRslt {} ] (recur ...))
+;;  - fn self recursion with recur, (stepHd [xs prev partialResult] ... (recur ...)
+;;  - stepHd transform list based on head with loop (let [curpron (stepHd xs)] (lazy-seq (cons curpron (lazy-pron curpron))) )))
+;;  
+(fn intrapol 
+  ([pred v coll]
+    (if (or (empty? coll)
+            (< (count (take 2 coll)) 2))
+      coll
+      (intrapol pred v coll [])))
+  ([pred v coll partRslt]        ;; partRslt is not used here, this is recursive fn call.
+    (let [ hd (first coll) 
+           nxthd (first (rest coll))]
+      (if (nil? nxthd)          
+        (vector hd) 
+        (if (pred hd nxthd)
+          (lazy-seq (cons hd (cons v (intrapol pred v (rest coll) partRslt))))  ;; cant use self recur call, as recur not in tail
+          (lazy-seq (cons hd (intrapol pred v (rest coll) partRslt))))))))
+  
+(= [0 1 :same 1 2 3 :same 5 8 13 :same 21]
+   (take 12 (->> [0 1]
+                 (iterate (fn [[a b]] [b (+ a b)]))
+                 (map first) ; fibonacci numbers
+                 (__ (fn [a b] ; both even or both odd
+                       (= (mod a 2) (mod b 2)))
+                     :same))))
+
+;;
+;; take-while but stop only when n items satisfied, not whenever pred is false.
+;;
+(fn take-while-n [n pred seqns]
+  (let [hd (first seqns) bd (rest seqns) pred? (pred hd)]
+    (if (or (zero? n)      ;; should check header.
+            (and (= 1 n)
+                 pred?))
+        []    ;; ret empty seq at leaf so parent can conj its result on top of it to bottom up.
+        (if pred?
+          (lazy-seq (cons hd (take-while-n (dec n) pred bd)))
+          (lazy-seq (cons hd (take-while-n n pred bd)))))))
+
+(= ["this" "is" "a" "sentence"]
+   (__ 3 #(some #{\i} %)
+         ["this" "is" "a" "sentence" "i" "wrote"]))
 ;;
 ;; create a map such that each key in the map is a keyword, and the value is a sequence of all the numbers (if any) 
 ;; between it and the next keyword in the sequence.
@@ -549,22 +639,6 @@
 (= {:a [1 2 3], :b [], :c [4]} (__ [:a 1 2 3 :b :c 4]))
 
 
-;; decurry, accepts a curried fn of unknown arity n, ret an equivalent fn of n arguments
-;;
-(fn decurry [f]
-  (fn [ & xs] 
-    (loop [ argv xs partFn f]
-      (if (= 1 (count argv))
-        (partFn (first argv))
-        (recur (next argv) (partFn (first argv)))))))
- 
-(= 10 ((__ (fn [a]
-             (fn [b]
-               (fn [c]
-                 (fn [d]
-                   (+ a b c d))))))
-       1 2 3 4))
-
 ;;
 ;; oscillating iterate: a function that takes an initial value and a variable number of functions.
 ;;
@@ -577,5 +651,81 @@
 
 (= (take 12 (__ 0 inc dec inc dec inc)) [0 1 0 1 0 1 2 1 2 1 2 3])
     
+;;
+;; universal compute engine, take a prefix math form, and param map, compute the value.
+;; compute form closure to wrap the form and val map. resolve symb closure recursively call computer form closure. 
+;;
+(fn compute-engine [form]
+  (fn [vmap]
+    (letfn [(numb? [x]
+                 (let [t (type x)]
+                   (if (or (= java.lang.Integer t)
+                           (= java.lang.Long t))
+                     true
+                     false)))
+            (symb? [x]
+                 (let [t (type x)]
+                   (if (= clojure.lang.Symbol t)
+                     true
+                     false)))
+            (compute-form [form vmap]
+                          (letfn [ (symb-val [x]    ;; a fn closure to resolve each symbol. recursively.
+                                             (if (numb? x)
+                                               x
+                                               (if (symb? x)
+                                                 (vmap x)
+                                                 (compute-form x vmap))))]
+                            (let [op (first form)]
+                              (condp = op
+                                '* (apply * (map symb-val (rest form)))
+                                '/ (apply / (map symb-val (rest form)))
+                                '+ (apply + (map symb-val (rest form)))
+                                '- (apply - (map symb-val (rest form)))))))]
+      (compute-form form vmap))))
+
+(= [6 0 -4]
+     (map (__ '(* (+ 2 a)
+  	              (- 10 b)))
+	        '[{a 1 b 8}
+	          {b 5 a -2}
+	          {a 2 b 11}]))
+
+;;
+;; word chain, Levenshtein algorithm
+;; http://www.codeproject.com/Articles/13525/Fast-memory-efficient-Levenshtein-algorithm
+;;
+(fn word-chain [wdset]
+  (letfn [(levenshtein [src tgt]
+                       (let [srclen (count src) tgtlen (count tgt) rowsz (inc tgtlen)]
+                         (if (= src tgt)
+                           0
+                           (loop [srcidx 0 tgtidx 0 preRow (range 0 rowsz) curRow (conj [] (inc srcidx))] ;; curRow[0]=srcidx+1
+                             (let [srclt (nth src srcidx)
+                                   tgtlt (nth tgt tgtidx)
+                                   nxtsrcidx (inc srcidx)
+                                   nxttgtidx (inc tgtidx)
+                                   leftv (nth preRow nxttgtidx)
+                                   leftupperv (nth preRow tgtidx)
+                                   upperv (nth curRow tgtidx)
+                                   cost (fn [slt dlt] (if (= slt dlt) 0 1))
+                                   mincurv (min (inc leftv) (inc upperv) (+ leftupperv (cost srclt tgtlt)))]
+                               
+                               ;; does cur row iteration done ?
+                               ;;(prn srclt tgtlt nxtsrcidx preRow curRow)
+                               (if (= nxttgtidx tgtlen)   ;; done one iteration of tgt row
+                                   (if (= nxtsrcidx srclen)
+                                     mincurv     ;; the result is in last of cur-row after iterating all.
+                                     (recur nxtsrcidx 0 (conj curRow mincurv) (conj [] (inc nxtsrcidx))))  ;; next src letter
+                                   (recur srcidx nxttgtidx preRow (conj curRow mincurv))))))))]
+                       
+                       
+
+
+
+
+
+
+
+
     
     
