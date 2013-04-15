@@ -116,11 +116,52 @@
                   (let [hdnb (remove (fn [e] (contains? color e)) (graph hd))]  ;; at leaf level, an empty lazy-seq
                     ;;(prn "hd " hd " hdnb " hdnb " color " color q)
                     ;; recur call - pop head, add head's neighbor to queue, add head's neighbor to colormap(in stack visiting)
-                    (stepHd graph (into (pop q) hdnb) (reduce #(conj %1 %2) color hdnb)))))))]
+                    (stepHd graph (into (pop q) hdnb) (reduce #(conj %1 %2) color hdnb)))))))]   ;; reduce to translate hdnb list to atom for conj
 
     (let [graph (nbmap col)             ;; transform edge list into neighbor map
           root (first (keys graph))]
       (= (count graph) (count (stepHd graph (conj clojure.lang.PersistentQueue/EMPTY root) (conj #{} root)))))))
+
+(defn graph-tour [ edges ]
+  (letfn [(nbmap [col]  
+                 ;; collection of edges [[a b] [c d]]
+                 (let [bi-edges (into col (map (fn [e] [(second e) (first e)]) col))]
+                   (reduce (fn [ret e]
+                             (update-in ret [(first e)] (fnil conj #{}) (last e))) {} bi-edges)))
+          
+          (bfs [nbmap q discovered]  
+                  ;; q is PersistentQueue, conj to discovered set when we find a new node, until q is empty.
+                  (let [hd (peek q)   ;;  
+                        hdnb (remove #(contains? discovered %) (nbmap hd))]
+                    (if (empty? hdnb)
+                      discovered
+                      (recur nbmap (into (pop q) hdnb) (reduce #(conj %1 %2) discovered hdnb)))))
+          (stepHd [nbmap q discovered]
+                  ;; stepHd process head and ret a lazy list of node reachable from head.
+                  (when-let [hd (peek q)]
+                    (lazy-seq
+                      (cons hd 
+                            (let [hdnb (remove #(contains? discovered %) (nbmap hd))]
+                              (stepHd nbmap (into (pop q) hdnb) (reduce #(conj %1 %2) discovered hdnb)))))))
+          (odd-degrees [edges]
+                      ;; ret the num of nodes that have odd degrees
+                      (let [out-deg-map (reduce (fn [ret e] (update-in ret [(first e)] (fnil inc 0))) {} edges)
+                            in-deg-map (reduce (fn [ret e] (update-in ret [(second e)] (fnil inc 0))) {} edges)
+                            deg-map (merge-with + out-deg-map in-deg-map)
+                            odd-deg (filter (fn [e] (odd? (val e))) deg-map)]
+                        (count odd-deg)))]
+    (let [graph (nbmap edges)
+          root (key (first graph))
+          q (conj clojure.lang.PersistentQueue/EMPTY root)
+          discovered (conj #{} root) 
+          stephdcomponent (stepHd graph q discovered)
+          bfscomponent (bfs graph q discovered)]
+      (prn graph)
+      (prn (take 5 (stepHd graph q discovered)))
+      (prn bfscomponent))))
+
+(graph-tour [[:a :b] [:a :b] [:a :c] [:c :a]
+               [:a :d] [:b :d] [:c :d]])
 
 ;;
 ;; DFS. We need to transform fn recur to loop recur, as we need to recur bind/carry intermeidate result from each

@@ -691,9 +691,40 @@
 	          {a 2 b 11}]))
 
 ;;
-;; word chain, get Levenshtein distance 1 neighors and TSP visit all nodes.
+;; levenshtein distance.
 ;; http://www.codeproject.com/Articles/13525/Fast-memory-efficient-Levenshtein-algorithm
 ;;
+(fn levenshtein [src tgt]
+  (let [srclen (count src) tgtlen (count tgt) rowsz (inc tgtlen)]
+    (if (= src tgt)
+      0
+      (if (or (= (count src) 0)
+              (= (count tgt) 0))
+        (max (count src) (count tgt))
+        (loop [srcidx 0 tgtidx 0 preRow (range 0 rowsz) curRow (conj [] (inc srcidx))] ;; curRow[0]=srcidx+1
+          (let [srclt (nth src srcidx)
+                tgtlt (nth tgt tgtidx)
+                nxtsrcidx (inc srcidx)
+                nxttgtidx (inc tgtidx)
+                leftv (nth preRow nxttgtidx)
+                leftupperv (nth preRow tgtidx)
+                upperv (nth curRow tgtidx)
+                cost (fn [slt dlt] (if (= slt dlt) 0 1))
+                mincurv (min (inc leftv) (inc upperv) (+ leftupperv (cost srclt tgtlt)))]
+            ;; does cur row iteration done ?
+            ;;(prn srclt tgtlt nxtsrcidx preRow curRow)
+            (if (= nxttgtidx tgtlen)   ;; done one iteration of tgt row
+              (if (= nxtsrcidx srclen)
+                mincurv     ;; the result is in last of cur-row after iterating all.
+                (recur nxtsrcidx 0 (conj curRow mincurv) (conj [] (inc nxtsrcidx))))  ;; next src letter
+              (recur srcidx nxttgtidx preRow (conj curRow mincurv)))))))))
+
+(= (__ "ttttattttctg" "tcaaccctaccat") 10)
+
+;;
+;; word chain, get Levenshtein distance 1 neighors and TSP visit all nodes.
+;; TSP, recu loop each children, self-recursion travelsman fn. one of them will succ or all will fail.
+;; remove cur from map to avoid cycle. bottom up build the path from succ leaf.
 (fn word-chain [wdset]
   (letfn [(levenshtein [src tgt]
                        (let [srclen (count src) tgtlen (count tgt) rowsz (inc tgtlen)]
@@ -736,7 +767,9 @@
                          (recur partmap (pop stack) discovered partRslt)))))))
                            
           (travelsman [cur partmap]
-                  (if (and (= 1 (count partmap))
+                  ;; TSP, recu loop each children, self-recursion travelsman fn. one of them will succ or all will fail.
+                  ;; remove cur from map to avoid cycle. bottom up build the path from succ leaf.
+                  (if (and (= 1 (count partmap))  ;; the
                            (= cur (first (keys partmap))))
                     [true [cur]]
                     (loop [curnbs (partmap cur) filtermap (dissoc partmap cur)]  ;; loop all nbs, dissoc cur to avoid cycle
@@ -758,8 +791,58 @@
 
 (= true (__ #{"hat" "coat" "dog" "cat" "oat" "cot" "hot" "hog"}))               
                        
+;;
+;; graph tour, each edge visited only once.
+;; An undirected graph has an Eulerian trail if and only if at most two vertices have odd degree, 
+;; and if all of its vertices with nonzero degree belong to a single connected component.
+;; first, use bfs to verify we only have one connected components. then check at most two vertices have odd degree.
+;;
+(fn graph-tour [ edges ]
+  (letfn [(nbmap [col]  
+                 ;; collection of edges [[a b] [c d]]
+                 (let [bi-edges (into col (map (fn [e] [(second e) (first e)]) col))]
+                   (reduce (fn [ret e]
+                             (update-in ret [(first e)] (fnil conj #{}) (last e))) {} bi-edges)))
+          (bfs [nbmap q discovered]  
+                  ;; q is PersistentQueue, conj to discovered set when we find a new node, until q is empty.
+                  (let [hd (peek q)   ;;  
+                        hdnb (remove #(contains? discovered %) (nbmap hd))]
+                    (if (empty? hdnb)
+                      discovered
+                      (recur nbmap (into (pop q) hdnb) (reduce #(conj %1 %2) discovered hdnb)))))
+          (stepHd [nbmap q discovered]
+                  ;; stepHd process head and ret a lazy list of node reachable from head.
+                  (when-let [hd (peek q)]
+                    (lazy-seq
+                      (cons hd 
+                            (let [hdnb (remove #(contains? discovered %) (nbmap hd))]
+                              (stepHd nbmap (into (pop q) hdnb) (reduce #(conj %1 %2) discovered hdnb)))))))
+          (odd-degrees [edges]
+                      ;; ret the num of nodes that have odd degrees
+                      (let [out-deg-map (reduce (fn [ret e] (update-in ret [(first e)] (fnil inc 0))) {} edges)
+                            in-deg-map (reduce (fn [ret e] (update-in ret [(second e)] (fnil inc 0))) {} edges)
+                            deg-map (merge-with + out-deg-map in-deg-map)
+                            odd-deg (filter (fn [e] (odd? (val e))) deg-map)]
+                        (count odd-deg)))]
+    (let [graph (nbmap edges)
+          root (key (first graph))
+          q (conj clojure.lang.PersistentQueue/EMPTY root)
+          discovered (conj #{} root) 
+          stephdcomponent (stepHd graph q discovered)
+          bfscomponent (bfs graph q discovered)]
+      ;;(prn graph)
+      ;;(prn (take 5 (stepHd graph q discovered)))
+      (if (and (= (count bfscomponent) (count (keys graph)))
+               (<= (odd-degrees edges) 2))   ;; at most 2 vertices with odd edges
+        true
+        false))))
+               
+(= true (__ [[:a :b] [:a :c] [:c :b] [:a :e]
+              [:b :e] [:a :d] [:b :d] [:c :e]
+              [:d :e] [:c :f] [:d :f]]))
 
-
+(= false (__ [[:a :b] [:a :b] [:a :c] [:c :a]
+               [:a :d] [:b :d] [:c :d]]))
 
 
 
