@@ -1,14 +1,15 @@
-;; clojure github
+;; 
+;; 4clojure problem solving  http://www.4clojure.com/
 ;;
-;; the diff between list/vec and use flatten and apply when calling fn with arg list.
-;; (conj nil 4) returns (4)
-;; (conj [] 4) return [4]
-
+;; Your Ranking
+;;Username: life0fun
+;;Rank: 479 out of 13793
+;;Problems Solved: 103 [ 9 hard] 
 ;;
 ;; find indices of a val in a vector
 ;; for string array, use string array's .indexOf method.
 ;;
- (use '[clojure.contrib.seq-utils :only (positions)]')
+ (use '[clojure.contrib.seq-utils :only (positions)])
  (positions #{99} [0 99 3334 53 2 5 99 2 55 63])
  (def v ["one" "two" "three"])
  (.indexOf v "two")
@@ -354,6 +355,23 @@
 ;;
 (defn fibo [] (map first (iterate (fn [[a b]] [b (+ a b)]) [0N 1N])))
 
+;;
+;; intervals is a vec of two int, start end that all int between are contained.
+;;
+(fn intervals [col]
+  (let [scol (sort col)]
+    (reduce (fn [ret n]
+              (if (= (last (last ret)) (dec n))
+                (conj (vec (butlast ret)) (vector (first (last ret)) n))
+                (if (or (nil? (last (last ret)))
+                        (> n (last (last ret))))
+                  (conj ret (vector n n))
+                   ret)))
+            [] scol)))
+
+(= (__ [10 9 8 1 2 3]) [[1 3] [8 10]])
+(= (__ [19 4 17 1 3 10 2 13 13 2 16 4 2 15 13 9 6 14 2 11])
+       [[1 4] [6 6] [9 11] [13 17] [19 19]])
 
 ;;
 ;; trampoline [fn]
@@ -452,10 +470,10 @@
   ([n]
     (if (= n 1)
       [1]
-        (if (= n 2)
-          [1 1]
-          (let [xs (pascal (dec n)) ys (rest xs)]
-            (cons 1 (conj (vec (map + (drop-last xs) ys)) 1)))))))
+      (if (= n 2)
+        [1 1]
+        (let [xs (pascal (dec n)) ys (rest xs)]
+          (cons 1 (conj (vec (map + (drop-last xs) ys)) 1)))))))
 
 
 ;;
@@ -511,14 +529,32 @@
                 (recur (- remain hd) body (conj partResult hd))
                 partResult)))))))
 
-(=  (__ 10 [1 2 [3 [4 5] 6] 7]) '(1 2 (3 (4)))')
-(=  (__ 30 [1 2 [3 [4 [5 [6 [7 8]] 9]] 10] 11]) '(1 2 (3 (4 (5 (6 (7))))))')
-(=  (__ 9 (range)) '(0 1 2 3)')
-(=  (__ 1 [[[[[1]]]]]) '(((((1)))))')
-(=  (__ 0 [1 2 [3 [4 5] 6] 7]) '()')
-(=  (__ 0 [0 0 [0 [0]]]) '(0 0 (0 (0)))')
-(=  (__ 1 [-10 [1 [2 3 [4 5 [6 7 [8]]]]]]) '(-10 (1 (2 3 (4))))')
+(=  (__ 10 [1 2 [3 [4 5] 6] 7]) '(1 2 (3 (4))))
+(=  (__ 30 [1 2 [3 [4 [5 [6 [7 8]] 9]] 10] 11]) '(1 2 (3 (4 (5 (6 (7)))))))
+(=  (__ 9 (range)) '(0 1 2 3)
+(=  (__ 1 [[[[[1]]]]]) '(((((1))))))
+(=  (__ 0 [1 2 [3 [4 5] 6] 7]) '())
+(=  (__ 0 [0 0 [0 [0]]]) '(0 0 (0 (0))))
+(=  (__ 1 [-10 [1 [2 3 [4 5 [6 7 [8]]]]]]) '(-10 (1 (2 3 (4)))))
 
+;; 
+;; Read Roman numerals with subtractive principle. 
+;; just cover the following condition: IV 4 IX 9 XL 40 XC 90 CD 400 CM 900
+;; look ahead for each item, if matches one of the above, consume both.
+(fn roman-num [numstr]
+  (let [vmap { "I" 1 "V" 5 "X" 10 "L" 50 "C" 100 "D" 500 "M" 1000 "IV" 4 "IX" 9 "XL" 40 "XC" 90 "CD" 400 "CM" 900 }]
+  (loop [numstr numstr tot 0]
+    (if (clojure.string/blank? numstr)
+      tot
+      (if (<= (count numstr) 1)
+        (+ tot (vmap (subs numstr 0 1)))
+        (let [hd (subs numstr 0 1) hdpair (subs numstr 0 2)]
+          (if (nil? (vmap hdpair))
+            (recur (subs numstr 1) (+ tot (vmap hd)))
+            (recur (subs numstr 2) (+ tot (vmap hdpair))))))))))
+  
+(= 3999 (__ "MMMCMXCIX"))
+(= 827 (__ "DCCCXXVII"))
 
 ;;
 ;; lazy seq of pronunciations
@@ -641,11 +677,13 @@
 
 ;;
 ;; oscillating iterate: a function that takes an initial value and a variable number of functions.
+;; stepHd rets a lazy seq gened by processing then head item. We then lazy-cons head onto it forms the ret lazy-seq.
 ;;
 (fn oscilrate [v & fns ]
   (let [ cycledfns (cycle fns) ]
     (letfn [ (stepHd [v & fns]
-                     (let [ hdfn (first fns) nextv (hdfn v) ]
+                     (let [ hdfn (first fns) 
+                           nextv (hdfn v) ]
                        (lazy-seq (cons nextv (apply stepHd nextv (rest fns)))))) ]
             (cons v (apply stepHd v cycledfns)))))
 
@@ -844,7 +882,88 @@
 (= false (__ [[:a :b] [:a :b] [:a :c] [:c :a]
                [:a :d] [:b :d] [:c :d]]))
 
+;;
+;; traiangle min path
+;; choose the min path of the two children path. 
+;; at each step, ret a pair of min-path-val to min path
+;;
+(fn triangle-min-path 
+  ([coll]
+    (if (empty? coll)
+      nil
+      (first (triangle-min-path coll 0))))   ;; colidx inside the cur row(the top)
+  ([coll colidx]
+    ;; at each step, return a map of min-val to min-path vec
+    ;; as we are building from leaf bottom up, recursion exits at leaf
+    (let [v (nth (first coll) colidx)
+          nextrow (rest coll)]
+      (if (empty? nextrow)
+        [ v [v] ]  ;; ret a pair of min val and min-path vec
+        (let [[lv lp] (triangle-min-path nextrow colidx)
+              [rv rp] (triangle-min-path nextrow (inc colidx))]
+          (if (< lv rv)
+            [(+ lv v) (conj lp v)]
+            [(+ rv v) (conj rp v)]))))))
+             
+(= 20 (__ '([3]
+           [2 4]
+          [1 9 3]
+         [9 9 2 4]
+        [4 6 6 7 8]
+       [5 7 3 5 1 4]))) ; 3->4->3->2->7->1       
+        
+    
+;; 
+;; transitive closure
+;; merge all ele of the same set into a sorted list(set), then gen powerset of the list
+;; due to transitive nature, we only look at a segment's head and tail when merging.
+;;
+(fn transitive-closure [coll]
+  (letfn [(add-node [partRslt curnode]
+                    ;; not used here, as map can not augment cur list.
+                    (map (fn [this]
+                              (if (= (first this) (last curnode))
+                                (cons (first curnode) this)
+                                (if (= (last this) (first curnode))
+                                  (conj this (first curnode))
+                                  this)))))
+          (update-or-add [closure curnode]
+                         ;; from existing closure, maps to merged closure, if not aug existing entry, append to end.
+                         (loop [closure closure mergedclosure [] updated false]  ;; curnode aug an existing entry?
+                           (if (empty? closure)
+                             (if updated
+                               mergedclosure
+                               (conj mergedclosure curnode))  ;; append curnode to the merged closure
+                             (let [[hdst hded] (first closure)
+                                   [st ed] curnode]
+                               (if (= hded st)
+                                 (recur (next closure) (conj mergedclosure (conj (vec (first closure)) ed)) true)
+                                 (if (= hdst ed)
+                                   (recur (next closure) (conj mergedclosure  (cons st (first closure))) true)
+                                   (recur (next closure) (conj mergedclosure (first closure)) updated)))))))
+          (powerset [coll]
+                    ;; coll is [1 2 3 4]
+                    (loop [coll coll rslt []]
+                      (let [hd (first coll) bd (rest coll)]
+                        (if (empty? bd)
+                          rslt
+                          (let [pairs (map (fn [e] [hd e]) bd)]
+                            (recur bd (into rslt pairs)))))))]
+          (let [mergedclosure (reduce update-or-add [] coll)]
+            (loop [coll mergedclosure result #{}]
+              (if (empty? coll)
+                result
+                (recur (next coll) (into result (powerset (first coll)))))))))
+                          
+(let [divides #{[8 4] [9 3] [4 2] [27 9]}]
+  (= (__ divides) #{[4 2] [8 4] [8 2] [9 3] [27 9] [27 3]}))
 
+(let [more-legs
+      #{["cat" "man"] ["man" "snake"] ["spider" "cat"]}]
+  (= (__ more-legs)
+     #{["cat" "man"] ["cat" "snake"] ["man" "snake"]
+       ["spider" "cat"] ["spider" "man"] ["spider" "snake"]}))
+    
 
 
 

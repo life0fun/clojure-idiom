@@ -1,4 +1,4 @@
-(ns wordcount.wordcount
+(ns wordcount.core
   (:import [backtype.storm StormSubmitter LocalCluster])
   (:use [backtype.storm clojure config])
   (:use [clojure.string])
@@ -7,6 +7,8 @@
 ;;
 ;; (defspout name output-declare option-map % impl)
 ;; (defbolt name output-declare option-map % impl)
+;; spout spec impl body takes topl conf, topl context, and spoutoutputcollector.
+;; bolt spec impl execute method [tuple collector]
 ;; the input map is for each bolt is defined in topology.
 ;;
 ;; topology map {"comp_id" (spout-spec (spec-impl)) }
@@ -24,11 +26,11 @@
 ;;
 (defspout sentence-spout-parameterized ["word"] {:params [sentences] :prepare false}
   [collector]
-  (Thread/sleep 500)
-  (emit-spout! collector [(rand-nth sentences)]))
+    (Thread/sleep 500)
+    (emit-spout! collector [(rand-nth sentences)]))
 
 ;;
-;; random emit sentence.
+;; defspout ret an ISpout object that impls nextTuple method.
 ;;
 (defspout sentence-spout ["logevent"]
   [conf context collector]
@@ -46,7 +48,7 @@
                "11227 [Thread-32] INFO  backtype.storm.daemon.task  - Emitting: 3 default [\"over\" 17]"
                "11227 [Thread-40] INFO  backtype.storm.daemon.task  - Emitting: 3 default [\"door\" 17]"
              ]]
-    (spout
+    (spout      ;; ret an ISpout object that impls nextTuple and ack method 
       (nextTuple []
         (Thread/sleep 100)
         (emit-spout! collector [(rand-nth logs)]))
@@ -59,7 +61,8 @@
 ;;
 ;; filter sentence based on keyword, output stream defined with a vector of fields.
 ;;
-(defbolt filter-sentence ["sentence"] {:params [keywords] :prepare false}  ;; output map = a vector of fields
+(defbolt filter-sentence ["sentence"]
+  {:params [keywords] :prepare false}  ;; output map = a vector of fields
   [tuple collector]  ;; default output stream, reduce to a vector of output field rather than a output map.
                      ;; non-prepared bolt, body impl execute(tuple)
   (let [ sentence (.getString tuple 0)  ;; tuple = list<fields> list<values> get value at position i
@@ -79,20 +82,22 @@
 ;; a bolt has many tasks, input stream grping partition streams and dispatch to designated tasks.
 ;; partition streams with grping: shuffle, fields, global, direct
 ;;
-(defbolt split-sentence {"1" ["word"] "2" ["word" "index"]} {:prepare true}
-  [conf context collector]  ; prepared bolt impl takes conf, context, collector
-  (let [counts (atom 0)
-       ]
+(defbolt split-sentence
+    {"1" ["word"] "2" ["word" "index"]} 
+    {:prepare true}
+    [conf context collector]  ; prepared bolt impl takes conf, context, collector
+  (let [counts (atom 0) ]
     (bolt
       (execute [tuple]
-        (let [ nprocessed (swap! counts inc) ]
-          (if (odd? @nprocessed)
-            (do
-                (prn "odd time " @nprocessed)
-                (emit-bolt! collector [w i] :anchor tuple :stream "1"))
-            (do
-                (prn "even time " @nprocessed)
-                (emit-bolt! collector [w i] :anchor tuple :stream "2")))
+        (let [ nprocessed (swap! counts inc)
+               words (.split (.getString tuple 0) " ")]   ;; split tuple's string content
+          (if (odd? nprocessed)
+            (doseq [w words]
+                (prn "odd time " nprocessed)
+                (emit-bolt! collector [w] :anchor tuple :stream "1"))
+            (doseq [w words]
+                (prn "even time " nprocessed)
+                (emit-bolt! collector [w] :anchor tuple :stream "2")))
         (ack! collector tuple))))))
 
 ;;
@@ -111,28 +116,25 @@
        (let [word (.getString tuple 0)]
          (swap! counts (partial merge-with +) {word 1})  ; merge map zip map set/union  conj collection.
          (emit-bolt! collector [word (@counts word)] :anchor tuple)
-         (ack! collector tuple)
-         )))))
+         (ack! collector tuple))))))
 
 ;;
 ;; tuple(list<fields> list<values>)
 ;;
 (defbolt combiner ["word" "count"] {:prepare true}
   [conf context collector]
-  (let [counts (atom {})
-       ]
+  (let [counts (atom {})]
     (bolt
       (execute [tuple]
         (let [ word (.getString tuple 0)   ;; first value, word
-               count (.getLong tuple 1)    ;; second value, count
-             ]
+               count (.getLong tuple 1)]    ;; second value, count
           (prn "combiner tuple <<<"  tuple)
           (prn "word " word)
           (prn "count " count)
         )))))
 
 ;;
-;; topology is a map of component id and its spec
+;; topology is a map of component id [1 2 3 4] and its spec
 ;; spout-spec = spec impl and parallelism. output stream map defined inside spout-spec
 ;; bolt-spec = input-map and spec impl.
 ;; bolt-spec input-map = { [comp-id stream-id] :stream-grp [comp-id stream-id] ["field1" "field2"]

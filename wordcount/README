@@ -1,13 +1,24 @@
-# wordcount
+# lein dependency management
 
-FIXME: write description
+lein is the npm for clojure.
 
-## Usage
+    lein version
+    lein new my-app
+    cd my-app
+    vi project.clj
 
-FIXME: write
+dependency management by :dependencies key in a vector.
 
-## License
+    lein deps
 
-Copyright (C) 2013 FIXME
+causes dependency packages to be download to global ~/.m2/repository/
+and the copied to your lib folder.
+dev dependencies into lib/dev folder.
 
-Distributed under the Eclipse Public License, the same as Clojure.
+## build
+     lein clean
+     lein deps
+     lein compile
+     lein run -m package.name.class
+    
+     
