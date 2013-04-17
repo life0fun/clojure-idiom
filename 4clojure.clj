@@ -2,9 +2,9 @@
 ;; 4clojure problem solving  http://www.4clojure.com/
 ;;
 ;; Your Ranking
-;;Username: life0fun
-;;Rank: 479 out of 13793
-;;Problems Solved: 103 [ 9 hard] 
+;; Username: life0fun
+;; Rank: 306 out of 13815
+;; Problems Solved: 119
 ;;
 ;; find indices of a val in a vector
 ;; for string array, use string array's .indexOf method.
@@ -112,6 +112,61 @@
 (fn [origfn]
   (fn [ & args ]
     (apply origfn (reverse args))))
+
+;;
+;; re-impl map with recursion
+;; pattern: build list from leaf where empty [] reted for parents to conj.
+;; lazy-seq cons head results to the result of self recursion on the rest .
+;;
+(fn mymap [f xs] 
+  (if (empty? xs)
+    []
+   (lazy-seq (cons (f (first xs)) (mymap f (rest xs))))))
+
+(= [3 4 5 6 7]
+   (__ inc [2 3 4 5 6]))
+
+;;
+;; Infix Calulator
+;; first pass transform by consolidate * /, then left to right cal.
+;;
+(fn [ & infix]
+  (letfn [ (rm-timediv [infix]
+                     (loop [ infix infix operator [] operand []]
+                       (let [hd (first infix) hdtype (type hd)]
+                         (if (nil? hd)
+                           [operator operand]
+                           (if (= hdtype java.lang.Integer)
+                             (recur (next infix) operator (conj operand hd))
+                             (if (or (= hdtype clojure.core$_STAR_)
+                                     (= hdtype clojure.core$_SLASH_))
+                               (recur (next (next infix)) operator (conj (vec (butlast operand)) (hd (last operand) (first (next infix)))))
+                               (recur (next infix) (conj (vec operator) hd) operand)))))))]
+    (let [[operator operand] (rm-timediv infix)]
+      (prn operator operand)
+      (loop [op operator opd (rest operand) tot (first operand) ]
+        (if (empty? op)
+          tot
+          (recur (rest op) (rest opd) ((first op) tot (first opd))))))))
+                                        
+
+;; 
+(defn tree [tree]
+  (letfn [(btree [root]
+                 (let [ t (type root) ]
+                   (if (or (= t clojure.lang.Keyword)
+                           (= t java.lang.Integer)
+                           (= t java.lang.Long)
+                           (= t java.lang.Boolean)
+                           (= t nil))
+                     true
+                     (if (and (= 3 (count root))
+                              (btree (first root))
+                              (btree (second root))
+                              (btree (nth root 2)))
+                       true
+                       false))))
+                          
 
 ;;
 ;; split a seq by type, reduce to a map and get the value.
