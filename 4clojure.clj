@@ -3,8 +3,6 @@
 ;;
 ;; Your Ranking
 ;; Username: life0fun
-;; Rank: 306 out of 13815
-;; Problems Solved: 119
 ;;
 ;; find indices of a val in a vector
 ;; for string array, use string array's .indexOf method.
@@ -151,6 +149,7 @@
                                         
 
 ;; 
+;; valid whether a tree is btree
 (defn tree [tree]
   (letfn [(btree [root]
                  (let [ t (type root) ]
@@ -166,8 +165,34 @@
                               (btree (nth root 2)))
                        true
                        false))))
-                          
-
+                 
+          
+;;
+;; symmetry
+;; if the left half of the tree is the mirror image of the right half of the tree
+;;
+(fn symmetry [xs]
+  (letfn [(seqns? [xs]
+                (if (or (= (type xs) clojure.lang.PersistentVector)
+                        (= (type xs) clojure.lang.PersistentList))
+                  true
+                  false))
+          (mirror [xs]
+                  ;; ret a seq of mirror-ed btree
+                  (if-not (seqns? xs)
+                    xs
+                    (vector (first xs) (mirror (last xs)) (mirror (second xs)))))]
+    (let [root (first xs) lc (second xs) rc (last xs)]
+        (if (= (mirror (second xs))
+               (last xs))
+          true
+          false))))
+ 
+(= (__ [1 [2 nil [3 [4 [5 nil nil] [6 nil nil]] nil]]
+          [2 [3 nil [4 [6 nil nil] [5 nil nil]]] nil]])
+   true)
+  
+  
 ;;
 ;; split a seq by type, reduce to a map and get the value.
 ;; (= (set (__ [1 :a 2 :b 3 :c])) #{[1 2 3] [:a :b :c]})
