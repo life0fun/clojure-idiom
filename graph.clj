@@ -12,7 +12,6 @@
 (defn dbg [msg]
   (prn msg))
 
-
 ;; Clojure has several ways of busting recursion
 ;;   explicit tail calls with recur. (they must be truely tail calls so this wont work)
 ;;   Lazy sequences as mentioned above.
@@ -53,6 +52,38 @@
 ;; iterate to gen a seq of pairs, use range to gen list of singles.
 (defn fibo []
   (map first (iterate (fn [[a b]] [b (+ a b)]) [0N 1N])))
+
+;; memoize for bottom-up recursion.
+;; you can see fib from inside memoized fn b/c fib is defed var.
+;; if fib is a let binding, (let [fib (memoize (fn ...))]) you can not do this.
+;; You need (with-local-vars to create thread-local var bindings and .bindRoot before leave with context.
+;; or do Y-combinator to pass recursion fn in. (let [fib (fn [mem-fib x])])
+(def fib (memoize (fn [x]
+                    (if (< x 2)
+                      x
+                      (+ (fib (- x 1))
+                         (fib (- x 2)))))))
+
+;; true memoize fn that can recursively call itself.
+;; inspired from http://stackoverflow.com/questions/3906831/how-do-i-generate-memoized-recursive-functions-in-clojure
+(defmacro memoize-fn
+  "Produces a memoized anonymous function that can recursively call itself."
+  [fn-name & fn-args]
+    `(with-local-vars
+      [~fn-name (memoize (fn ~@fn-args))]
+      (.bindRoot ~fn-name @~fn-name)
+    @~fn-name))
+
+;;
+;; fib defed by co-recursion 
+;; recursion: break from top down to smaller bottom 
+;; co-recursion: use data gened by fn, bit by bit, to produce further bits of data.
+;; so re-cursively def fib as [0 1 f]
+;; fib                0        1      f
+;; (rest fib)         1        f
+;; (+ fib (rest fib)) f
+
+(def fib (lazy-cat [0 1] (map + fib (rest fib))))
 
 ;; factorial with recur
 (defn fact [x]
@@ -140,7 +171,7 @@
                   ;; stepHd process head and ret a lazy list of node reachable from head.
                   (when-let [hd (peek q)]
                     (lazy-seq
-                      (cons hd 
+                      (cons hd
                             (let [hdnb (remove #(contains? discovered %) (nbmap hd))]
                               (stepHd nbmap (into (pop q) hdnb) (reduce #(conj %1 %2) discovered hdnb)))))))
           (odd-degrees [edges]
@@ -189,6 +220,35 @@
             ;;(recur graph (pop stack) discovered (conj processed curnode) (conj partRslt curnode)) ))))))
             (recur graph (conj stack child) (conj discovered child) processed (conj partRslt [curnode child]))  ;; path is from curnode to child
             (recur graph (pop stack) discovered (conj processed curnode) partRslt )))))))
+
+
+;;
+;; bfs with co-recursion. This is space search algorithm. 
+;; From head, recursively search out the entire space.
+;; use the data gened by fn, produce further data.
+;; use the available data, head, produce further data, header's children.
+;; ret a seq formed by cons hd into the seq formed by further data from processing of head.
+;;
+(defstruct tree :val :left :right)
+(def my-tree
+  (struct tree 1
+    (struct tree 2)
+    (struct tree 3
+      (struct tree 4
+        (struct tree 66))
+      (struct tree 5))))
+
+
+(defn bftrav [& trees]
+  (when trees
+    (lazy-cat trees
+      (->> trees
+        (mapcat #(vector (:left %) (:right%)))
+        (filter identity)    ;; filter identity remov nil.
+        (apply bftrav)))))
+
+(bftrav my-tree)
+
 
 ;; take a nest collection, and a sub collection of it that sum to certain number. maintain nested structure.
 ;; For/loop comprehents flatten list. Nested collection, need explict loop or reduce and carry partial result along.

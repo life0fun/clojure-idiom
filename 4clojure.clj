@@ -25,8 +25,8 @@
 ;; compress a sequence
 ;;
 (= (apply str (__ "Leeeeeerrroyyy")) "Leroy")
-(= (__ [1 1 2 3 3 2 2 3]) '(1 2 3 2 3)')
-(= (__ [[1 2] [1 2] [3 4] [1 2]]) '([1 2] [3 4] [1 2])')
+(= (__ [1 1 2 3 3 2 2 3]) '(1 2 3 2 3))
+(= (__ [[1 2] [1 2] [3 4] [1 2]]) '([1 2] [3 4] [1 2]))
 
 (fn [l]
   (loop [x l ret []]
@@ -698,9 +698,10 @@
 ;; many ways for recursion, recur fn, recur loop, or lazy-seq con stepHd.
 ;;  - recur loop, (loop [lst l curk nil partRslt {} ] (recur ...))
 ;;  - fn self recursion with recur, (stepHd [xs prev partialResult] ... (recur ...)
-;;  - stepHd transform list based on head with loop (let [curpron (stepHd xs)] (lazy-seq (cons curpron (lazy-pron curpron))) )))
+;;  - stepHd co-recursion. ret a seq formed by processing hd, recursion on the further data gened by head. 
+;;      loop (let [curpron (stepHd xs)] (lazy-seq (cons curpron (lazy-seq (stepHd curpron)))) )))
 ;;  
-(fn intrapol 
+(fn intrapol
   ([pred v coll]
     (if (or (empty? coll)
             (< (count (take 2 coll)) 2))
@@ -714,7 +715,7 @@
         (if (pred hd nxthd)
           (lazy-seq (cons hd (cons v (intrapol pred v (rest coll) partRslt))))  ;; cant use self recur call, as recur not in tail
           (lazy-seq (cons hd (intrapol pred v (rest coll) partRslt))))))))
-  
+
 (= [0 1 :same 1 2 3 :same 5 8 13 :same 21]
    (take 12 (->> [0 1]
                  (iterate (fn [[a b]] [b (+ a b)]))
@@ -753,7 +754,6 @@
           (recur body curk (update-in partRslt [curk] (fnil conj []) hd)))))))
 
 (= {:a [1 2 3], :b [], :c [4]} (__ [:a 1 2 3 :b :c 4]))
-
 
 ;;
 ;; oscillating iterate: a function that takes an initial value and a variable number of functions.
@@ -1046,7 +1046,94 @@
     
 
 
+;;
+;; subset sum and subset max(knapsack).
+;; 1. bottom-up, what is the solution with just 1 item at bottom, and build-up to 2 items, and nth items.
+;; 1.When iterate to nth item, fn return the solution with nth item based on the solution of previous [0..n-1] ROW. 
+;;   ROW are items 0, 1, ..., n-1, tab[i] is the solution of item subset[0..i]. 
+;;   tab[i, val] is the solution of the subset items from item pool[0..i], with optimal(sum, max) val = val. 
+;;   e.g tab[2, 5] of set [1 2 3 7] can have subset val [2 3]. tab[4, 10] of V[10 40 30 50] W[5 4 6 3] has max v=90
+;;   incl/excl:   tab[idx, v] = or { tab[idx-1, v], tab[idx-1, v-vi]}       ;; subset-sum, cell store T/F, or items.
+;;                tab[idx, w] = max{ tab[idx-1, w], tab[idx-1, W-wi] + vi } ;; cell store max values of items.
+;;                tab[val] = min [ for-each coin Vi {tab[val-Vi] + 1} ]     ;; coin types/items is fixed len list.
+;;
+;; I varies of item idx[0..len(item)] from bottom up, J varies in value space[0..max]
+;; Use memoize to tab the sol during bottom-up.
+;; use with-local-vars to maek the recursive function see its own memoized bindings
+;;
+(fn subsetsum [ & sets ]
+  (letfn [(subsetsum-with-local-vars [ ]
+                         (with-local-vars 
+                           [subsetsum-mem (memoize (fn [itemsvec idx sumval]
+                                 ;; items in vec[0..n]
+                                 ;; bottom, what happened with only 1 item
+                                 (if (= idx 0)
+                                   (if (= sumval (nth itemsvec idx))  ;; bottom, ret true if found, false if not.
+                                     true
+                                     false)
+                                   ;; not bottom, first check direct hit before incl/excl recursion.
+                                   (if (>= idx (count itemsvec))
+                                     false    ;; idx out of bound
+                                     (let [curval (nth itemsvec idx)]
+                                       (if (= sumval curval)
+                                         true
+                                         (if (> sumval curval)  ;; incl only when val > curval
+                                           (or (subsetsum-mem itemsvec (dec idx) (- sumval curval))
+                                               (subsetsum-mem itemsvec (dec idx) sumval))
+                                           (subsetsum-mem itemsvec (dec idx) sumval))))))))]
+                           (.bindRoot subsetsum-mem @subsetsum-mem)
+                           @subsetsum-mem))  ;; ret memoize fn
+          ;; Y-combinator version that pass recursion fn into to itself.
+          ;; all the trouble to make the recursive function see its own memoized bindings
+          (subsetsum-ycombinator []  ;; DP take a memoized fn as first arg
+                                 (let [DP (fn [mem-dp itemsvec idx sumval]
+                                            (let [DP (fn [itemsvec idx sumval]  
+                                                       ;; redef DP, so pass down memoized dp
+                                                       (mem-dp mem-dp itemsvec idx sumval))]
+                                              (if (= idx 0)
+                                                (if (= sumval (nth itemsvec idx))  ;; bottom, ret true if found, false if not.
+                                                  true
+                                                  false)
+                                                ;; not bottom, first check direct hit before incl/excl recursion.
+                                                (if (>= idx (count itemsvec))
+                                                  false    ;; idx out of bound
+                                                  (let [curval (nth itemsvec idx)]
+                                                    (if (= sumval curval)
+                                                      true
+                                                      (if (> sumval curval)  ;; incl only when val > curval
+                                                        (or (DP itemsvec (dec idx) (- sumval curval))
+                                                            (DP itemsvec (dec idx) sumval))
+                                                        (DP itemsvec (dec idx) sumval))))))))
+                                       mem-dp (memoize DP)]
+                                   (partial mem-dp mem-dp)))
+                                   
+          (has-subsetsum-vars [itemsvec sumval]  ;; whether this set has subset sum to sumval
+                         ((subsetsum-with-local-vars) itemsvec (dec (count itemsvec)) sumval))
+          (has-subsetsum-yb [itemsvec sumval]  ;; whether this set has subset sum to sumval
+                         ((subsetsum-ycombinator) itemsvec (dec (count itemsvec)) sumval))
+          (max-value [ sets ]
+                     (apply max (map #(apply + %) (map (fn [e] (map #(Math/abs %) e)) sets))))
+          (same-val [vs]  ;; split vec into two sublist, whether eqs first one, then count
+                    (and (= (count vs) (count (first ((juxt filter remove) #(= (first vs) %) vs))))
+                         (= true (first vs))))]
+      (loop [v (- 0 (max-value sets))]
+        (if (> v (max-value sets))
+          false
+          (if (same-val (for [s sets] (has-subsetsum-yb (vec s) v)))
+            true
+            (recur (inc v)))))))
 
+(subsetsum  #{-1 1 99} 
+             #{-2 2 888}
+             #{-3 3 7777})
 
-    
-    
+(= false (subsetsum #{1 -3 51 9} 
+             #{0} 
+             #{9 2 81 33}))
+
+(= true  (subsetsum #{1 3 5}
+             #{9 11 4}
+             #{-3 12 3}
+             #{-3 4 -2 10}))
+
+                                    
