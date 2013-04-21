@@ -16,8 +16,7 @@
   (:require [clojure.string :as str])
   (:require [clojure.java.jdbc :as sql])
   (:import [java.io FileReader]
-           [java.util Map Map$Entry List ArrayList Collection Iterator HashMap]
-           )
+           [java.util Map Map$Entry List ArrayList Collection Iterator HashMap])
   (:use [cljaction-test.util])   ;; use util namespace without fully qualified name.
   (:use [cljaction-test.chapter14-worker])  ;; use chapter14_worker
   ;;(:use [cljaction-test.chapter14-worker-usage])

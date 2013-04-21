@@ -159,7 +159,7 @@
                  (let [bi-edges (into col (map (fn [e] [(second e) (first e)]) col))]
                    (reduce (fn [ret e]
                              (update-in ret [(first e)] (fnil conj #{}) (last e))) {} bi-edges)))
-          
+
           (bfs [nbmap q discovered]  
                   ;; q is PersistentQueue, conj to discovered set when we find a new node, until q is empty.
                   (let [hd (peek q)   ;;  
@@ -224,6 +224,7 @@
 
 ;;
 ;; bfs with co-recursion. This is space search algorithm. 
+;; bfs needs a queue rather than recursion. With co-recursion, queue is implicit by lazy-cons head to the result.
 ;; From head, recursively search out the entire space.
 ;; use the data gened by fn, produce further data.
 ;; use the available data, head, produce further data, header's children.
@@ -334,3 +335,26 @@
 
 (prn "dfs 2 " (dfs #{[:a :b] [:b :c] [:c :d] [:x :y] [:d :a] [:b :e] [:x :a]}))
 
+
+;; leveinshtein edit distance
+;; use memoize to for dynamic programming.
+;;
+(def dist (memoize (fn [pred index]
+  (let [[i j] index]
+  (cond
+    (zero? (min i j)) (max i j)
+    (pred index) (dist pred [(dec i) (dec j)])
+    :else (inc (min
+                 (dist pred [(dec i) j])
+                 (dist pred [i (dec j)])
+                 (dist pred [(dec i) (dec j)]))))))))
+
+(defn levenshtein-distance
+  (let [pred (fn [index]
+                (let [[i j] index]
+                  (= (get source (dec i)) (get target (dec j)))))]
+    (->> (for [j (range (count target))
+               i (range (count source))]
+           [i j])
+      (map (partial dist pred))
+      last)))

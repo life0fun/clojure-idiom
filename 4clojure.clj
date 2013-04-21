@@ -1,8 +1,9 @@
 ;; 
 ;; 4clojure problem solving  http://www.4clojure.com/
 ;;
-;; Your Ranking
 ;; Username: life0fun
+;; Rank: 175 out of 13915
+;; Problems Solved: 133
 ;;
 ;; find indices of a val in a vector
 ;; for string array, use string array's .indexOf method.
@@ -1050,7 +1051,7 @@
 ;; subset sum and subset max(knapsack).
 ;; 1. bottom-up, what is the solution with just 1 item at bottom, and build-up to 2 items, and nth items.
 ;; 1.When iterate to nth item, fn return the solution with nth item based on the solution of previous [0..n-1] ROW. 
-;;   ROW are items 0, 1, ..., n-1, tab[i] is the solution of item subset[0..i]. 
+;;   ROW are items 0, 1, ..., n-1, tab[i] is the solution of item subset[0..i]. recursion to ROW+1 based on ROW. 
 ;;   tab[i, val] is the solution of the subset items from item pool[0..i], with optimal(sum, max) val = val. 
 ;;   e.g tab[2, 5] of set [1 2 3 7] can have subset val [2 3]. tab[4, 10] of V[10 40 30 50] W[5 4 6 3] has max v=90
 ;;   incl/excl:   tab[idx, v] = or { tab[idx-1, v], tab[idx-1, v-vi]}       ;; subset-sum, cell store T/F, or items.
@@ -1063,7 +1064,7 @@
 ;;
 (fn subsetsum [ & sets ]
   (letfn [(subsetsum-with-local-vars [ ]
-                         (with-local-vars 
+                         (with-local-vars   ;; with-local-var create local dynamic vars.
                            [subsetsum-mem (memoize (fn [itemsvec idx sumval]
                                  ;; items in vec[0..n]
                                  ;; bottom, what happened with only 1 item
