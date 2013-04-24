@@ -99,7 +99,7 @@
 (ns ns-type-protocol-records
   (:require clojure.string))
 
-;; defrecord creates a TYPE.  (defrecord name [fields*] options* specs*)
+;; defrecord creates a JVM class.  (defrecord name [fields*] options* specs*)
 ;; record types are concrete classes
 ;; look up keys in records is more quickly than the equivalent array map or hash map 
 ;; less mem than boxed objects(Byte, Integer, Long)
@@ -110,8 +110,9 @@
     (seq [this]
       (lazy-seq (cons i (seq this)))))
 
+;; this create a JVM class and import to current ns implicitly.
 (defrecord TreeNode [val l r])
-(TreeNode. 5 nil nil)
+(TreeNode. 5 nil nil)   ;; TreeNode now is JVS class and use new Klz to instantiate.
 
 (defn xconj [t v]
   (cond
@@ -127,7 +128,7 @@
 (xseq sample-tree)
 
 ;;
-;; protocol, Interface
+;; protocol, Interface, a set of fn signatures.
 ;; the first parameter to a protocol function corresponds to the target object, object.if-method
 ;;
 (defprotocol FIXO
@@ -137,8 +138,10 @@
 
 ;;
 ;; Protocol is clojure style Mixin that impls polymorphism
-;; Protocol extends to class/type/IF with single dispatch of first arg, and extendible multiple dispatches.
 ;; Protocols are implemented using extend forms: extend, extend-type, extend-protocol.
+;; extend-type : to impl inside JVM type.
+;; extend class-name protocol-name mixin-fn-map
+;; Protocol extends to class/type/IF with single dispatch of first arg, and extendible multiple dispatches.
 ;; this is exactly as javascript augment object by adding fns in prototype object chain.
 ;; Types extended to protocols.
 ;; concrete type and protocol can be from 3rd party and we can extend without any adapters, wrappers, monkey patching
@@ -149,10 +152,13 @@
 ;;  Wrapper : class TreeWrapper { private TreeNode, public fixo-push()}
 ;; Protocol enables run-time polymorphism that can integrate 3rd lib easily.
 ;;
+
+;; so we just simply import a JVM type, and start to extend it.
+;; for static compiling java, everything must be done at the time of definition. 
 (extend-type TreeNode    ;; extend-type to impl certain protocol.
   FIXO
-    (fixo-push [node value]
-        (xconj node value)))
+  (fixo-push [node value]
+    (xconj node value)))
 
 (xseq (fixo-push sample-tree 5/2))
 ;;
@@ -160,7 +166,7 @@
 ;;
 (extend-type clojure.lang.IPersistentVector
   FIXO
-    (fixo-push [vector value]
+  (fixo-push [vector value]
         (conj vector value)))
         (fixo-push [2 3 4 5 6] 5/2)
 
@@ -202,7 +208,8 @@
                 (if (:l node)
                   (TreeNode. (:val node) (fixo-pop (:l node)) (:r node)) (:r node)))})
 
-(extend TreeNode FIXO tree-node-fixo)   ;; extend protocol using map.
+;; extend JVM class with a mixin map that contains all fns in protocols.
+(extend TreeNode FIXO tree-node-fixo)   
 
 (xseq (fixo-into (TreeNode. 5 nil nil) [2 4 6 7]))
 

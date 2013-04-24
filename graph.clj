@@ -75,7 +75,10 @@
     @~fn-name))
 
 ;;
-;; fib defed by co-recursion 
+;; fib defed by { "keys": ["ctrl+shift+1"], "command": "move_to_group", "args": { "group": 0 } },
+  { "keys": ["ctrl+shift+2"], "command": "move_to_group", "args": { "group": 1 } },
+  { "keys": ["ctrl+shift+3"], "command": "move_to_group", "args": { "group": 2 } },
+  { "keys": ["ctrl+shift+4"], "command": "move_to_group", "args": { "group": 3 } },co-recursion 
 ;; recursion: break from top down to smaller bottom 
 ;; co-recursion: use data gened by fn, bit by bit, to produce further bits of data.
 ;; so re-cursively def fib as [0 1 f]
@@ -249,6 +252,11 @@
         (apply bftrav)))))
 
 (bftrav my-tree)
+
+;; for binary tree, in order traverse just recursively cons lchild, cur, rchild.
+(defn xseq [tree]
+  (when tree
+    (concat (xseq (:l tree)) [(:val tree)] (xseq (:r t))))) 
 
 
 ;; take a nest collection, and a sub collection of it that sum to certain number. maintain nested structure.

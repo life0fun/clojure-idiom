@@ -2,6 +2,8 @@
 ;; 4clojure problem solving  http://www.4clojure.com/
 ;;
 ;; Username: life0fun
+;; Rank: 171 out of 13992
+;; Problems Solved: 134
 ;; Rank: 175 out of 13915
 ;; Problems Solved: 133
 ;;
@@ -1086,10 +1088,10 @@
                            @subsetsum-mem))  ;; ret memoize fn
           ;; Y-combinator version that pass recursion fn into to itself.
           ;; all the trouble to make the recursive function see its own memoized bindings
-          (subsetsum-ycombinator []  ;; DP take a memoized fn as first arg
-                                 (let [DP (fn [mem-dp itemsvec idx sumval]
-                                            (let [DP (fn [itemsvec idx sumval]  
-                                                       ;; redef DP, so pass down memoized dp
+          (subsetsum-ycombinator []  ;; dp take a memoized fn as first arg
+                                 (let [dp (fn [mem-dp itemsvec idx sumval]
+                                            (let [dp (fn [itemsvec idx sumval]  
+                                                       ;; redef dp, so pass down memoized dp
                                                        (mem-dp mem-dp itemsvec idx sumval))]
                                               (if (= idx 0)
                                                 (if (= sumval (nth itemsvec idx))  ;; bottom, ret true if found, false if not.
@@ -1102,9 +1104,9 @@
                                                     (if (= sumval curval)
                                                       true
                                                       (if (> sumval curval)  ;; incl only when val > curval
-                                                        (or (DP itemsvec (dec idx) (- sumval curval))
-                                                            (DP itemsvec (dec idx) sumval))
-                                                        (DP itemsvec (dec idx) sumval))))))))
+                                                        (or (dp itemsvec (dec idx) (- sumval curval))
+                                                            (dp itemsvec (dec idx) sumval))
+                                                        (dp itemsvec (dec idx) sumval))))))))
                                        mem-dp (memoize DP)]
                                    (partial mem-dp mem-dp)))
                                    
@@ -1136,5 +1138,72 @@
              #{9 11 4}
              #{-3 12 3}
              #{-3 4 -2 10}))
+
+;;
+;; Number Maze find a path between the two using only three possible operations:
+;;  - double, halve, add 2
+;; sol: x + 1 = (2x+2)/2
+;; for odd x, (2x+2), if half is odd and great than dest, add 2. Otherwise, half.
+;; 
+(fn [start end]
+  (letfn [(dist [x end]
+              (if (= end x)
+                0   ;; one step away
+                (if (or (= end (+ x 2))
+                        (= end (* x 2))
+                        (= end (/ x 2)))
+                  1
+                  -1)))
+
+          (add-one [x v]
+            (let [x2 (* 2 x) x22 (+ 2 x2) x1 (/ x22 2)]
+              [x1 (conj v x x2 x22)]))
+  
+          (half-odd [x v end]
+            (let [[x1 v1] (add-one x v)]
+              (half-even x1 v1 end)))
+
+          (half-even [x v end]
+            ;; when counting down, consider the dist to end between 
+            ;; half, add 2 half, ensure we can continue recuring on 
+            ;; half by selecting the even half between half and add 2 half
+            (let [xh (/ x 2) xh1 (/ (+ x 2) 2) d (dist xh end)]
+              (if (= 0 d)
+                [xh (conj v x end) d]
+                (if (= 1 d)
+                  [xh (conj v x xh end) d]
+                  (if (= 0 (dist xh1 end))
+                    [xh1 (conj v x (+ x 2) end)]
+                    (if (> xh end)
+                      (if (even? xh)  ;; recur on the half that is even
+                        (half-even xh (conj v x) end)
+                        (half-even xh1 (conj v x (+ x 2)) end))))))))
+
+          (double-up [x v end]
+            ;; double up or add two, mono increasing
+            (let [dbx (* x 2) x2 (+ x 2) d (dist x end)]
+              (if (= 0 d)
+                [x (conj v x)]
+                (if (= 1 d)
+                  [x (conj v x end)]
+                  (if (< dbx end)
+                    (double-up dbx (conj v x) end)
+                    (if (= 1 (- end x))
+                      [(inc x) (conj (second (add-one x v)) end)]
+                      (double-up x2 (conj v x) end)))))))]
+  (if (<= start end)
+    (count (second (double-up start [] end)))
+    (if (odd? start)
+      (count (second (half-odd start [] end)))
+      (count (second (half-even start [] end)))))))
+
+
+
+
+
+
+
+
+
 
                                     
