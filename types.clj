@@ -17,6 +17,19 @@
 ;;   (:import (java.util.Collection)))
 
 
+; partial and curry
+; Although both partial and curry return functions, a partially applied function is always 
+; ready to run when it’s applied to the remaining arguments. If given insufficient 
+; arguments, a partially applied function will throw an exception complaining about 
+; that. Curried functions return functions that are further curried if they’re applied to insufficient arguments.
+(defn curried-fn [func args-len]
+  (fn [& args]
+    (let [remaining (- args-len (count args))]
+      (if (zero? remaining)
+        (apply func args)
+        (curried-fn (apply partial func args) remaining)))))
+
+
 ;; prototype inheritance
 ;; the flexibility of UDP comes from each map contains a reference to a prototype 
 ;; map used as a parent link to inherited fields.

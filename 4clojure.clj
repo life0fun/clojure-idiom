@@ -4,6 +4,8 @@
 ;; Username: life0fun
 ;; Rank: 171 out of 13992
 ;; Problems Solved: 134
+;; Rank: 162 out of 14099
+;; Problems Solved: 135
 ;; Rank: 175 out of 13915
 ;; Problems Solved: 133
 ;;
@@ -376,6 +378,111 @@
         (take n
           (lazy-seq   ;; lazy-seq is cons head on the recursive self call result
             (cons hd (sieve (- n 1) (filter #(not (zero? (mod % hd))) bd))) ))))))  ;; filter out all head's multipliers
+
+;;
+;; prime sandwich, whether a prime which is also the mean of prev and next prime.
+;; memoize recursion fn.
+;;
+(fn prime-sandwich [p]
+  (let [siftlist-cache {}] ;; cache intermediate dynamic table
+    (letfn [(sieve [n l]   ;; ret a sifted out list without head's multiplies to get prime
+              (let [hd (first l) bd (rest l)]
+                (if (zero? n)    ;; bottom situation, zero n
+                  []             ;; ret empty [] to built-up from bottom to upper parent root. 
+                  (take n (lazy-seq 
+                    (cons hd (sieve (dec n) (filter #(not (zero? (rem % hd))) bd))))))))
+          (prime-idx [primes p]
+            (if-not (some #{p} primes)
+              -1  ;; ret -1
+              ;; find out the index of prime in seq so to get prev and next
+              (loop [start 0 end (dec p)]
+                (let [mid (int (/ (+ start end) 2))]
+                  (if (= p (nth primes mid))
+                    mid
+                    (if (> p (nth primes mid))
+                      (recur (inc mid) end)
+                      (recur start (dec mid))))))))
+
+          (prime? [n]
+            ;; celebrates clojure's java interop, using BigInteger isProbablePrime with 5% certainty
+            (.isProbablePrime (BigInteger/valueOf n) 5)) 
+
+          (siftlist [n]
+            (if (= 2 n)   ;; bottom, build-up with inf list
+              (let [ret (filter #(not (zero? (rem % n))) (iterate inc 2))]
+                (assoc siftlist-cache n ret)
+                ret)
+              (if (contains? siftlist-cache n)
+                (siftlist-cache n)
+                (let [xs (siftlist (dec n))
+                      hd (first xs)
+                      bd (rest xs)
+                      ret (filter #(not (zero? (rem % hd))) bd)]
+                  (assoc siftlist-cache n ret)
+                  ret))))
+
+          (siftlist-yb []
+            (let [dp (fn [mem-dp n]    ;; def dp fn to take memoized boxed dp as first arg
+                        ;; inside recursion body, impl logic without worrying dp tab, unbox memoized fn
+                        (let [dp (fn [n] (mem-dp mem-dp n))]  ;; mem-dp takes 2 args, recursion fn, and args
+                          (if (= 2 n)
+                            (filter #(not (zero? (rem % n))) (iterate inc 2))
+                            (let [xs (dp (dec n))
+                                  hd (first xs)
+                                  bd (rest xs)
+                                  ret (filter #(not (zero? (rem % hd))) bd)]
+                              ret))))
+                  mem-dp (memoize dp)]      ;; mem-dp memoized
+                  (partial mem-dp mem-dp))) ;; pass mem-dp as the second arg to memoized dp
+
+          (primelist [n]
+            (loop [ idx 2 rslt [2]]
+              ;;(let [ sl (siftlist idx) hd (first sl)]
+              (let [ sl ((siftlist-yb) idx) hd (first sl)]  
+                (if (= hd n)
+                  (conj rslt hd)
+                  (if (> hd n)
+                    rslt
+                    (recur (inc idx) (conj rslt hd)))))))]
+    
+    (if (and (> p 2)
+             (even? p))
+      false
+      ; (let [primes (sieve p (iterate inc 2))
+      ;      idx (prime-idx primes p)]
+      ;      (if (< idx 1)
+      ;        false
+      ;        (let [pre (nth primes (dec idx))
+      ;              nxt (nth primes (inc idx))]
+      ;          (if (= p (/ (+ pre nxt) 2))
+      ;            true
+      ;            false)))))))
+
+      ; (let [pl (primelist p) idx (count pl)]
+      ;   (if (or (not= (last pl) p)
+      ;           (<= idx 2))
+      ;     false
+      ;     (let [pre (last (butlast pl)) nxt (first ((siftlist-yb) (inc (count pl))))]
+      ;       (prn pre p nxt)
+      ;       (if (= p (/ (+ pre nxt) 2))
+      ;         true
+      ;         false))))))))
+      (if (or (not (prime? p))
+              (< p 5))
+        false
+        (letfn [(prep [n]
+                  (loop [v (dec n)]
+                    (if (prime? v)
+                      v
+                      (recur (dec v)))))
+                (nxtp [n]
+                  (loop [v (inc n)]
+                    (if (prime? v)
+                      v
+                      (recur (inc v)))))]
+          (if (= p (/ (+ (prep p) (nxtp p)) 2))
+            true
+            false)))) )))
 
 ;;
 ;; merge-with
@@ -1085,44 +1192,48 @@
                                                (subsetsum-mem itemsvec (dec idx) sumval))
                                            (subsetsum-mem itemsvec (dec idx) sumval))))))))]
                            (.bindRoot subsetsum-mem @subsetsum-mem)
-                           @subsetsum-mem))  ;; ret memoize fn
+                           @subsetsum-mem)) ;; ret memoize fn
           ;; Y-combinator version that pass recursion fn into to itself.
           ;; all the trouble to make the recursive function see its own memoized bindings
           (subsetsum-ycombinator []  ;; dp take a memoized fn as first arg
-                                 (let [dp (fn [mem-dp itemsvec idx sumval]
-                                            (let [dp (fn [itemsvec idx sumval]  
-                                                       ;; redef dp, so pass down memoized dp
-                                                       (mem-dp mem-dp itemsvec idx sumval))]
-                                              (if (= idx 0)
-                                                (if (= sumval (nth itemsvec idx))  ;; bottom, ret true if found, false if not.
-                                                  true
-                                                  false)
-                                                ;; not bottom, first check direct hit before incl/excl recursion.
-                                                (if (>= idx (count itemsvec))
-                                                  false    ;; idx out of bound
-                                                  (let [curval (nth itemsvec idx)]
-                                                    (if (= sumval curval)
-                                                      true
-                                                      (if (> sumval curval)  ;; incl only when val > curval
-                                                        (or (dp itemsvec (dec idx) (- sumval curval))
-                                                            (dp itemsvec (dec idx) sumval))
-                                                        (dp itemsvec (dec idx) sumval))))))))
-                                       mem-dp (memoize DP)]
-                                   (partial mem-dp mem-dp)))
-                                   
+             (let [dp (fn [mem-dp itemsvec idx sumval]
+                        (let [dp (fn [itemsvec idx sumval]  
+                                   ;; redef dp, so pass down memoized dp
+                                   (mem-dp mem-dp itemsvec idx sumval))]
+                          (if (= idx 0)
+                            (if (= sumval (nth itemsvec idx))  ;; bottom, ret true if found, false if not.
+                              true
+                              false)
+                            ;; not bottom, first check direct hit before incl/excl recursion.
+                            (if (>= idx (count itemsvec))
+                              false    ;; idx out of bound
+                              (let [curval (nth itemsvec idx)]
+                                (if (= sumval curval)
+                                  true
+                                  (if (> sumval curval)  ;; incl only when val > curval
+                                    (or (dp itemsvec (dec idx) (- sumval curval))
+                                        (dp itemsvec (dec idx) sumval))
+                                    (dp itemsvec (dec idx) sumval))))))))
+                   mem-dp (memoize dp)]
+               (partial mem-dp mem-dp)))
+               
           (has-subsetsum-vars [itemsvec sumval]  ;; whether this set has subset sum to sumval
-                         ((subsetsum-with-local-vars) itemsvec (dec (count itemsvec)) sumval))
-          (has-subsetsum-yb [itemsvec sumval]  ;; whether this set has subset sum to sumval
-                         ((subsetsum-ycombinator) itemsvec (dec (count itemsvec)) sumval))
+            ((subsetsum-with-local-vars) itemsvec (dec (count itemsvec)) sumval))
+          
+          (has-subsetsum-yb [itemsvec sumval]  
+            ; whether this set has subset sum to sumval
+            ((subsetsum-ycombinator) itemsvec (dec (count itemsvec)) sumval))
           (max-value [ sets ]
-                     (apply max (map #(apply + %) (map (fn [e] (map #(Math/abs %) e)) sets))))
-          (same-val [vs]  ;; split vec into two sublist, whether eqs first one, then count
-                    (and (= (count vs) (count (first ((juxt filter remove) #(= (first vs) %) vs))))
-                         (= true (first vs))))]
+            (apply max (map #(apply + %) (map (fn [e] (map #(Math/abs %) e)) sets))))
+   
+          (all-true [vs]
+            (let [hd (first vs)]
+              (and (= hd true) (every? #(= hd %) vs))))]
+
       (loop [v (- 0 (max-value sets))]
         (if (> v (max-value sets))
           false
-          (if (same-val (for [s sets] (has-subsetsum-yb (vec s) v)))
+          (if (all-true (for [s sets] (has-subsetsum-yb (vec s) v)))
             true
             (recur (inc v)))))))
 
@@ -1163,7 +1274,7 @@
             (let [[x1 v1] (add-one x v)]
               (half-even x1 v1 end)))
 
-          (half-even [x v end]
+          yyyyy-even [x v end]
             ;; when counting down, consider the dist to end between 
             ;; half, add 2 half, ensure we can continue recuring on 
             ;; half by selecting the even half between half and add 2 half
@@ -1198,8 +1309,15 @@
       (count (second (half-even start [] end)))))))
 
 
+;;
+;; clojure quine
+;; refs to wiki for java version 
+;; The idea for the program is that there are two copies of the same lambda expression. 
+;; The first is the program and the second is data
+;;
+((fn [x] (list x (list (quote quote) x))) (quote (fn [x] (list x (list (quote quote) x)))))
 
-
+(fn [] (list (quote (fn [] (list (quote quote))))))
 
 
 

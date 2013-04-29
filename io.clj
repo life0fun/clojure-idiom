@@ -1,27 +1,53 @@
-;; clojure io
-;; (load-file "io.clj")
+; clojure io
+; (load-file "io.clj")
 
-;; when defining ns, include only the references that are used.
-;;:exclude, :only, :as, :refer-clojure, :import, :use, :load, and :require.
-;; ;use naked could corrupt the namespace.  (:use :only)
-;; :import working with java deftype defrecord
-;; :refer
-;; (ns my-ns
-;;   (:refer-clojure :exclude [defstruct])
-;;   (:use (clojure set xml))  ;; use other namespace without namespace qualification.
-;;   (:use [clojure.java.io])
-;;   (:use [clojure.test :only (are is)])
-;;   (:require (clojure [zip :as z]))
-;;   (:import (java.util.Collection)))
+; when defining ns, include only the references that are used.
+;:exclude, :only, :as, :refer-clojure, :import, :use, :load, and :require.
+; ;use naked could corrupt the namespace.  (:use :only)
+; :import working with java deftype defrecord
+; :refer
+; (ns my-ns
+;   (:refer-clojure :exclude [defstruct])
+;   (:use (clojure set xml))  ;; use other namespace without namespace qualification.
+;   (:use [clojure.java.io])
+;   (:use [clojure.contrib.io])  ; (use 'clojure.contrib.io)
+;   (:use [clojure.test :only (are is)])
+;   (:require (clojure [zip :as z]))
+;   (:import (java.util.Collection)))
 
 
-;; get the current directory
+; get the current directory
 (System/getProperty "user.dir")
 
 (def filename "/Users/e51141/macsrc/clj/io.clj")
 
-;; slurp a file into mem
+; slurp a file into mem
 (slurp "/Users/e51141/macsrc/clj/io.clj")
+(read-lines "/Users/e51141/macsrc/clj/myclj/io.clj")
+
+(defn parse-line [line]
+  (let [tokens (.split (.toLowerCase line) " ")]
+    (map #(vector % 1) tokens)))
+
+(defn sum [[k v]]
+  {k (apply + v)})
+
+(defn reduce-parsed-lines [collected-values]
+  (apply merge (map sum collected-values)))
+
+(defn combine [mapped]
+  (->> (apply concat mapped)
+       (group-by first)
+       (map (fn [[k v]]
+              {k (map second v)}))
+       (apply merge-with conj)))
+
+(defn word-frequency [filename]
+  (->> (read-lines filename)
+       (map parse-line)
+       (combine)
+       (reduce-parsed-lines)))
+
 
 ;; read a file line by line
 (with-open [rdr (reader filename)]
@@ -74,3 +100,26 @@
 
 (def conn (socket "irc.freenode.net" 6667))
 (println (.readLine (:in conn)))
+
+
+; parsing logs
+(defn request-seq [filename]
+  (->> (read-lines filename)
+       (drop 2)               ; drop head 2 lines
+       (lazy-request-seq)))
+
+; cons the result of head (next-log-record hd) to result seq of the rest 
+(defn lazy-request-seq [log-lines]
+  (lazy-seq
+    (let [record (next-log-record log-lines)]
+      (if (empty? record)
+        nil
+        (cons (remove empty? record)
+              (lazy-request-seq (drop (count record) log-lines)))))))
+
+(defn next-log-record [log-lines]
+  (let [head (first log-lines)
+        body (take-while (complement record-start?) (rest log-lines))]
+    (remove nil? (conj body head))))
+
+

@@ -4,6 +4,52 @@
 (ns ns-ref-atom
   (:require clojure.string))
 
+
+; a stub ret a canned val predefined.
+; a mock records the fact that it was called with a specific set of args so we can verify api is called properly later from mock log.
+
+; dynamic binding for test driven
+; fns are dynamic vars, you can bind it with stub or mock values, elegant.
+(defn cal [x y] (prn "real cal " x y) [x y])
+(cal x)
+(binding [cal (constantly ["mock-val1" "mock-val2"])] (cal "berkeley" "ucla"))
+
+; stub take a list of pairs of [fn-name mock-form] and dynamic binding mock to fn-name.
+(defmacro stubbing [stub-forms & body]
+  (let [stub-pairs (partition 2 stub-forms)
+        returns (map last stub-pairs)
+        stub-fns (map #(list 'constantly %) returns)
+        real-fns (map first stub-pairs)]
+    `(binding [~@(interleave real-fns stub-fns)]
+       ~@body)))
+
+(defn calc-x [x1 x2]
+  (* x1 x2))
+(defn calc-y [y1 y2]
+   (/ y2 y1))
+(defn some-client []
+  (println (calc-x 2 3) (calc-y 3 4)))
+
+(stubbing [calc-x 1 calc-y 2]
+  (some-client))
+
+; common stub-fn ret passed in val no matter what args
+(defn stub-fn [return-value]
+  (fn [& args]         
+    return-value))
+        
+(defmacro stubbing [stub-forms & body]
+  (let [stub-pairs (partition 2 stub-forms)
+        returns (map last stub-pairs)
+        stub-fns (map #(list 'stub-fn %) returns)  ; use stub fn               
+        real-fns (map first stub-pairs)]
+    `(binding [~@(interleave real-fns stub-fns)]
+               ~@body)))
+
+; a mock records when and how API called(time, count, args) so we can verify calls later.
+
+
+
 ;; REFERENCES AROUND EVIL MUTABLE THINGS
 ;; Wrapping a mutable object in a Clojure reference type provides absolutely no guarantees 
 ;; for safe concurrent modification. 
@@ -16,10 +62,9 @@
 ;; Vars are for thread local isolated identities with a shared default value."
 ;;
 
-;; testbed, create a executor service pool and submit n threads repeat k times invoke a fn.
-;;
+; testbed, create a executor service pool and submit n threads repeat k times invoke a fn.
 (import '(java.util.concurrent Executors))
-(def *pool* (Executors/newFixedThreadPool
+(def *pool* (Executors/newFixedThreadPool  ;; dynamic bindable vars with earmuffs
     (+ 2 (.availableProcessors (Runtime/getRuntime)))))
 
 (defn dothread! [f & {thread-count :threads exec-count :times :or (thread-count 1 exec-count 1)}]
@@ -110,6 +155,7 @@
                (< x y) (recur x (- y x))
                :else x))))
 
+;;
 ;; A memoization protocol
 (defprotocol CacheProtocol
   (lookup  [cache e])
@@ -121,16 +167,17 @@
 ;; update with result when missing. do not care what actual fn used to compute fn.
 ;; no concurrent control in the cache type here. wrapper take care of thread-safe.
 (deftype BasicCache [cache]
-  CacheProtocol
+  CacheProtocol       ;; impl the type inside type definition. extend to impl protocol
   (lookup [_ item]
-  (get cache item))
+    (get cache item))
   (has? [_ item]
-  (contains? cache item))
-  (hit [this item] this)
+    (contains? cache item))
+  (hit [this item] 
+    this)
   (miss [_ item result]     ;; create a new type with updated value
     (BasicCache. (assoc cache item result))))
 
-def cache (BasicCache. {}))
+(def cache (BasicCache. {}))
 (lookup (miss cache '(servo) :robot') '(servo)')
 
 ;; bridge together cache and the fn to compute cache value.
@@ -151,6 +198,69 @@ def cache (BasicCache. {}))
     (PluggableMemoization. f (miss cache item result)))  ;; create a new meoize with new value.
   (lookup [_ item]
     (lookup cache item)))
+
+
+;; alter ref conj to append log to global state syncly
+;; defrecord to create a JVM class and bring into current namespace
+(defrecord Message [sender text])
+(user.Message. "Aaron" "Hello")  ;; instantiate the class
+(def messages (ref ()))   ;; create a ref to an empty list. The list is mutable
+(defn add-message [msg]   ;; alter mutable with conj as update-fn taking msg as arg
+  (dosync (alter messages conj msg)))
+(add-message (user.Message. "user 1" "hello"))
+(add-message (user.Message. "user 2" "howdy"))
+
+;; swap synch update an-atom by applying fn, (fn @atom-cur-val option-args)
+(def current-track (atom {:title "Credo" :composer "Byrd"}))
+(deref current-track)  ;; @current-track
+(set! *print-length* 10)  ;; set rebindable global dynamic var
+(swap! current-track assoc :title "Sancte Deus")  ;; (assoc @atom :title x)
+
+;; send agent update-fn & args
+(def counter (agent 0 :validator number?))  ; use validator to guard data in agent
+(send counter inc)
+;; block until update complete if you like
+(await-for timeout-mills & agents)
+(send bad-agent / 0)  ; send bad operation (div 0) to agent cause agent to crash
+(clear-agent-errors agent)
+;; incl agent in transactions
+;; agent store the log file name,
+(def backup-agent (agent "output/messages-backup.clj"))
+(defn add-message-with-backup [msg]
+  (dosync ; start transaction 
+    ; grab the commute in-trans val of message. at commit time, the val is set to be most-recent commit val
+    (let [snapshot (commute messages conj msg)] ;; commute only applicable to ref
+      ; send the data to backup agent to persist while inside the transation
+      (send-off backup-agent 
+                (fn [filename]
+                  (spit filename snapshot)
+                  filename)) 
+                snapshot)))
+
+; manage Per-thread state with dynamic vars
+(def ^:dynamic foo 10)  ; root binding wont change. Not mutable. If you require mutable, use @atom
+(.start (Thread. (fn [] (println foo))))
+(binding [foo 42] foo)  ;; bind similar to let, re-bind foo and check its val
+(defn print-foo [] (println foo))
+(let [foo "let foo"] 
+  (print-foo))  ; when print-foo invoked, static scoping looks for var foo.
+(binding [foo "bound foo"]    ; temporally change foo val and within binding form
+  (print-foo))                ; root binding wont be changed
+
+
+;; Deal with Java Callbacks with dynamic bindings
+; contentHandler is a callback got invoked when stream parser encounter certain token
+; the current offset in stream, as a mutable pointer, to a specific spot in stream.
+; SAX parser call startElement when it encounter start tag, and the callback fn update dynamic var binding
+(startElement [uri local-name q-name #^Attributes atts]
+  (set! *stack* (conj *stack* *current*)) (set! *current* e)
+  (set! *state* :element))
+
+(endElement [uri local-name q-name]
+  ; details omitted
+  (set! *current* (push-content (peek *stack*) *current*)) (set! *stack* (pop *stack*))
+  (set! *state* :between))
+
 
 ;; like Collections.synchronizedMap. Wraps a memoize cache with atom, provide thread-safe.
 ;; cache-impl is memoization type, created from a fn and a concrete cache protocol
@@ -188,10 +298,9 @@ def cache (BasicCache. {}))
 (time (exercise-agents send))
 
 
-(ns logger (:import (java.io BufferedWriter FileWriter)))
-
 ;; agent wraps/ref around eveil mutable BufferedWriter
 ;; agent's new value is set as the ret value of fn send to agent
+(ns logger (:import (java.io BufferedWriter FileWriter)))
 (let [wtr (agent (BufferedWriter. (FileWriter. "agent.log")))]
   (defn log [msg]
     (letfn [(write [out msg]
