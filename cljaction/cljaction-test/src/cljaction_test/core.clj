@@ -22,7 +22,7 @@
   ;;(:use [cljaction-test.chapter14-worker-usage])
   (:use [cljaction-test.chapter14-sender])
   (:use [cljaction-test.chapter14-receiver])
-  (:gen-class :main true))
+  (:gen-class :main true))   ; need gen-class :main in order for lein run
 
 
 ;; main entry, refered from prj.clj and lein run will execute.
