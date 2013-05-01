@@ -10,6 +10,10 @@
 	(:require clj-record.boot)
 	(:use [clojure.contrib.sql]))  ; (use 'clojure.contrib.sql)  
 
+; require the clj-record.boot namespace. Internally, the library is made up of several 
+; different namespaces that contain code related to things like 
+; associations, validations, callbacks, and serialization.
+
 (def db    ; mysql db configuration using jdbc driver
   {:classname "com.mysql.jdbc.Driver"
    :subprotocol "mysql"

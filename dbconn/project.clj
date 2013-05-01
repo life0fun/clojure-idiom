@@ -8,5 +8,6 @@
     [mysql/mysql-connector-java "5.1.6"]
     [clj-redis "0.0.12"]   ;
     [clojure-rabbitmq "0.2.1"]
+    [org.clojure/data.json "0.2.2"]    ;; json package
     ]
   :main dbconn.core)   ; set main entry
