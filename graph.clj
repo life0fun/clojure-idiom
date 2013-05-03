@@ -71,14 +71,11 @@
   [fn-name & fn-args]
     `(with-local-vars
       [~fn-name (memoize (fn ~@fn-args))]
-      (.bindRoot ~fn-name @~fn-name)
+      (.bindRoot ~fn-name @~fn-name(def messages (ref ())))
     @~fn-name))
 
 ;;
-;; fib defed by { "keys": ["ctrl+shift+1"], "command": "move_to_group", "args": { "group": 0 } },
-  { "keys": ["ctrl+shift+2"], "command": "move_to_group", "args": { "group": 1 } },
-  { "keys": ["ctrl+shift+3"], "command": "move_to_group", "args": { "group": 2 } },
-  { "keys": ["ctrl+shift+4"], "command": "move_to_group", "args": { "group": 3 } },co-recursion 
+;; fib defed by co-recursion 
 ;; recursion: break from top down to smaller bottom 
 ;; co-recursion: use data gened by fn, bit by bit, to produce further bits of data.
 ;; so re-cursively def fib as [0 1 f]
@@ -224,6 +221,21 @@
             (recur graph (conj stack child) (conj discovered child) processed (conj partRslt [curnode child]))  ;; path is from curnode to child
             (recur graph (pop stack) discovered (conj processed curnode) partRslt )))))))
 
+; dfs ret a lazy seq of node from dfs of root, always only look at the header
+; how to perf process-edge, process-vertex late ?
+(defn dfs [root discovered processed]
+  (let [rootnbs (nbmap root) ]
+    (loop [nbs rootnbs partRslt []]
+      (if (empty? nbs)
+        (do
+          (conj processed cur)
+          (lazy-seq partRslt))
+        (let [cur (first nbs)]
+          (if-not (discovered cur)
+            (do
+              (conj discovered cur)
+              (recur (rest nbs) (conj partRslt (dfs cur discovered processed))))
+            (recur (rest nbs) partRslt)))))))
 
 ;;
 ;; bfs with co-recursion. This is space search algorithm. 
@@ -243,7 +255,7 @@
       (struct tree 5))))
 
 
-(defn bftrav [& trees]
+(defn bftrav [& trees]  ; trees is a Q in bfs
   (when trees
     (lazy-cat trees
       (->> trees

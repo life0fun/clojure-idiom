@@ -2,6 +2,11 @@
   (:require [clj-redis.client :as redis])  ; bring in redis namespace
   (:require [clojure.data.json :as json]))
 
+; clojure does not support cyclic dependencies. break cyclic by having a third ns
+; contains common defs. If you have cyclic deps, you did not get your abstraction right.
+; init redis connection
+(def db (redis/init :url "redis://localhost"))
+
 ;; serialization
 (defmulti serialize (fn [format key-type value]
                           [format key-type]))
@@ -50,9 +55,10 @@
 
 (defn insert-into-redis [persistable]
   (let [inserter (fn [[k v]]
+           (prn "insert-into-redis" k v (v :key-type) "v:value" (v :value))
            (cond
-             (= (v :key-type) :string-type) ((inserters :string-type) k (v :value))
-             (= (v :key-type) :list-type) (doall (map #((inserters :list-type) k %) (v :value)))))]
+             (= (v :key-type) :string-type) ((inserters :string-type) db k (v :value))
+             (= (v :key-type) :list-type) (doall (map #((inserters :list-type) db k %) (v :value)))))]
     (doall (map inserter persistable))))
 
 (defn persistable-for [redis-object]

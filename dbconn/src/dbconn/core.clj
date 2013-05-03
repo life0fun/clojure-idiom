@@ -5,10 +5,9 @@
            [java.util Map Map$Entry List ArrayList Collection Iterator HashMap])
   (:require [clj-redis.client :as redis]) 		; bring in redis namespace
   (:use [dbconn.redis-datamapper ])
-  (:use [dbconn.redis-persister ])
+  (:use [dbconn.redis-persister])
   (:gen-class :main true))    ; bring in redis namespace
 
-(def db (redis/init :url "redis://localhost"))   ; connection reted is threadsafe, backed up conn pool
 
 ; simple test redis
 (defn test-redis []
@@ -17,7 +16,7 @@
 	(prn (redis/get db "foo"))
 	(redis/rpush db "cars" "celica")
 	(redis/rpush db "cars" "accord")
-	(prn (redis/lrange db "cars" -100 100))
+	(prn (redis/lrange db "cars" 0 -1))
 	(redis/sadd db "lang" "clojure")
 	(redis/sadd db "lang" "javascript")
 	(prn (redis/smembers db "lang")))
