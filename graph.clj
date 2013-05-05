@@ -167,8 +167,8 @@
                     (if (empty? hdnb)
                       discovered
                       (recur nbmap (into (pop q) hdnb) (reduce #(conj %1 %2) discovered hdnb)))))
-          (stepHd [nbmap q discovered]
-                  ;; stepHd process head and ret a lazy list of node reachable from head.
+          (stepHd [nbmap q discovered] 
+                  ; stepHd process head and ret a lazy list of node reachable from head.
                   (when-let [hd (peek q)]
                     (lazy-seq
                       (cons hd
@@ -202,7 +202,8 @@
 ;; dfs traverse normally post-order, as we want to collect all results from children's explore.
 ;; Vectors and Lists used as stacks with IPersistenStack to bind Intermediate result
 ;; partial result can be a vec of visited node, or a map of max/min of each node's subtree.
-;; set discovered when node gets put into stack. set processed when all node's children is done and node is off stack.
+;; discovered : node in active stack. was set when node gets put into stack. 
+;; processed : node all children done. Not in active stack. Only used in cyclic graph. Not usable in b-tree.
 ;; we update state and collect result for each node after all its children done.
 ;; we can carry a map to record each node's max/min after exploring all node's children.
 ;;
@@ -210,32 +211,60 @@
   (let [graph (nbmap col)    ;; tranform edge list to neighbor adj map.
         root (first (keys graph))]
     (loop [graph graph stack [root] discovered #{root} processed #{} partRslt []]   ;; stack bottom is root when started.
-      (if (empty? stack)       ;; recur until stack empty
-        [partRslt discovered]  ;; ret list of result and seen
-        (let [ curnode (peek stack)    ;; peek stack, not pop, find all children of the cur node.
+      (if (empty? stack)       ; recur until stack empty
+        [partRslt discovered]  ; loop ret partial result. recursive fn call ret []
+        (let [ curnode (peek stack)    ; peek stack, not pop, find all children of the cur node.
                children (remove (fn [e] (contains? discovered e)) (graph curnode))
                child (first children)]
-          (if child   ;; if children not done, keep pushing stack topnode's children. Otherwise, pop topnode from stack.
-            ;;(recur graph (conj stack child) (conj discovered child) processed partRslt)  ;; path is from curnode to child
-            ;;(recur graph (pop stack) discovered (conj processed curnode) (conj partRslt curnode)) ))))))
+          (if child   ; if children not done, keep pushing stack topnode's children. Otherwise, pop topnode from stack.
             (recur graph (conj stack child) (conj discovered child) processed (conj partRslt [curnode child]))  ;; path is from curnode to child
             (recur graph (pop stack) discovered (conj processed curnode) partRslt )))))))
 
+; fn build the full solution on top of the paritial solution recursion.
+; the key is found partial result, and recursively build full solution on top it.
 ; dfs ret a lazy seq of node from dfs of root, always only look at the header
 ; how to perf process-edge, process-vertex late ?
-(defn dfs [root discovered processed]
-  (let [rootnbs (nbmap root) ]
-    (loop [nbs rootnbs partRslt []]
-      (if (empty? nbs)
-        (do
-          (conj processed cur)
-          (lazy-seq partRslt))
-        (let [cur (first nbs)]
-          (if-not (discovered cur)
-            (do
-              (conj discovered cur)
-              (recur (rest nbs) (conj partRslt (dfs cur discovered processed))))
-            (recur (rest nbs) partRslt)))))))
+(defn dfs-tree [root]  ; for bin tree, acyclic, no need for discovered/processed
+  (letfn [(get-children [root]
+            ; collect all children of root into a vec seq to 
+            (reduce (fn [ret cur] (conj ret (cur root))) [] [:left :right]))]
+    (let [children (filter identity (get-children root))]
+      (if (empty? children)
+        [(:val root)]  ; at end, ret single node val. at parent, use reduce to culmulate partial result.
+        (let [partRslt (reduce (fn [ret cur] (lazy-cat ret (dfs-tree cur))) [] children)]
+          (lazy-cat partRslt [(:val root)]))))))  ; append root at the end of children rets.
+
+(dfs-tree my-tree)
+
+; dfs of graph, need to carry global discovered, processed, and path
+; The args to recursive fn can carry global state; foreach c : children, partRslt = dfs(c)
+; we reduce(cumulate result of each children, update to the global state, and carry it over
+; to the next dfs(child) call. After all dfs children done, we have full dfs result for this node.
+; the same as DP call that carries partial result at each DP. e.g, subset-sum.
+(defn dfs-graph [root discovered processed path]
+  (letfn [(get-children [root]
+          ; collect all children of root in a vec to operate on
+          (reduce (fn [ret cur] (conj ret (cur root))) [] [:left :right]))]
+    (let [children (filter identity (get-children root))]
+      ; reduce can only take one state var. use loop recur to carry multiple
+      (loop [children children discovered discovered processed processed path path]
+        (if (empty? children)  
+          ; at end, ret a vec of updated global state.(processed, path)
+          [discovered (conj processed root) (lazy-cat path [(:val root)])]
+          (let [ hd (first children) 
+                 discovered? (some #{hd} discovered)
+                 upd-disc (conj discovered hd) ]
+            ; only recursion(node, edge) on not discovered. do edge on processed.
+            (if-not discovered?
+              ; dfs recur fn with carried global 
+              (let [[accu-disc accu-proc accu-path] (dfs-graph hd upd-disc processed path)]
+                ; accumulate one child's partial result into global state for recur to carry on.
+                (recur (rest children) accu-disc accu-proc accu-path))
+              ; node already disc, process edge if applicable. otherwise, skip
+              (recur (rest children) upd-disc processed path))))))))
+
+(dfs-graph my-tree #{} #{} [])
+
 
 ;;
 ;; bfs with co-recursion. This is space search algorithm. 
@@ -254,12 +283,14 @@
         (struct tree 66))
       (struct tree 5))))
 
-
+; arg is a list of node, of one bfs level. process the arg, produce a result list which consists
+; of all of children of nodes in cur bfs level. this result list is the arg for next recursive bfs.
+; the final result is the cons of cur list on top of 
 (defn bftrav [& trees]  ; trees is a Q in bfs
   (when trees
-    (lazy-cat trees
+    (lazy-cat trees     ; cons me to the result of processing me, forming the full result.
       (->> trees
-        (mapcat #(vector (:left %) (:right%)))
+        (mapcat #(vector (:left %) (:right %)))  ; process cur list, the result is the input for next recursion
         (filter identity)    ;; filter identity remov nil.
         (apply bftrav)))))
 
@@ -361,13 +392,13 @@
 ;;
 (def dist (memoize (fn [pred index]
   (let [[i j] index]
-  (cond
-    (zero? (min i j)) (max i j)
-    (pred index) (dist pred [(dec i) (dec j)])
-    :else (inc (min
-                 (dist pred [(dec i) j])
-                 (dist pred [i (dec j)])
-                 (dist pred [(dec i) (dec j)]))))))))
+    (cond
+      (zero? (min i j)) (max i j)
+      (pred index) (dist pred [(dec i) (dec j)])
+      :else (inc (min
+                   (dist pred [(dec i) j])
+                   (dist pred [i (dec j)])
+                   (dist pred [(dec i) (dec j)]))))))))
 
 (defn levenshtein-distance
   (let [pred (fn [index]

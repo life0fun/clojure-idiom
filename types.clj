@@ -9,12 +9,12 @@
 ;; ;use naked could corrupt the namespace.  (:use :only)
 ;; :import working with java deftype defrecord
 
-;; (ns my-ns
-;;   (:refer-clojure :exclude [defstruct])
-;;   (:use (clojure set xml))  ;; mixed-in other namespace without namespace qualification.
-;;   (:use [clojure.test :only (are is)])
-;;   (:require (clojure [zip :as z]))
-;;   (:import (java.util.Collection)))
+; (ns my-ns
+;   (:refer-clojure :exclude [defstruct])
+;   (:use (clojure set xml))  ;; mixed-in other namespace without namespace qualification.
+;   (:use [clojure.test :only (are is)])
+;   (:require (clojure [zip :as z]))
+;   (:import (java.util.Collection)))
 
 
 ; partial and curry
@@ -28,6 +28,22 @@
       (if (zero? remaining)
         (apply func args)
         (curried-fn (apply partial func args) remaining)))))
+
+; code as data, is closure object a data object, or a function ?
+; The line is blurred when closure object can ret the props and perform fn call in the same form.
+; (object message-name & arguments)
+(defn new-user [login password email]
+  (fn [a]
+    (condp = a
+      :login login
+      :password password
+      :email email
+      :authenticate (= password (first args)))))
+
+(def tom (new-user "tom" "tompasswd" "tom@tom.com"))
+(tom :login)
+(tom :email)
+(tom :authenticate)
 
 
 ;; prototype inheritance
@@ -198,8 +214,7 @@
 
 (rev "Works")  ;; => "skroW"
 
-;; Mixin to borrow fns from other objects with extend ([atype & proto+mmaps])
-;;
+; Mixin to borrow fns from other objects with extend ([atype & proto+mmaps])
 (def rev-mixin {:rev clojure.string/reverse})
 (def upp-mixin {:upp (fn [this] (.toUpperCase this))})
 (def fully-mixed (merge upp-mixin rev-mixin))
