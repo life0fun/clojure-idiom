@@ -22,6 +22,7 @@
 	(prn (redis/smembers db "lang")))
 
 ; use def type macro to create a data type to encap data from/to redis
+; we call this redis-type and we can instantiate redis objects and use builder pattern.
 (def-redis-type mobile-user
 	(string-type :id :name :start-time :parent-id)
 	(list-type :apps)
@@ -33,7 +34,7 @@
 	;(let [m (mobile-user :new)])
 	(prn (mobile-user :name))
 	(mobile-user :format)
-	(let [m (mobile-user :new)]
+	(let [m (mobile-user :new)]  ; instantiate and using redis object.
 		(m :set! :name "sparkle")
 		(m :get :name)
 		(m :save!)))

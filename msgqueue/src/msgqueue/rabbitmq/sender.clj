@@ -10,11 +10,17 @@
     (send-message routingkey (str "sending test message to " routingkey)))
   (println "done!"))
 
-(defn send-multicast 
+(defn send-multicast
 	([]
 		(send-multicast "fanex" "logs-all-level"))
 	([exchgname routingkey]
 		(println "Multicasting to " exchgname routingkey)
 		(with-rabbit ["localhost" "guest" "guest"]
-  		(send-message exchgname FANOUT-EXCHANGE-TYPE routingkey "Broadcast! Multicasting all logs")))
-	(println "done!")
+  		(send-message exchgname FANOUT-EXCHANGE-TYPE routingkey "Broadcast! Multicasting all logs"))
+		(println "done!")))
+
+(defn test-send [qname msg]
+	(println "Test sending msg to " qname msg)
+	(with-rabbit ["localhost" "guest" "guest"]
+  	(send-message qname msg))
+	(println "done!"))

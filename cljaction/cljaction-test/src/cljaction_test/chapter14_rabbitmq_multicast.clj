@@ -1,4 +1,4 @@
-(ns chapter14-rabbitmq-multicast
+(ns cljaction-test.chapter14-rabbitmq-multicast
   (:import (com.rabbitmq.client ConnectionParameters ConnectionFactory QueueingConsumer)))
 
 (def *rabbit-connection*)

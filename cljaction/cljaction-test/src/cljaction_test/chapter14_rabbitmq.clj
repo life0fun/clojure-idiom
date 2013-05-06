@@ -11,6 +11,7 @@
          (.setVirtualHost "/")
          (.setUsername q-username)
          (.setPassword q-password))]
+    (prn "new-connection ...")
     (.newConnection (ConnectionFactory. params) q-host)))
 
 (defmacro with-rabbit [[mq-host mq-username mq-password] & exprs]

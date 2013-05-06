@@ -1,9 +1,9 @@
 # msgqueue
-Model a message queue using lazy seq.
 
-## Setup project
+Distribute computation across rabbitmq and model rabbitmq message queues as clojure lazy sequences.
 
-### project.clj
+
+## Dependency lib resolver
 
 Lib format: group-id/artifact-id, version string.
 Clojure uses the following paths to resolve dependency library.
@@ -12,35 +12,29 @@ Clojure uses the following paths to resolve dependency library.
     clojars (http://clojars.org/repo/)
 
 add lib coordinates (artifact-id and (if differing) group-id) go into your project.clj’s :dependencies vector.
-require the package into ns macro’s :require list. (ns package.namespace) = (src/package/namespace)
+
+When you specify a lib jar name, [com.rabbitmq/amqp-client "2.3.1"]
+lein resolve the jar by looking at the package.2.3.1.pom.xml for the jar from the maven or clojar and copy the downloaded files into lib folder.
+
+require the package into ns macro’s :require list. 
+(ns package.namespace) = (src/package/namespace)
 
 Specify main function for the project.
 
   :main msgqueue.core)
 
-### Package is Namespace
+## Package is Namespace
 
 Package is namespece, and named after convention src/package/file.clj maps to
 (ns package.file)
 
-### Require, use, import and gen-class.
+## Require, use, import and gen-class.
 
 Import java packages and each classes. [java.util Map List]
 Require loads the lib, :as to give a short name to avoid qualified full name.
 Require or use other namespace's code as though its yours.
 Require can now take a :refer option. :refer takes a list of symbols to refer, so you not bring in entire symbols.
 from the namespace or :all to bring in all public vars."
-
-(ns cljaction-test.core
-  (:require [clojure.string :as str])
-  (:require [clojure.java.jdbc :as sql])
-  (:import [java.io FileReader]
-           [java.util Map Map$Entry List ArrayList Collection Iterator HashMap]
-           )
-  (:use [cljaction-test.util])   ;; use util namespace without fully qualified name.
-  (:use [cljaction-test.chapter14-worker])  ;; use chapter14_worker
-  (:use [cljaction-test.chapter14-worker-usage])
-  (:gen-class :main true))
 
 
 gen-class gen a java class that delegate java class .method to clj :prefix func. (.main to -main)
@@ -52,6 +46,37 @@ args: :name, :init, :constructor :state,
 http://kotka.de/blog/2010/02/gen-class_how_it_works_and_how_to_use_it.html 
 
 
-## Run
-lein compile
-lein run 
+## AMQP client and Jar dependencies
+
+There are two libs for rabbitmq client.  
+  [rabbitmq-client "1.7.0"]
+  [com.rabbitmq/amqp-client "2.3.1"]
+
+The rabbitmq-client 1.7.0 is deprecated. It contains a reference to contrib-1.0.0-SNAPSHOT in its project.clj. This is the reason for error msg during compilation.
+
+We are using amqp-client 2.3.1 client.
+
+
+# Args for main
+
+You can pass in args to main the same as java args for main.
+  lein compile
+  lein run [arg1 arg2 ...]
+
+To run rabbitmq consumer process, 
+  lein run workerhandler
+
+To run rabbitmq producer
+  lein run workertask
+
+## Namespace closures
+
+All global vars with root bindings form the closure of the namespace.
+For example, workers defined in (ns msgqueue.rabbitmq.worker) is private
+closure to all fns in the namespace.
+  (def workers (ref {}))
+
+so if you distribute worker thru msg queue, with different threads at different machines, just use defworker to add the computation fn to the workers map. When different threads load the namespace, the computation fn object is accessible through map to the threads. Hence, the sender can just send the fn name string, and the processor can extract the fn object from the map, which is a closure in the namespace.
+
+After getting fn object from the namespace map, apply the fn with the passed in args.
+  (let [value (apply worker-handler worker-args)])

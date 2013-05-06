@@ -2,6 +2,7 @@
 ;; define a set of msg queue recevier in this namespace
 ;;
 (ns msgqueue.rabbitmq.receiver
+	(:use clojure.contrib.str-utils)
   (:use msgqueue.rabbitmq.rabbitmq))
 
 
@@ -23,11 +24,12 @@
 ; give a queue name and a handler callback, for each msg, invoke callback.
 (defn handle-msg [qname handler]
 	(with-rabbit ["localhost" "guest" "guest"]
-  	(println "Waiting for messages...")
+  	(println "Waiting for messages from " qname)
   	(doseq [message (message-seq qname)]
   		(handler message))))
 
-;
+(defn test-receive [qname]
+	(handle-msg qname prn))
 
 
 

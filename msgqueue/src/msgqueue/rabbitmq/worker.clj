@@ -3,17 +3,19 @@
 ;; data(args) extracted from the queue. Send result back thru callback queue.
 ;;
 (ns msgqueue.rabbitmq.worker
-  (:use msgqueue.rabbitmq.rabbitmq))
+  (:use msgqueue.rabbitmq.rabbitmq)
   (:import (java.util UUID)))
 
-;; global mapping, the name of computation, and the args for it.
+; NameSpace global mapping, the name of computation, and the args for it.
+; whenever a thread executes any fns inside this namespace, this global vars
+; are closures shared among all threads. It's like class static variable.
 (def workers (ref {}))
 (def worker-init-value :__worker_init__) ; worker init status
 (def WORKER-QUEUE "workers_queue")
 (def BROADCAST-QUEUE "workers_bcast_queue")
 (def BROADCAST-EXCHANGE "workers_fanex")
 
-; worker will update req object's complete? prop
+; result msg come back to ret-q, changed ret status from init.
 (defn all-complete? [swarm-requests]
   (every? #(% :complete?) swarm-requests))
 
@@ -43,7 +45,7 @@
      (wait-until-completion ~swarm-requests 5000)
      ~@expr))
 
-; a response listener wrapped inside a future object(async blocking call)
+; A FutureTask block on getting msg from return-queue.
 ; ref-set worker-ref with response msg get from return queue name
 ; wrapped inside a future task. when blocking call rets, 
 ; setted up when dispatching a runnable to worker.
@@ -69,7 +71,7 @@
      (assoc (request-envelope worker-name args) :return-q return-q-name)))
 
 ; dispatch a computation(fn-name is worker-name, provide args, update ret state)
-; dispatching also creates a listener FutureTask and updates ret status ref.
+; dispatching also creates a FutureTask blocking on result and updates ret status ref.
 (defn dispatch-work [worker-name args worker-ref]
   (let [return-q-name (str (UUID/randomUUID))  ; random reply queue name
         request-object (request-envelope worker-name args return-q-name)
@@ -97,20 +99,24 @@
         :status (@worker-data :status)
         :disconnect (disconnect-worker worker-transport)))))
 
-; given a worker-name(computation fn name) and args, dispatch the worker to remote queue.
+; on-swarm dispatch the worker computation request to remote thru rabbitmq queue 
 (defmacro worker-runner [worker-name should-return worker-args]
   `(fn ~worker-args
      (if ~should-return
        (on-swarm ~worker-name ~worker-args))))
 
-; ret a fn named service-name with args and expr as body, when called, 
-; send a msg to rabbitmq requesting the computationi to be performed at remote process.
+; def a var with root binding to fn named service-name with args and expr as body, 
+; most importantly, add fn object to workers map to make it namespace closure. 
+; any distributed thread load the namespace can access the defed fn object.
+; so client threads can send name string cross and processor thread can access
+; fn object from map and call the fn object with the args.
 (defmacro defworker [service-name args & exprs]
   `(let [worker-name# (keyword '~service-name)] ; name to keyword, :name
      (dosync 
        ; workers is global map of worker name to fn object.
        ; store service fn form into workers map, remote worker can retrieve it and perform the fn.
        (alter workers assoc worker-name# (fn ~args (do ~@exprs))))
+     ; def a var with root binding to the fn service-name(args, body)
      (def ~service-name (worker-runner worker-name# true ~args))))
 
 ; dispatch a request to run worker-name fn on remote process.

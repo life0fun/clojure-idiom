@@ -6,8 +6,11 @@
 	(:use msgqueue.rabbitmq.rabbitmq)
 	(:use msgqueue.rabbitmq.worker))
 
-; wrap computation name, args, and expr body into a worker.
-; when called, the worker send msg to ask computation run remotely.
+; def a var with root binding to fn named service-name with args and expr as body, 
+; most importantly, add fn object to workers map to make it namespace closure. 
+; any distributed thread load the namespace can access the defed fn object.
+; so client threads can send name string cross and processor thread can access
+; fn object from map and call the fn object with the args.
 (defworker long-computation-one [x y]
   (Thread/sleep 3000)
   (* x y))
@@ -20,27 +23,24 @@
   (println "expensive audit log:" z)
   (Thread/sleep 4000))
 
-(defn worker-example []
-	(println "Dispatching worker-example")
-	;(with-rabbit ["localhost" "guest" "guest"]
-	(with-rabbit ["localhost"]
+; test worker, send worker request across.
+(defn worker-task []
+	(println "Dispatching test worker")
+	(with-rabbit ["localhost" "guest" "guest"]
+    ; invoke the worker computation, on-swarm send workers to remote
   	(let [one (long-computation-one 10 20)
     	    two (long-computation-two 3 5 7)]
-    	(fire-and-forget expensive-audit-log 100)
-    	(run-worker-everywhere expensive-audit-log 777)
-    	(from-swarm [one two]
+    	;(fire-and-forget expensive-audit-log 100)
+    	;(run-worker-everywhere expensive-audit-log 777)
+      
+      ; now spin on worker status. wait computation done.
+    	(from-swarm [one two]  
                 (println "one:" (one :value))
                 (println "two:" (two :value)))))
 	(println "done!"))
 
-(defn run-test [qname]
-	(println "Dispatching run-test")
-	(with-rabbit ["localhost" "guest" "guest"]
-  	(send-message qname "run-test"))
-	(println "done!"))
-
-
-; apply(invoke) fn with passed in args, ret result in a ret map.
+; apply(invoke) fn object extracted from worker namespace workers map 
+; with the passed in args, ret result in a ret map.
 (defn response-for [worker-handler worker-args]
   (try
   	(let [value (apply worker-handler worker-args)]
@@ -64,7 +64,8 @@
           worker-name (req :worker-name) 
           worker-args (req :worker-args) 
           return-q (req :return-q)
-          worker-handler (@workers worker-name)]  ; get fn body expr from global mapper.
+          ; get fn object from worker namespace workers map.
+          worker-handler (@workers worker-name)]
     	(if (not (nil? worker-handler))
       	(do
         	(println "Processing:" worker-name "with args:" worker-args)
@@ -87,5 +88,5 @@
     (with-rabbit ["localhost" "guest" "guest"]
       (println "Starting worker handler...")
       (doseq [request-message (message-seq BROADCAST-EXCHANGE FANOUT-EXCHANGE-TYPE BROADCAST-QUEUE)]
-        (handle-request-message request-message)))
+        (handle-request-message request-message)))))
 

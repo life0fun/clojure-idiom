@@ -1,8 +1,12 @@
 ;;
 ;; add cljaction-test ns path prefix.
-;;
+;; (:import (com.rabbitmq.client ConnectionParameters ConnectionFactory QueueingConsumer)))
+;; ;[rabbitmq-client "1.7.0"]
+;;    [com.rabbitmq/amqp-client "2.3.1"]
+
 (ns msgqueue.rabbitmq.rabbitmq
-  (:import (com.rabbitmq.client ConnectionParameters ConnectionFactory QueueingConsumer)))
+  (:import (com.rabbitmq.client ConnectionFactory ConnectionParameters Connection Channel QueueingConsumer)))
+
 
 ; dynamic bindable variable for connection. each thread can re-bind connection
 ; that is private to the thread whichever rebind it.
@@ -16,14 +20,23 @@
 (defn random-queue-name []
   (str (java.util.UUID/randomUUID)))
 
-; get a new connection to host with user and pass
+; amqp-client 2.3.1 version.
 (defn new-connection [host username password]
+  (prn "new-connection :" host username password)
   (.newConnection
-   (doto (ConnectionFactory.)
-     (.setVirtualHost "/")
-     (.setUsername username)
-     (.setPassword password)
-     (.setHost host))))
+    (doto (ConnectionFactory.)
+      (.setVirtualHost "/")
+      (.setUsername username)
+      (.setPassword password)
+      (.setHost host))))
+
+; this is rabbitmq-client 1.7.0 version.
+; (defn new-connection [q-host q-username q-password]
+;   (let [params (doto (ConnectionParameters.)
+;          (.setVirtualHost "/")
+;          (.setUsername q-username)
+;          (.setPassword q-password))]
+;     (.newConnection (ConnectionFactory. params) q-host)))
 
 ; eval exprs within a new connection.
 (defmacro with-rabbit [[mq-host mq-username mq-password] & exprs]
