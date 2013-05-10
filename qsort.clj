@@ -5,13 +5,13 @@
   (:import [java.util.collections])
   (:use clojure.set))
 
-;; take n from a random seq
+; take n from a random seq
 (defn nom [n] (take n (repeatedly #(rand-int n))))
 
-;;
-;; qsort, divide and conquer, pull apart work list, destructuring.
-;; pull work apart as two lists, for each list, again pull apart as pivot(head) and rest
-;;
+;
+; qsort, divide and conquer, pull apart work list, destructuring.
+; pull work apart as two lists, for each list, again pull apart as pivot(head) and rest
+;
 
 (defn sort-parts [work]
   (lazy-seq
@@ -29,6 +29,8 @@
 
 ;;
 ;; what focus on result, not procedure really means in fn lang
+;  1. do not moving index, just make another list of pairs of idx, item.
+;  2. list tranform, filter; build solution for simplest case, recursive induction on this base.
 ;; in imperative lang, we need to carefully adjust offset/index/pointer to avoid off-by-one error
 ;; and manually swap items. For example, qsort in python:
 ;;
@@ -86,9 +88,39 @@
 (defn qsort [xs]
   (myqsort (list xs)))
 
-;;
-;; test
+;
+; test
 (qsort [2 1 4 3])
+
+; lazy-cat, first, destruct the passed-in list as (p & body), then partition body into 
+; low hi bodies, full sol = cons solution for low, pivot, solution for hi.
+(defn lazyqsort [l]
+  (if-not (seq l)   ; idiomatic. (seq l) ret a seq view of the collection, or nil
+    []  ; ret empty seq so high level can lazy-cat vectors
+    (let [p (first l) body (rest l) 
+          lol (filter #(<= % p) body) hil (remove #(<= % p) body) ]
+      (lazy-cat (lazyqsort lol) [p] (lazyqsort hil)))))
+
+(lazyqsort [1])
+(lazyqsort [1 1 1])
+(lazyqsort [1 2 3])
+(lazyqsort [9 8 7 6 1 2 3 4])
+
+; lazy-cat merge-sort
+(defn mergesort [xs]
+  (letfn [(merge [p q]
+            (cond
+              (if-not (seq p) q)
+              (if-not (seq q) p)
+              :else
+                (let [ph (first p) qh (first q)]
+                  (if (< ph qh)
+                    (cons ph (merge (rest p) q))
+                    (cons qh (merge p (rest q)))))))]
+    (if (= 1 (count l))
+      l
+      (let [[l q] (split-at (/ (count l) 2) xs)]
+        (lazy-cat (merge (mergesort l) (mergesort q)))))))
 
 ;;
 ;; bisect, if not found, insert to the end.
@@ -118,11 +150,11 @@
 (java-binsearch [1 3 5 6 8 9] 3)
 
 
+;
+; mutual recursion is idea for state machine transition
 
-;;
-;; mutual recursion is idea for state machine transition
-
-;; trampoline(fn & args) change recur fn to  recur #(fn) to achieve TCO
+; trampoline(fn & args) change recur fn to  recur #(fn) to achieve TCO
+; you give trampoline a fn, trampoline will recur the fn without stack overflow.
 
 (defn my-even? [n]
   (letfn [(e? [n]
@@ -137,3 +169,34 @@
 
 (defn my-odd? [n]
   (not (my-even? n)))
+
+
+
+; recursive build a list, recursive destructure a list
+(defn- coll-or-scalar [x & _] (if (coll? x) :collection :scalar))  ; dispatch 
+(defmulti replace-symbol coll-or-scalar)
+(defmethod replace-symbol :collection [coll oldsym newsym]
+  (lazy-seq   ; invoke the body only when needed, ret empty seq at bottom
+    (when (seq coll)
+      (cons (replace-symbol (first coll) oldsym newsym)
+            (replace-symbol (rest coll) oldsym newsym)))))
+; after dispatching, the first arg is exact
+(defmethod replace-symbol :scalar [obj odlsym newsym]
+  (if (= obj oldsym)
+    newsym
+    oldsym))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

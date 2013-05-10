@@ -50,6 +50,7 @@
 
 
 ;; read a file line by line
+(use '[clojure.java.io :only (reader)])
 (with-open [rdr (reader filename)]
   (doseq [line (line-seq rdr)]
       (println line)))
