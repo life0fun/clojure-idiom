@@ -110,17 +110,23 @@
 (defn mergesort [xs]
   (letfn [(merge [p q]
             (cond
-              (if-not (seq p) q)
-              (if-not (seq q) p)
+              (not (seq p)) q  ; p is done, take entire q
+              (not (seq q)) p  ; q is done, take entire p
               :else
                 (let [ph (first p) qh (first q)]
                   (if (< ph qh)
-                    (cons ph (merge (rest p) q))
-                    (cons qh (merge p (rest q)))))))]
-    (if (= 1 (count l))
-      l
-      (let [[l q] (split-at (/ (count l) 2) xs)]
-        (lazy-cat (merge (mergesort l) (mergesort q)))))))
+                    (lazy-seq (cons ph (merge (rest p) q)))
+                    (lazy-seq (cons qh (merge p (rest q))))))))]
+    (if (<= (count xs) 1)
+      xs  ; base, only one ele left, ret
+      (let [[l q] (split-at (quot (count xs) 2) xs)]  ; split-at half
+        (merge (mergesort l) (mergesort q))))))
+
+(mergesort [1])
+(mergesort [1 1 1])
+(mergesort [1 2 3])
+(mergesort [9 8 7 6 1 2 3 4])
+
 
 ;;
 ;; bisect, if not found, insert to the end.
