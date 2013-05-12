@@ -155,6 +155,27 @@
 
 (java-binsearch [1 3 5 6 8 9] 3)
 
+; recursive version of bi-sect, insert just before entry that is bigger than val
+; arg is map-indexed vector l, [idx val]
+(defn recur-bisect [l v]
+  (if-not (seq l)
+    0   ; ret immediately upon empty list, we ensured never recur with empty list.
+    (let [len (count l) mid (quot len 2) midv (second (nth l mid))
+          lo (subvec (vec l) 0 mid) hi (subvec (vec l) (inc mid))]
+      (if (>= v midv)     ; recur until the first one bigger than val
+        (if-not (seq hi)  ; hi subvec explored, insert after mid
+          (inc (first (nth l mid)))
+          (recur hi v))        ; never recur with empty list
+        (if-not (seq lo)       ; lo subvec explored, insert before mid
+          (first (nth l mid))
+          (recur lo v))))))   ; never recur with empty list
+
+(recur-bisect (map-indexed vector []) 3)
+(recur-bisect (map-indexed vector [5]) 3)
+(recur-bisect (map-indexed vector [1 2 3 4 5]) 3)
+(recur-bisect (map-indexed vector [1 2 3 3]) 3)
+(recur-bisect (map-indexed vector [1 2 3 3 5]) 3)
+(recur-bisect (map-indexed vector [1 2 3 3 5]) 8)
 
 ;
 ; mutual recursion is idea for state machine transition

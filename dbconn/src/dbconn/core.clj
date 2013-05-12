@@ -4,13 +4,14 @@
   (:import [java.io FileReader]
            [java.util Map Map$Entry List ArrayList Collection Iterator HashMap])
   (:require [clj-redis.client :as redis]) 		; bring in redis namespace
-  (:use [dbconn.redis-datamapper ])
-  (:use [dbconn.redis-persister])
+  (:use [dbconn.redis.redis-datamapper ])
+  (:use [dbconn.redis.redis-persister])
+  (:use [dbconn.mysql.mysql-datamapper])	; use bring-in the entire namespace
   (:gen-class :main true))    ; bring in redis namespace
 
 
 ; simple test redis
-(defn test-redis []
+(defn test-redis [db]
 	; set key
 	(redis/set db "foo" "bar")
 	(prn (redis/get db "foo"))
@@ -31,7 +32,6 @@
 	(key-separator "##"))
 
 (defn test-mobile-user []
-	;(let [m (mobile-user :new)])
 	(prn (mobile-user :name))
 	(mobile-user :format)
 	(let [m (mobile-user :new)]  ; instantiate and using redis object.
@@ -39,11 +39,18 @@
 		(m :get :name)
 		(m :save!)))
 
+;
+; test connection to mysql
+(defn test-sqlkorma []
+	(prn "testing sql korma lib")
+	;(populate-db)
+	(get-user "jackson"))
 
 ; the main 
 (defn -main []
  	(prn " >>>> starting dbconn.core main <<<<< ")
-	(test-redis)
-	(test-mobile-user))
+	(test-redis redis-db)
+	(test-mobile-user)
+	(test-sqlkorma))
 
 
