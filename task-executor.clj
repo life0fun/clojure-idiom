@@ -5,8 +5,31 @@
            [java.util Map Map$Entry List ArrayList Collection Iterator HashMap])
   (:import [java.text SimpleDateFormat]
            [java.util Calendar TimeZone])
+  (:import [java.util.concurrent Executors])
   (:use clojure.contrib.io
         clojure.contrib.seq-utils))
+
+
+;; example of using executor service.
+;; clojure fn is java.util.concurrent.Callable !
+(defn test-stm [nitems nthreads niters]
+  (let [refs  (map ref (repeat nitems 0))  ; a list of global state refed.
+        pool  (Executors/newFixedThreadPool nthreads)
+        ; loop create n fn closures, upon invoke, do n times of batch alter refs.
+        tasks (map (fn [t]
+                      (fn []
+                        (dotimes [n niters]
+                          (dosync
+                            (doseq [r refs]
+                              (alter r + 1 t))))))
+                   (range nthreads))]
+    ; executor invoke all clojure fns, which is java Callables.
+    ; ret result is wrapped inside blocking future. get it one by one !
+    (doseq [future (.invokeAll pool tasks)]  ; Collection<Callable> task
+      (.get future))
+    (.shutdown pool)
+    (map deref refs)))
+
 
 ;;
 ;; the job meta map

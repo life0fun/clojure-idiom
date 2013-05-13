@@ -7,7 +7,8 @@
 
 ;;
 ;; (defspout name output-declare option-map % impl)
-;; (defbolt name output-declare option-map % impl)
+;; (defbolt  name output-declare option-map % impl) 
+;; spout-spec take spout-imp. bolt-spec specify the input to the bolt.
 ;; spout spec impl body takes topl conf, topl context, and spoutoutputcollector.
 ;; bolt spec impl execute method [tuple collector]
 ;; the input map is for each bolt is defined in topology.
@@ -32,12 +33,12 @@
 
 ;;
 ;; defspout takes 2 method(nexstTuple, ack) impls and ret an ISpout object. 
-;; emit tuple as follow:
-;;   {"logevent" "11226 [Thread-32] INFO  backtype.storm.daemon.task  - Emitting: 3 default [\"cat\" 17]"}
+;; emit tuple is a list of key value pairs.
+;;   {"logevent" "Apr 21 01:00:08 haijin-mac kernel[0]: image 2166576128"}
 ;;
-(defspout sentence-spout ["logevent"]  ;; declare output fields
+(defspout sentence-spout ["logevent"]  ; output stream has logevent key.
   [conf context collector]
-  (let [logs [ 
+  (let [logs [
             "Apr 21 01:00:08 haijin-mac kernel[0]: image 2166576128, uncompressed 5045297152 (183186), compressed 2155141936 (42%), sum1 6c67ac3, sum2 72119025"
             "Apr 21 01:00:08 haijin-mac kernel[0]: wired_pages_encrypted 77034, wired_pages_clear 106654, dirty_pages_encrypted 1048074"
             "Apr 21 01:00:08 haijin-mac kernel[0]: hibernate_write_image done(0)"
@@ -66,7 +67,7 @@
             "Apr 21 11:57:07 haijin-mac kernel[0]: AirPort: RSN handshake complete on en1"
             "Apr 21 11:57:07 haijin-mac kernel[0]: wl0: Roamed or switched channel, reason #4, bssid 5c:d9:98:65:83:d4"
             "Apr 21 11:57:07 haijin-mac kernel[0]: en1: BSSID changed to 5c:d9:98:65:83:d4"
-             ]]
+        ]]
     (spout      ;; spout macro takes 2 method (nextTuple, ack) impl and ret an ISpout object
       (nextTuple []
         (Thread/sleep 100)
@@ -82,7 +83,7 @@
 ;; output stream defined with a vector of fields.
 ;; default output stream, reduce to a vector of output field rather than a output map.
 ;;
-(defbolt filter-sentence ["sentence"] ;; output map = a vector of fields
+(defbolt filter-sentence ["sentence"] ;; output map = a vector of fields(keyword)
   {:params [keywords] :prepare false} ;; take keywords param from topology bolt spec when creating the bolt.
   [tuple collector] ;; for non-prepared bolt, impl fn (execute [tuple collector]) 
   (let [ sentence (.getStringByField tuple "logevent")  ;; the first string in tuple string list is sentence.
@@ -104,7 +105,8 @@
 ;; partition streams with grping: shuffle, fields, global, direct
 ;;
 (defbolt split-sentence
-  {"1" ["word"] "2" ["word" "index"]} ;; out stream 2 has two fields
+  { "1" ["word"]          ; output stream 1, output tuple has only one field "word" 
+    "2" ["word" "index"]} ;; out stream 2, output tuple has two fields "word" and "index"
   {:prepare true}
   [conf context collector] ;; prepared bolt impl takes conf, context, collector
   (let [index (atom 0) ]  ;; counter is global state
@@ -132,7 +134,7 @@
   [conf context collector]  ;; prepared bolt impl takes conf, context, collector
   (let [counts (atom {})]   ;; word count map
     (bolt
-     (execute [tuple]       ; execute func only takes tuple.
+     (execute [tuple]       ; input tuple has field word
        (let [word (.getStringByField tuple "word")]
          (swap! counts (partial merge-with +) {word 1})  ; merge map zip map set/union  conj collection.
          (emit-bolt! collector [word (@counts word)] :anchor tuple)
@@ -145,7 +147,7 @@
   [conf context collector]
   (let [counts (atom {})]
     (bolt
-      (execute [tuple]
+      (execute [tuple]  ; tuple in the stream has two fields, word, index
         (let [ word (.getStringByField tuple "word")
                line (.getLongByField tuple "index")]
           (prn "combiner word " word)
@@ -156,25 +158,26 @@
 ;; spout-spec = spec impl and parallelism. output stream map defined inside spout-spec
 ;; bolt-spec = input-map and spec impl.
 ;; bolt-spec input-map = { [comp-id stream-id] :stream-grp [comp-id stream-id] ["field1" "field2"]
+;; components exchange data in *tuple*. Tuple has fields.
 ;;
 (defn mk-topology []
-  ;; toplogy is a map of component id and corresponding spec.(spout-spec, bolt-spec)
+  ; toplogy is a map of component id and component spec.(spout-spec, bolt-spec)
   (topology
-    ;; spout-spec : spout impl and parallel tasks.
+    ; spout-spec : spout impl and parallel tasks.
     {"1" (spout-spec (sentence-spout-parameterized ["the cat jumped over the door" "greetings from the faraway land"])
                       :p 2)
 
-     "2" (spout-spec sentence-spout) }
+     "2" (spout-spec sentence-spout) }  ; done with spout spec.
 
     ;; bolt-spec, input declaration, bolt implementation, parallel tasks.
     ;; input declaration: a map of stream id and stream groupings.
     ;; stream id = [==component id== ==stream id==]
     ;; stream grp ["id" "name"]: subscribes with a fields grouping on the specified fields
-    {"3" (bolt-spec {"2" :shuffle}   ;; subscribe to 2 default stream
+    {"3" (bolt-spec {"2" :shuffle}  ; input component 2, shuffle grouping
                     (filter-sentence ["Link" "channel"])
                     :p 2)
 
-     "4" (bolt-spec {"3" :shuffle}   ;; default stream from component 3
+     "4" (bolt-spec {"3" :shuffle}   ;; input from component 3, shuffle grouping
                      split-sentence
                      :p 2)
 
@@ -182,7 +185,7 @@
                     word-count
                     :p 2)
 
-     "6" (bolt-spec {["4" "2"] ["word" "index"]}
+     "6" (bolt-spec {["4" "2"] ["word" "index"]} ; comp 4, stream 2, group by word index
                     combiner
                     :p 2)}))
 
