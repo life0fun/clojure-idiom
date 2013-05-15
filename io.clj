@@ -21,6 +21,10 @@
 
 (def filename "/Users/e51141/macsrc/clj/io.clj")
 
+; open a file, spit content to it, with option, using clojure.java.io/write, then close it.
+(spit "/tmp/x" "1. log-1\n" :append true)
+(spit "/tmp/x" "2. log-2\n" :append true)
+
 ; slurp a file into mem
 (slurp "/Users/e51141/macsrc/clj/io.clj")
 (read-lines "/Users/e51141/macsrc/clj/myclj/io.clj")
