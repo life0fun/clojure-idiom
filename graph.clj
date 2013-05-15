@@ -226,7 +226,7 @@
 ; how to perf process-edge, process-vertex late ?
 (defn dfs-tree [root]  ; for bin tree, acyclic, no need for discovered/processed
   (letfn [(get-children [root]
-            ; collect all children of root into a vec seq to 
+            ; give a root, reduce(loop) of all its children(left,right) to collect
             (reduce (fn [ret cur] (conj ret (cur root))) [] [:left :right]))]
     (let [children (filter identity (get-children root))]
       (if (empty? children)
@@ -235,6 +235,17 @@
           (lazy-cat partRslt [(:val root)]))))))  ; append root at the end of children rets.
 
 (dfs-tree my-tree)
+
+; using mapcat to replace reduce a list to another list
+(defn dfs-tree-mapcat [root]
+  (letfn [(get-children [root]
+            ;(filter identity (reduce (fn [ret cur] (conj ret (cur root))) [] [:left :right])))]
+            (filter identity (mapcat #(vector (% root)) [:left :right])))]
+    (if (empty? root)
+      [(:val root)]   ; base, ret root val
+      (conj (vec (mapcat #(dfs-tree-mapcat %) (get-children root))) (:val root)))))
+   
+(dfs-tree-mapcat my-tree)
 
 ; dfs of graph, need to carry global discovered, processed, and path
 ; The args to recursive fn can carry global state; foreach c : children, partRslt = dfs(c)

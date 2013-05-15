@@ -158,15 +158,15 @@
 ; recursive version of bi-sect, insert just before entry that is bigger than val
 ; arg is map-indexed vector l, [idx val]
 (defn recur-bisect [l v]
-  (if-not (seq l)
+  (if (empty? l)
     0   ; ret immediately upon empty list, we ensured never recur with empty list.
     (let [len (count l) mid (quot len 2) midv (second (nth l mid))
           lo (subvec (vec l) 0 mid) hi (subvec (vec l) (inc mid))]
       (if (>= v midv)     ; recur until the first one bigger than val
-        (if-not (seq hi)  ; hi subvec explored, insert after mid
+        (if (empty? hi)  ; hi subvec explored, insert after mid
           (inc (first (nth l mid)))
           (recur hi v))        ; never recur with empty list
-        (if-not (seq lo)       ; lo subvec explored, insert before mid
+        (if (empty? lo)       ; lo subvec explored, insert before mid
           (first (nth l mid))
           (recur lo v))))))   ; never recur with empty list
 
@@ -212,18 +212,4 @@
   (if (= obj oldsym)
     newsym
     oldsym))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 

@@ -2,10 +2,10 @@
 ;; 4clojure problem solving  http://www.4clojure.com/
 ;;
 ;; Username: life0fun
-;; Rank: 171 out of 13992
-;; Problems Solved: 134
 ;; Rank: 162 out of 14099
 ;; Problems Solved: 135
+;; Rank: 171 out of 13992
+;; Problems Solved: 134
 ;; Rank: 175 out of 13915
 ;; Problems Solved: 133
 ;;
@@ -393,10 +393,10 @@
                     (cons hd (sieve (dec n) (filter #(not (zero? (rem % hd))) bd))))))))
           (prime-idx [primes p]
             (if-not (some #{p} primes)
-              -1  ;; ret -1
+              -1  ; not in primes set, not a prime, ret -1
               ;; find out the index of prime in seq so to get prev and next
               (loop [start 0 end (dec p)]
-                (let [mid (int (/ (+ start end) 2))]
+                (let [mid (quot (+ start end) 2)]
                   (if (= p (nth primes mid))
                     mid
                     (if (> p (nth primes mid))
