@@ -307,6 +307,34 @@
 
 (bftrav my-tree)
 
+
+; when co-recursion, the diff between bfs and dfs, is when lazy-cat parent result to child result.
+; recursion is apply DP fn to header, and recursively apply DP fn to all header's children. then
+; concat the result. 
+;   (lazy-cat (hd) (mapcat DP (getChildren hd)))  ; bfs cons hd
+;   (lazy-cat (mapcat DP (getChildren hd)) (hd))  ; dfs conj hd
+; For tree, get child of head is header's child pointer
+; For list, get child of head is header's idx dec. List is a tree with only left children.
+; we unified graph traverse branch bound explore with list header recursion 
+; example:
+;  permutation, get hd, header's child is head idx-1, permu(childen), for each result, conj hd.
+;  subsetsum: get hd, child is head idx-1, apply subsetsum to children incl/excl head value.
+;  dfs : lazy-cat conj result of dfs header's children, with header
+;  bfs : mapcat getchild fn to each headers, apply bfs to all the children of cur headers.
+;        lazy-cat headers to the results of recursive bfs to the current headers.
+;
+(defn dftrav [& trees]
+  (when trees
+    (lazy-cat 
+      (->> trees
+        (mapcat #(vector (:left %) (:right %)))
+        (filter identity)
+        (apply dftrav))
+      trees)))
+
+(dftrav my-tree)
+
+
 ;; for binary tree, in order traverse just recursively cons lchild, cur, rchild.
 (defn xseq [tree]
   (when tree
