@@ -177,6 +177,26 @@
 (recur-bisect (map-indexed vector [1 2 3 3 5]) 3)
 (recur-bisect (map-indexed vector [1 2 3 3 5]) 8)
 
+
+; for list, use header iteration when need to apply fn to each element in list.
+; for tree, can use branch DP to explore
+(defn permutation [text]
+  (letfn [(inject-each-pos [hd subw]   ; ret a list of strings
+            (if (empty? subw)
+              hd   ; bottom, ret hd string
+              (let [sz (inc (count subw))
+                    splits (map #(split-at % subw) (range sz))
+                    injected-splits (map #(concat (first %) (vec hd) (second %)) splits)]
+                (map #(apply str %) injected-splits))))]
+
+    (if (empty? text)
+      []
+      (let [ hd (subs text 0 1)
+             subp (permutation (subs text 1))]
+        (if (empty? subp)
+          [hd]
+          (mapcat #(inject-each-pos hd %) subp))))))
+
 ;
 ; mutual recursion is idea for state machine transition
 
