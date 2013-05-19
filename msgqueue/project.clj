@@ -7,9 +7,9 @@
     [org.clojure/java.jdbc "0.2.3"]         ; jdbc 
     [mysql/mysql-connector-java "5.1.6"]
     [clj-redis "0.0.12"]   ;
-    [clojure-rabbitmq "0.2.1"]
+    ;[clojure-rabbitmq "0.2.1"]
     ;[rabbitmq-client "1.7.0"]
-    [com.rabbitmq/amqp-client "2.3.1"]
+    [com.rabbitmq/amqp-client "2.3.1"]  ; use amqp-client !
     [org.clojure/data.json "0.2.2"]    ;; json package
     ]
   :main msgqueue.core)   ; set main entry

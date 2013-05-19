@@ -5,7 +5,9 @@
 ;;    [com.rabbitmq/amqp-client "2.3.1"]
 
 (ns msgqueue.rabbitmq.rabbitmq
-  (:import (com.rabbitmq.client ConnectionFactory ConnectionParameters Connection Channel QueueingConsumer)))
+  (:import (com.rabbitmq.client ConnectionFactory 
+                                ;ConnectionParameters 
+                                Connection Channel QueueingConsumer)))
 
 
 ; dynamic bindable variable for connection. each thread can re-bind connection

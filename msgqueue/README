@@ -2,6 +2,15 @@
 
 Distribute computation across rabbitmq and model rabbitmq message queues as clojure lazy sequences.
 
+# The rabbitmq client lib.
+
+There are many rabbitmq client libs, the most robust one is amqp-client.
+We use that lib, rather than rabbitmq-client-1.7.0.jar. Note that clojure-rabbitmq depends on rabbitmq-client-17.0.jar.
+
+ [com.rabbitmq/amqp-client "2.3.1"]
+ 
+  ;[clojure-rabbitmq "0.2.1"]
+  ;[rabbitmq-client "1.7.0"]
 
 ## Dependency lib resolver
 
