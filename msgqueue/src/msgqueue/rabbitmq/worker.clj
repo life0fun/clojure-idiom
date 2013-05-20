@@ -88,7 +88,8 @@
   (worker-internal-data attrib-name))
 
 ; dispatch the worker to msg queue. first creates a ref to store ret value(async call).
-; part of dispatch is create a listener for response ret a closure that wraps result for accessor attrib getter.
+; then create a listener for response, listener wrapped in a future, update ret value(closure)
+; ret a closure that wraps the result and exposes getter accessor fn.
 (defn on-swarm [worker-name args]
   (let [worker-data (ref worker-init-value)  ; init a ref to store ret data
         worker-transport (dispatch-work worker-name args worker-data)]

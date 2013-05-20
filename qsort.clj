@@ -218,13 +218,14 @@
   (not (my-even? n)))
 
 
-
 ; recursive build a list, recursive destructure a list
 (defn- coll-or-scalar [x & _] (if (coll? x) :collection :scalar))  ; dispatch 
 (defmulti replace-symbol coll-or-scalar)
 (defmethod replace-symbol :collection [coll oldsym newsym]
   (lazy-seq   ; invoke the body only when needed, ret empty seq at bottom
     (when (seq coll)
+      ; apply the same repalce-symbo to the first ele, be it scalar or a seq, 
+      ; and to rest list. replace-symbo polymorphy by dispatch on the ele type.
       (cons (replace-symbol (first coll) oldsym newsym)
             (replace-symbol (rest coll) oldsym newsym)))))
 ; after dispatching, the first arg is exact
@@ -232,4 +233,15 @@
   (if (= obj oldsym)
     newsym
     oldsym))
+
+; given a list, continuously delete every other ele until one left
+; just transform the list recursive
+(defn filterlist [l]
+  (if (= (count l) 1)   ; base, only one, ret ele in the list
+    (first l)
+    (let [sz (count l)
+          keep-even-l (keep-indexed #(if (even? %1) %2) l)] ; keep ele with even idx, drop odd index ele in the list
+      (if (even? sz)   ; if len is even, the last ele is dropped, no need to adjust head for next recursion
+        (recur keep-even-l)
+        (recur (next keep-even-l))))))  ; odd is size, next recursion need to adjust head
 
