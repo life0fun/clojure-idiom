@@ -239,7 +239,7 @@
 (defn filterlist [l]
   (if (= (count l) 1)   ; base, only one, ret ele in the list
     (first l)
-    (let [sz (count l)
+    (let [sz (count l)  ; or if next point to itself, only one left.
           keep-even-l (keep-indexed #(if (even? %1) %2) l)] ; keep ele with even idx, drop odd index ele in the list
       (if (even? sz)   ; if len is even, the last ele is dropped, no need to adjust head for next recursion
         (recur keep-even-l)

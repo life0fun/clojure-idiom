@@ -49,7 +49,6 @@
 ; a mock records when and how API called(time, count, args) so we can verify calls later.
 
 
-
 ;; REFERENCES AROUND EVIL MUTABLE THINGS
 ;; Wrapping a mutable object in a Clojure reference type provides absolutely no guarantees 
 ;; for safe concurrent modification. 
@@ -203,9 +202,9 @@
 ;; alter ref conj to append log to global state syncly
 ;; defrecord to create a JVM class and bring into current namespace
 (defrecord Message [sender text])
-(user.Message. "Aaron" "Hello")  ;; instantiate the class
-(def messages (ref ()))   ;; create a ref to an empty list. The list is mutable
-(defn add-message [msg]   ;; alter mutable with conj as update-fn taking msg as arg
+(user.Message. "Aaron" "Hello")  ; instantiate the class
+(def messages (ref ()))   ; create a ref to an empty list. The list is mutable
+(defn add-message [msg]   ; alter mutable with conj as update-fn taking msg as arg
   (dosync (alter messages conj msg)))
 (add-message (user.Message. "user 1" "hello"))
 (add-message (user.Message. "user 2" "howdy"))
@@ -216,26 +215,14 @@
 (set! *print-length* 10)  ;; set rebindable global dynamic var
 (swap! current-track assoc :title "Sancte Deus")  ;; (assoc @atom :title x)
 
-;; send agent update-fn & args
+;; send agent update-fn & args, args is de-refed agent value.
 (def counter (agent 0 :validator number?))  ; use validator to guard data in agent
 (send counter inc)
 ;; block until update complete if you like
 (await-for timeout-mills & agents)
 (send bad-agent / 0)  ; send bad operation (div 0) to agent cause agent to crash
 (clear-agent-errors agent)
-;; incl agent in transactions
-;; agent store the log file name,
-(def backup-agent (agent "output/messages-backup.clj"))
-(defn add-message-with-backup [msg]
-  (dosync ; start transaction 
-    ; grab the commute in-trans val of message. at commit time, the val is set to be most-recent commit val
-    (let [snapshot (commute messages conj msg)] ;; commute only applicable to ref
-      ; send the data to backup agent to persist while inside the transation
-      (send-off backup-agent 
-                (fn [filename]
-                  (spit filename snapshot)
-                  filename)) 
-                snapshot)))
+
 
 ; manage Per-thread state with dynamic vars
 (def ^:dynamic foo 10)  ; root binding wont change. Not mutable. If you require mutable, use @atom
@@ -248,7 +235,7 @@
   (print-foo))                ; root binding wont be changed
 
 
-;; Deal with Java Callbacks with dynamic bindings
+; Deal with Java Callbacks with dynamic bindings
 ; contentHandler is a callback got invoked when stream parser encounter certain token
 ; the current offset in stream, as a mutable pointer, to a specific spot in stream.
 ; SAX parser call startElement when it encounter start tag, and the callback fn update dynamic var binding
@@ -297,16 +284,40 @@
 (time (exercise-agents send-off))
 (time (exercise-agents send))
 
+; STM can not have side effect. So how do you impl update state and save the state to db ?
+; Agent can be used to facilitate intended side-effect inside ref change transaction.
+; clojure STM holds all actions that needs to be sent to agent until they succeed.
+; this ensure only one send to agent even when STM retries.
+(dosync
+  (send agent-one log-message args-one)
+  (send-off agent-two send-message-on-queue args-two)
+  (alter a-ref ref-function)
+  (some-pure-function args-three))
+
+; persistent logging. ref alter append log to global, and send fn to store snapshot to agent.
+; agent val is log file name, send-off execute write log fn with filename de-ref and snapshot.
+(def backup-agent (agent "output/messages-backup.clj"))
+(defn add-message-with-backup [msg]
+  (letfn [(log [logfile logmsg]
+            (spit logfile logmsg)
+            logfile)]  ; log msg into log file, and ret log file to agent
+    (dosync ; start transaction 
+      ; grab the commute in-trans ref val of message. at commit time, the val is set to be most-recent commit val
+      (let [snapshot (commute messages conj msg)]
+        ; send the data to backup agent to persist while inside the transation
+        (send-off backup-agent log snapshot)))))
 
 ;; agent wraps/ref around eveil mutable BufferedWriter
 ;; agent's new value is set as the ret value of fn send to agent
-(ns logger (:import (java.io BufferedWriter FileWriter)))
+(ns logger 
+  (:import (java.io BufferedWriter FileWriter)))
+
+; agent value stores buffered writer instance.  
 (let [wtr (agent (BufferedWriter. (FileWriter. "agent.log")))]
   (defn log [msg]
     (letfn [(write [out msg]
-              (.write out msg)
-                out)   ;; .write ret outstream, so it can be set to agent.
-           ]
+              (.write out msg) ; BufferedWriter.write(String str)
+              out)]   ;; .write ret outstream, so it can be set to agent.
       (send wtr write msg)))  ;; send (fn [@agent, data])
   (defn log [msg]
     (send wtr #(doto % (.write msg))))
@@ -318,8 +329,8 @@
 (close)
 
 ;;
-;; relay a msg thru a chain of N agents
-;; multiple cores with multiple agents.
+;; store url as agent value, send-off get-url fn to agent and wait for result.
+;; the send-off thread take agent val(url) and execute get-url fn to download url.
 ;;
 (ns parallel-fetch
   (:import (java.io InputStream InputStreamReader BufferedReader)
@@ -343,9 +354,9 @@
 (prn (get-urls '("http://lethain.com" "http://willarson.com")'))
 
 ;;
-;; Agent as a msg reply
-;; using agents to send agents to other agents which creates a fully asynchronous programming model.
-;; work pipeline where each agent performs some work on incoming message before passing it further down the line.
+;; send a msg around a ring test
+;; create a ring of agent, nested agent, (agent (agent (agent {})))
+;; when apply the relay fn to an agent, if agent contains another agent, recursive relay.
 ;;
 (ns agents-queue)
 
@@ -356,7 +367,7 @@
 ;; use reduce to create agent ref around agent, recursive. (agent (agent (agent )))
 (defn create-relay [n]
   (letfn [(next-agent [previous _] (agent previous))]
-    (reduce next-agent nil (range 0 n))))
+    (reduce next-agent nil (range 0 n)))) ; (agent (agent (...(agnent 0))))
 
 ;; first arg is agent
 (defn relay [relay msg]
@@ -408,8 +419,8 @@
 (def bucket-name "user-images")
 
 (defn update-image [image filename]
-  (with-open [os (ByteArrayOutputStream.)]
-    (ImageIO/write image "jpg" os)
+  (with-open [os (ByteArrayOutputStream.)]  ; create a outputstream obj to write image to
+    (ImageIO/write image "jpg" os)  ; write jpg to the output stream object
     (let [request (s3/put-object credentials bucket-name filename
                                  (clojure.java.io/input-stream (.toByteArray os)))]
       {:finished true :request request})))
@@ -419,8 +430,8 @@
 (defn upload-images [images]
   (doall
     (map-indexed
-      (fn [image i]
-        (future (upload-image image (format "myimage-%s.jpg" i))))  ;; future a closure expr.
+      (fn [image i]  ; wrap blocking io into future, run in separate thread
+        (future (upload-image image (format "myimage-%s.jpg" i))))
       images)))
 
 ;; submit the future and wait for the result.
