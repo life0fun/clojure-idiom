@@ -299,8 +299,8 @@
 (def backup-agent (agent "output/messages-backup.clj"))
 (defn add-message-with-backup [msg]
   (letfn [(log [logfile logmsg]
-            (spit logfile logmsg)
-            logfile)]  ; log msg into log file, and ret log file to agent
+            (spit logfile logmsg)  ; open f with writer, writes, the close.
+            logfile)]  ; ret val is set as new val of the reference.
     (dosync ; start transaction 
       ; grab the commute in-trans ref val of message. at commit time, the val is set to be most-recent commit val
       (let [snapshot (commute messages conj msg)]

@@ -27,7 +27,17 @@
 
 ; slurp a file into mem
 (slurp "/Users/e51141/macsrc/clj/io.clj")
-(read-lines "/Users/e51141/macsrc/clj/myclj/io.clj")
+
+; transform file as line seq using clojure.java.io/reader
+(with-open [rdr (clojure.java.io/reader "/Users/e51141/tmp/x")]
+  (printf "%s\n" (clojure.string/join "\n" (line-seq rdr))))
+
+
+; output stream convert a file to byte output stream.
+(:use [clojure.java.io :only [output-stream]])
+(defn use-output-stream []
+  (with-open [o (output-stream "test.txt")]
+    (.write o 65))) ; Writes 'A'
 
 (defn parse-line [line]
   (let [tokens (.split (.toLowerCase line) " ")]
@@ -65,10 +75,10 @@
 (with-open [wrtr (writer "/tmp/test.txt" :append true)]
   (.write wrtr "Line to be appended"))
 
-(defn fetch-url[address]
+(defn fetch-url [address]
   (with-open [stream (.openStream (java.net.URL. address))]
     (let [buf (java.io.BufferedReader.
-          (java.io.InputStreamReader. stream))]
+              (java.io.InputStreamReader. stream))]
       (apply str (line-seq buf)))))
 
 (fetch-url "http://google.com")

@@ -285,8 +285,9 @@
 ;; use the available data, head, produce further data, header's children.
 ;; ret a seq formed by cons hd into the seq formed by further data from processing of head.
 ;;
-(defstruct tree :val :left :right)
-(def my-tree
+(defrecord TreeNode [val l r])  ; use defrecord/deftype to gen class and import into ns.
+(defstruct tree :val :left :right)   ; the downfall of defstruct as the field is hard requirement
+(def my-tree                         ; could not be removed by dissoc, use defrecord and deftype !
   (struct tree 1
     (struct tree 2)
     (struct tree 3
@@ -325,7 +326,7 @@
 ;
 (defn dftrav [& trees]
   (when trees
-    (lazy-cat 
+    (lazy-cat   ; lazy-cat children first, then parent. DFS.
       (->> trees
         (mapcat #(vector (:left %) (:right %)))
         (filter identity)
