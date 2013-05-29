@@ -274,15 +274,25 @@
 ;; send-off is preferred for functions which block on IO, send for those which block on CPU.
 ;; (await-for blocks on any number of threads until they all complete or the timeout value, specified in milliseconds, is reached.)
 
-(defn exercise-agents [send-fn]
-  (let [agents (map #(agent %) (range 10))]
-    (doseq [a agents]
-      (send-fn a (fn [_] (Thread/sleep 1000))))
-    (doseq [a agents]
-      (await a))))
+; agent patten: distribute fn to run parallel in multiple thread in one box.
+; use rabbitmq to distribute fn to run in many processes in many boxes.
+(defn get-url [url]
+  (let [conn (.openConnection (URL. url))]
+    (.setRequestMethod conn "GET")
+    (.connect conn)
+    (with-open [stream (BufferedReader.
+                       (InputStreamReader. (.getInputStream conn)))]
+      (.toString (reduce #(.append %1 %2)
+                          (StringBuffer.) (line-seq stream))))))
+; map works(args) to a set of agents, one core per agent.
+; send-off computation fns to each agent, and collect result.
+(defn get-urls [urls]
+  (let [agents (doall (map #(agent %) urls))]
+    (doseq [agent agents] (send-off agent get-url))
+    (apply await-for 5000 agents)
+    (doall (map #(deref %) agents))))
 
-(time (exercise-agents send-off))
-(time (exercise-agents send))
+(prn (get-urls '("http://lethain.com" "http://willarson.com")))
 
 ; STM can not have side effect. So how do you impl update state and save the state to db ?
 ; Agent can be used to facilitate intended side-effect inside ref change transaction.
@@ -294,6 +304,13 @@
   (alter a-ref ref-function)
   (some-pure-function args-three))
 
+; agents are submitted functions which are executed with agent val as arg to fn in order.
+; if agent wraps file name, submitted fn must open file, write, and close(spit, slurp)
+; if agent wraps BufferedWriter, submitted fn just use the writer to output buffer.
+; In the end, agent is for sequencing fn operations on a global data structure.
+; usage: sequencing writes to file, sequencing update of shared collection.
+; one core per agent, each agent has a queue, submit task to the queue, agent runs parallel.
+;
 ; persistent logging. ref alter append log to global, and send fn to store snapshot to agent.
 ; agent val is log file name, send-off execute write log fn with filename de-ref and snapshot.
 (def backup-agent (agent "output/messages-backup.clj"))
