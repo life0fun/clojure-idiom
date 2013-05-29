@@ -82,6 +82,25 @@
     (let [this "huh?"]   ;; do NOT re-def this inside proxy-method
       (proxy-super toString))))
 
+(def myr 
+  (proxy [Runnable][]
+    (run [] 
+      (prn "running proxy"))))
+
+(def myz 
+  (reify Runnable 
+    (run [this] 
+      (prn "running reify"))))
+
+(.start (Thread. myr))
+(.start (Thread. myz))
+
+(import 'java.util.concurrent.Executors)
+(.submit (Executors/newSingleThreadExecutor) myr)
+
+(import [java.util.concurrent Executors])
+(.submit (Executors/newSingleThreadExecutor) myr)
+
 
 ; gen-class, need AOT compiler to gen java class before hand.
 ; (compile 'joy.gui.DynaFrame')
