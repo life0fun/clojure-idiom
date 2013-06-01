@@ -5,6 +5,10 @@
   (:require clojure.string))
 
 
+; ref is synchronized multi collection access. Java use lock, clj use dosync
+; atom is concurrent collection. Java use strip lock, clj use CAS.
+; agent is for sequencing, distribute parallel works, and incur side effect(log) in STM.
+
 ; a stub ret a canned val predefined.
 ; a mock records the fact that it was called with a specific set of args so we can verify api is called properly later from mock log.
 
@@ -35,9 +39,9 @@
 
 ; common stub-fn ret passed in val no matter what args
 (defn stub-fn [return-value]
-  (fn [& args]         
+  (fn [& args]
     return-value))
-        
+
 (defmacro stubbing [stub-forms & body]
   (let [stub-pairs (partition 2 stub-forms)
         returns (map last stub-pairs)
@@ -104,9 +108,9 @@
         ;launch side-effects here
     )))
 
-;;
-;; Atom {} = concurrentHashMap<K, FutureTask<T>>, CAS. reset! swap!  equals putIfAbsent
-;;
+;
+; Atom {} = concurrentHashMap<K, FutureTask<T>>, CAS. reset! swap!  equals putIfAbsent
+; Atom [] = concurrentLinkedList, FIFO, how do you do poll ?
 (def database (atom {:henk {:username "henk" :password "johnson" :session "test"}
                      :steve {:username "steve" :password "boldwin" :session "test2"}
                      :cane {:username "cane" :password "john" :session "test3"}}))

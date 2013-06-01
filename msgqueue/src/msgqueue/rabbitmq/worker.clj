@@ -58,7 +58,7 @@
                        (ref-set worker-ref (read-string response-message))
                        (.queueDelete channel return-q-name)
                        (.close channel)))]
-    ; dwrap blocking call into a future object will be invoke in another thread
+    ; wrap blocking call into a future object will be invoke in another thread
     ; when callback and cache result for def. The same as java FutureTask.
     (future (on-response (delivery-from channel consumer)))
     [channel return-q-name]))  ; ret ch and ret qname

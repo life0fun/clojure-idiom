@@ -75,7 +75,7 @@
     ([x y] (.doMoreStuff this, x, y)))))
 
 ; the magic this for dispatch. Do not redef this inside proxy-method
-; While the methods for gen-class take the object as ﬁrst argument (and can thus it can be named whatever you like) 
+; While the methods for gen-class take the object as first argument (and can thus it can be named whatever you like) 
 ; proxy captures the symbol this in a similar way Java does. So in a proxy method this will always refer to the instance at hand.
 (proxy [Object] []
   (toString []
