@@ -199,12 +199,12 @@
 ;; fn recur branch. In oo, ret val and call stack handles it.
 ;;    largest = max( (for c in child) val = dfs(c))
 ;; In fn lang, need to loop with explicit stack until stack empty and bind carry intermediate result.
-;; dfs traverse normally post-order, as we want to collect all results from children's explore.
+;; dfs traverse normally post-order, as we want to merge all results from children's explore.
 ;; Vectors and Lists used as stacks with IPersistenStack to bind Intermediate result
 ;; partial result can be a vec of visited node, or a map of max/min of each node's subtree.
 ;; discovered : node in active stack. was set when node gets put into stack. 
 ;; processed : node all children done. Not in active stack. Only used in cyclic graph. Not usable in b-tree.
-;; we update state and collect result for each node after all its children done.
+;; we update state and merge result for each node after all its children done.
 ;; we can carry a map to record each node's max/min after exploring all node's children.
 ;;
 (defn dfs [col]
@@ -236,14 +236,17 @@
 
 (dfs-tree my-tree)
 
-; using mapcat to replace reduce a list to another list
+; use mapcat to map fn to each child, and merge cat all results into single list to return.
+; use lazy-cons to form the result
 (defn dfs-tree-mapcat [root]
   (letfn [(get-children [root]
             ;(filter identity (reduce (fn [ret cur] (conj ret (cur root))) [] [:left :right])))]
             (filter identity (mapcat #(vector (% root)) [:left :right])))]
     (if (empty? root)
       [(:val root)]   ; base, ret root val
-      (conj (vec (mapcat #(dfs-tree-mapcat %) (get-children root))) (:val root)))))
+      (conj 
+        (vec (mapcat #(dfs-tree-mapcat %) (get-children root))) 
+        (:val root)))))
    
 (dfs-tree-mapcat my-tree)
 
@@ -254,7 +257,7 @@
 ; the same as DP call that carries partial result at each DP. e.g, subset-sum.
 (defn dfs-graph [root discovered processed path]
   (letfn [(get-children [root]
-          ; collect all children of root in a vec to operate on
+          ; merge all children of root in a vec to operate on
           (reduce (fn [ret cur] (conj ret (cur root))) [] [:left :right]))]
     (let [children (filter identity (get-children root))]
       ; reduce can only take one state var. use loop recur to carry multiple
@@ -298,7 +301,7 @@
 ; arg is a list of node, of one bfs level. process the arg, produce a result list which consists
 ; of all of children of nodes in cur bfs level. this result list is the arg for next recursive bfs.
 ; the final result is the cons of cur list on top of 
-(defn bftrav [& trees]  ; trees is a Q in bfs
+(defn bftrav [& trees]  ; collect args into a list
   (when trees
     (lazy-cat trees     ; cons me to the result of processing me, forming the full result.
       (->> trees
@@ -306,14 +309,24 @@
         (filter identity)    ;; filter identity remov nil.
         (apply bftrav)))))
 
-(bftrav my-tree)
+(map #(:val %) (bftrav my-tree))
 
 
 ; when co-recursion, the diff between bfs and dfs, is when lazy-cat parent result to child result.
 ; recursion is apply DP fn to header, and recursively apply DP fn to all header's children. then
-; concat the result. 
-;   (lazy-cat (hd) (mapcat DP (getChildren hd)))  ; bfs cons hd
-;   (lazy-cat (mapcat DP (getChildren hd)) (hd))  ; dfs conj hd
+; concat the result.
+;
+; when taking head sequentially one by one from list, use lazy-seq cons root
+;   (lazy-seq (cons root (DP root)))
+; when head is a collection, map fn to each child and merge result with mapcat. 
+; then lazy-cat to add head collection to the result of head collection.
+;   (lazy-cat [trees] (mapcat DP (getChildren trees)))  ; bfs cons hd
+; when apply fn to one item will gen a list, use mapcat to merge intermediate result.
+;   (lazy-cat (mapcat DP (getChildren hd)) [hd])  ; dfs conj hd
+;
+; map reduce is to distribute fn and merge results. break-down merge-sort.
+;   lazy-cat, mapcat, (lazy-seq cons)
+;
 ; For tree, get child of head is header's child pointer
 ; For list, get child of head is header's idx dec. List is a tree with only left children.
 ; we unified graph traverse branch bound explore with list header recursion 
@@ -324,7 +337,40 @@
 ;  bfs : mapcat getchild fn to each headers, apply bfs to all the children of cur headers.
 ;        lazy-cat headers to the results of recursive bfs to the current headers.
 ;
-(defn dftrav [& trees]
+
+; return a lazy-seq by conj root to the end of applying the same fn to root's children.
+; use mapcat to recursively apply fn to each of root's children.
+(defn dfs-lazyseq-mapcat [root]   ; only take one arg, root, as compared to prev
+  (letfn [(get-children [root]
+            ;(filter identity (reduce (fn [ret cur] (conj ret (cur root))) [] [:left :right])))]
+            (filter identity (mapcat #(vector (% root)) [:left :right])))]
+    (if (empty? root)
+      [(:val root)]   ; base, ret root val in a vec
+      (lazy-seq
+        (conj (vec (mapcat #(dfs-lazyseq-mapcat %) (get-children root))) (:val root))))))
+
+(dfs-lazyseq-mapcat my-tree)
+
+; yet another version of ret a lazy-seq by conj root to the end of recursive apply fn.
+; use mapcat to recursively apply the same fn to each of root's children, and merge the 
+; the result into a single return list using lazy-cat to
+(defn dfs-lazyseq [root]  ; only take single arg, root, not a list of node !
+  (when root
+    (lazy-seq    ; ret a lazy-seq of conj root to the end of result root's children
+      (conj 
+        (vec (mapcat dfs-lazyseq    ; map this fn recursively to each children, and merge results by concat into a single list
+                (->> (mapcat #(vector (% root)) [:left :right])  ; iterate each branch, and merge childrens into a list
+                  (filter identity))))
+        (:val root)))))
+
+(dfs-lazyseq my-tree)
+
+
+; if the fn take a list of node as arg, we can use apply fn to the list of children,
+; then use lazy-cat to merge the result. otherwise, we need to use map fn to each child.
+
+; by collecting args into list, we can call apply fn during recursion.
+(defn dftrav [& trees]  ; collect args into a list, so we can apply fn to a list, otherwise, we need to map fn to each child.
   (when trees
     (lazy-cat   ; lazy-cat children first, then parent. DFS.
       (->> trees
@@ -333,7 +379,19 @@
         (apply dftrav))
       trees)))
 
-(dftrav my-tree)
+(map #(:val %) (dftrav my-tree))  ; my-tree is root node, not a list.
+
+(defn dfs-apply [ & nodes]   ; a list of nodes
+  (when nodes
+    (lazy-cat
+      (->> nodes    ; get and merge all children of nodes list
+        (mapcat (fn [node]  ; map get child fn to each branch of node and merge children
+                    (mapcat #(vector (% node)) [:left :right])))
+        (filter identity)
+        (apply dfs-apply))
+      nodes)))
+
+(map #(:val %) (dfs-apply my-tree))
 
 
 ;; for binary tree, in order traverse just recursively cons lchild, cur, rchild.
