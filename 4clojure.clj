@@ -596,6 +596,17 @@
                                         (conj this (first coll))))
                                    (conj ret (hash-set (first coll))) ret)))))
 
+(defn powerset [coll]
+  (if (= 1 (count coll))
+    (vector (conj #{} (first coll)))
+    (let [head (first coll)
+          pret (powerset (rest coll))]
+      ; need to wrap head set into a vector, as concat will peel off the vec, 
+      ; and take only the content from it, and form the final seq.
+      (concat pret
+              (map (fn [col] (conj col head)) pret)
+              (vector (conj #{} head))))))   
+
 ;;
 ;; k-comb, powerset filter at len k.
 ;; trans fn taking partial result as args, and top-down built final result based on partial result step by step.
