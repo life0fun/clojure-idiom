@@ -92,7 +92,9 @@
 ; test
 (qsort [2 1 4 3])
 
-; lazy-cat, first, destruct the passed-in list as (p & body), then partition body into 
+; lazy-cat is used to merge intermediate result during recursion to ret single list to caller.
+; with lazy-cat to merge intermediate result during recursion, we can use map to divide and distribute works.
+; first, destruct the passed-in list as (p & body), then partition body into 
 ; low hi bodies, full sol = cons solution for low, pivot, solution for hi.
 (defn lazyqsort [l]
   (if-not (seq l)   ; idiomatic. (seq l) ret a seq view of the collection, or nil
@@ -136,7 +138,7 @@
 (defn bisect [l v]
   "binary search for value in l, if not found, insert v at the end of l"
   (loop [i (int 0) j (int (dec (count l)))]  ;; count is inlined, thus ret a primitive.
-    (if (> i j)
+    (if (> i j) ; continue when i == j
       false
       (let [ mid (unchecked-divide (unchecked-add i j) 2) midv (l mid) ]
         (cond

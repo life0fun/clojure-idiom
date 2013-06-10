@@ -304,7 +304,7 @@
 (defn bftrav [& trees]  ; collect args into a list
   (when trees
     (lazy-cat trees     ; cons me to the result of processing me, forming the full result.
-      (->> trees
+      (->> trees  ; the fn for mapct must gen a vec for concat to peel off
         (mapcat #(vector (:left %) (:right %)))  ; process cur list, the result is the input for next recursion
         (filter identity)    ;; filter identity remov nil.
         (apply bftrav)))))
@@ -381,7 +381,7 @@
 
 (map #(:val %) (dftrav my-tree))  ; my-tree is root node, not a list.
 
-(defn dfs-apply [ & nodes]   ; a list of nodes
+(defn dfs-apply [ & nodes]   ; change root node to list, lazy-cat takes lists.
   (when nodes
     (lazy-cat
       (->> nodes    ; get and merge all children of nodes list

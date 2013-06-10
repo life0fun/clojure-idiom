@@ -21,9 +21,7 @@
 (defn stringMatch [s, keywords]   ;; s is a string, not a list.
   (let [ words (.split s " ")
          wordset (into #{} words)
-         sect (clojure.set/intersection wordset (set keywords))
-       ]
-
+         sect (clojure.set/intersection wordset (set keywords))]
      (if (empty? sect)
        (if (not-empty sect)
          (prn 'not-empty)
@@ -38,10 +36,16 @@
 (binding [a 10] (.start (Thread. (fn [] (println a)))))
 (binding [a 10] (.start (Thread. (bound-fn [] (println a)))))
 
-;;
-;; destructuring : use [] to recv []/() destructuring. use {} for {} destructuring
+;named arguments by destruct the rest of arg just like destruct a map
+(defn foo [x y & {:keys [key1 key2 key3] :or {key3 10}}] 
+  (str x y key1 key2 key3))
+
+(foo 1 2 :key1 4 :key2 5)  ; => "124510"
+
+; destructuring : use [] to recv []/() destructuring. use {} for {} destructuring
 (def book {:name "SICP" :details {:pages 657 :isbn-10 "0262011530"}})
-(let [{{pages :pages} :details} book] (prn pages))
+(let [{{pages :pages} :details} book] 
+  (prn pages))
 
 ;;
 ;; map slicing : assoc/dissoc map/merge-with and update-in
