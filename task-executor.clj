@@ -141,3 +141,50 @@
   (let [f (fact n 1)]
     (println "Calculated factorial of" n "value:" f)
     f))
+
+
+; sleeping barbar, use Q to connect producer-consumer.
+; 1. use wait-notify
+; 2. LinkedBlockingQueue, wont blocking if queue is empty. LinkedBlockingQueue will block.
+; 3. clojure.lang.PersistentQueue/EMPTY for FIFO Q, ref fence it.
+; Pattern: wait, wake, lock, check, mute, notify
+
+(def queue  (ref (with-meta
+                   clojure.lang.PersistentQueue/EMPTY
+                   {:tally 0})))
+(def seats  3)
+
+(defn debug [_ msg n]  ; first unamed args
+  (println msg (apply str (repeat (- 35 (count msg)) \space)) n)
+  (flush))
+
+
+(defn the-shop [a]
+  ; the-shop is the Q connect producer and consumer
+  (debug "(c) entering shop" a)
+  (dosync
+    (if (< (count @queue) seats)
+      (alter queue conj a)    ; mutate ref with update fn
+      (debug "(s) turning away customer" a))))
+
+
+(defn the-barber [st q]
+  ; consumer, wait wake lock update notify
+  (Thread/sleep (+ 100 (rand-int 600)))
+  (dosync
+    (when (peek @q)
+      (debug "(b) cutting hair of customer" (peek @q))
+      (ref-set queue (with-meta (pop @q)
+                      {:tally (inc (:tally (meta @q)))})))))
+
+
+; observer on ref mutate for notification
+(add-watcher queue :send (agent 'barber) the-barber)
+
+(doseq [customer (range 1 20)]
+  ; (Thread/sleep (+ 100 (rand-int 200)))
+  (send-off (agent customer) the-shop))
+
+(Thread/sleep 2000)
+(println "(!) " (:tally (meta @queue)) "customers got haircuts today")
+
