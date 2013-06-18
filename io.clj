@@ -12,8 +12,8 @@
 ;   (:use [clojure.java.io])
 ;   (:use [clojure.contrib.io])  ; (use 'clojure.contrib.io)
 ;   (:use [clojure.test :only (are is)])
-;   (:require (clojure [zip :as z]))
-;   (:import (java.util.Collection)))
+;   (:require [clojure [zip :as z]])
+;   (:import [java.util.Collection]))
 
 
 ; get the current directory
@@ -75,8 +75,8 @@
 (with-open [wrtr (writer "/tmp/test.txt" :append true)]
   (.write wrtr "Line to be appended"))
 
-(defn fetch-url [address]
-  (with-open [stream (.openStream (java.net.URL. address))]
+(defn fetch-url [url]
+  (with-open [stream (.openStream (java.net.URL. url))]
     (let [buf (java.io.BufferedReader.
               (java.io.InputStreamReader. stream))]
       (apply str (line-seq buf)))))
@@ -122,8 +122,8 @@
   (->> (read-lines filename)
        (drop 2)               ; drop head 2 lines
        (lazy-request-seq)))
-
-; cons the result of head (next-log-record hd) to result seq of the rest 
+cons
+;  the result of head (next-log-record hd) to result seq of the rest 
 (defn lazy-request-seq [log-lines]
   (lazy-seq
     (let [record (next-log-record log-lines)]
@@ -138,3 +138,14 @@
     (remove nil? (conj body head))))
 
 
+
+; named arguments by destructure the rest argument with a map
+(defn foo [& {:keys [k1 k2 k3]}]
+  (prn "calling foo : " (str k1 k2 k3)))
+(foo :a :k1 "k" :k2 "b2" :k3 "c3")
+
+(defn blah [& {:keys [key1 key2 key3] :or {key3 10}}] 
+  (str key1 key2 key3))
+
+; unamed argument with underscore _
+; the underscore is used idiomatically indicates that the argument is not used.

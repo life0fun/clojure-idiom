@@ -424,7 +424,7 @@
           (siftlist-yb []
             (let [dp (fn [mem-dp n]    ;; def dp fn to take memoized boxed dp as first arg
                         ;; inside recursion body, impl logic without worrying dp tab, unbox memoized fn
-                        (let [dp (fn [n] (mem-dp mem-dp n))]  ;; mem-dp takes 2 args, recursion fn, and args
+                        (let [dp (fn [n] (mem-dp mem-dp n))]  ; calling mem-dp, passing itself as the first arg.
                           (if (= 2 n)
                             (filter #(not (zero? (rem % n))) (iterate inc 2))
                             (let [xs (dp (dec n))
@@ -432,7 +432,7 @@
                                   bd (rest xs)
                                   ret (filter #(not (zero? (rem % hd))) bd)]
                               ret))))
-                  mem-dp (memoize dp)]      ;; mem-dp memoized
+                  mem-dp (memoize dp)]      ;; memoize a fn, get a memoized fn
                   (partial mem-dp mem-dp))) ;; pass mem-dp as the second arg to memoized dp
 
           (primelist [n]
@@ -1181,6 +1181,8 @@
 ;; I varies of item idx[0..len(item)] from bottom up, J varies in value space[0..max]
 ;; Use memoize to tab the sol during bottom-up.
 ;; use with-local-vars to maek the recursive function see its own memoized bindings
+;; memoize a fn, get a memoized fn. The first arg to fn is a fn; when invoking the fn, pass itsef as the first arg.
+;; calling a fn by passing itself as the arg to the fn. Y-combinator.
 ;;
 (fn subsetsum [ & sets ]
   (letfn [(subsetsum-with-local-vars [ ]
@@ -1333,6 +1335,3 @@
 
 
 
-
-
-                                    

@@ -336,7 +336,7 @@
 ;  dfs : lazy-cat conj result of dfs header's children, with header
 ;  bfs : mapcat getchild fn to each headers, apply bfs to all the children of cur headers.
 ;        lazy-cat headers to the results of recursive bfs to the current headers.
-;
+;        mapcat is map and concat, hence the fn must return a list for concat to peel off and cat.
 
 ; return a lazy-seq by conj root to the end of applying the same fn to root's children.
 ; use mapcat to recursively apply fn to each of root's children.
@@ -381,7 +381,7 @@
 
 (map #(:val %) (dftrav my-tree))  ; my-tree is root node, not a list.
 
-(defn dfs-apply [ & nodes]   ; change root node to list, lazy-cat takes lists.
+(defn dfs-apply [ & nodes]   ; convert arg into list, so we can lazy-cat it to partial results.
   (when nodes
     (lazy-cat
       (->> nodes    ; get and merge all children of nodes list

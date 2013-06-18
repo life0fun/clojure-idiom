@@ -143,6 +143,7 @@
     f))
 
 
+<<<<<<< HEAD
 ; sleeping barbar, use Q to connect producer-consumer.
 ; 1. use wait-notify
 ; 2. LinkedBlockingQueue, wont blocking if queue is empty. LinkedBlockingQueue will block.
@@ -170,6 +171,30 @@
 
 (defn the-barber [st q]
   ; consumer, wait wake lock update notify
+=======
+
+;; sleeping barbar simulate
+;; A queue to tie up producer and consumer. Use ref to sequence the access to queue.
+; I 1 queue, producers-consumers sequencing on either get/put.
+; II deque/ringbuffer, producers lock on write idx, consumers on read idx.
+(def queue (ref (with-meta
+                 clojure.lang.PersistentQueue/EMPTY
+                 {:tally 0})))
+(def seats  3)  ; the capability of the queue
+
+(defn debug [_ msg n]  ; unamed argument, not used
+  (println msg (apply str (repeat (- 35 (count msg)) \space)) n)
+  (flush))
+
+(defn the-shop [a]  ; sequencing the enqueue 
+  (debug "(c) entering shop" a)
+  (dosync
+    (if (< (count @queue) seats)
+      (alter queue conj a)  ; update state with update fn
+      (debug "(s) turning away customer" a))))
+
+; Pattern: sync, peek, pop, set
+(defn the-barber [st q]
   (Thread/sleep (+ 100 (rand-int 600)))
   (dosync
     (when (peek @q)
@@ -178,7 +203,10 @@
                       {:tally (inc (:tally (meta @q)))})))))
 
 
-; observer on ref mutate for notification
+; observe mutable state changed, invoke my callback.
+; (add-watch refvar :key (fn [k refvar os ns] (print k refvar os ns)))
+(add-watcher queue :send (agent 'barber) the-barber)
+(add-watch queue :customer-ready the-barber)
 (add-watcher queue :send (agent 'barber) the-barber)
 
 (doseq [customer (range 1 20)]
@@ -187,4 +215,6 @@
 
 (Thread/sleep 2000)
 (println "(!) " (:tally (meta @queue)) "customers got haircuts today")
+                        {:tally (inc (:tally (meta @q)))})))))
+
 

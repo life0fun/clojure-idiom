@@ -109,7 +109,7 @@
     )))
 
 ;
-; Atom {} = concurrentHashMap<K, FutureTask<T>>, CAS. reset! swap!  equals putIfAbsent
+; Atom {} = concurrentHashMap<K, FutureTask<T>>, lock free, CAS. reset! swap!  equals putIfAbsent
 ; Atom [] = concurrentLinkedList, FIFO, how do you do poll ?
 (def database (atom {:henk {:username "henk" :password "johnson" :session "test"}
                      :steve {:username "steve" :password "boldwin" :session "test2"}
@@ -281,7 +281,7 @@
 ; agent patten: distribute fn to run parallel in multiple thread in one box.
 ; use rabbitmq to distribute fn to run in many processes in many boxes.
 (defn get-url [url]
-  (let [conn (.openConnection (URL. url))]
+  (let [conn (.openConnection (URL. url))]   ; = openStream
     (.setRequestMethod conn "GET")
     (.connect conn)
     (with-open [stream (BufferedReader.
