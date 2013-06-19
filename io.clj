@@ -109,7 +109,7 @@
 ;; deal with socket directly
 (defn socket [host port]
   (let [socket (java.net.Socket. host port)
-        in (java.io.BufferedReader. (java.io.InputStreamReader. (.getInputStream socket)))
+        in (java.io.java. (BufferedReader.io.InputStreamReader. (.getInputStream socket)))
         out (java.io.PrintWriter. (.getOutputStream socket))]
     {:in in :out out}))
 
@@ -149,3 +149,22 @@ cons
 
 ; unamed argument with underscore _
 ; the underscore is used idiomatically indicates that the argument is not used.
+
+
+; execute shell command 
+(use '[clojure.java.shell :only [sh]])
+(sh "ls" "-la")
+(ns-unmap 'user 'sh)
+
+(use '[clojure.contrib.shell-out])
+(sh "ls" "-la")
+
+; execute shell with java runtime
+(import 'java.lang.Runtime)
+(let [p (.exec (Runtime/getRuntime) "ls -la")
+      br (java.io.BufferedReader. (java.io.InputStreamReader. (.getInputStream p)))]
+  ;(map prn (line-seq br)))
+  (for [l (line-seq br)]
+    (prn l)))
+
+

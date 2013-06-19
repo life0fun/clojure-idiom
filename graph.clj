@@ -83,6 +83,9 @@
 ;; (rest fib)         1        f
 ;; (+ fib (rest fib)) f
 
+; lazy-cat, lazy-seq cons hd build seq top down from head recursive to infinity.
+; dfs, permutation, powerset is break down to bottom, then up back to root
+
 (def fib (lazy-cat [0 1] (map + fib (rest fib))))
 
 ;; factorial with recur
@@ -154,7 +157,7 @@
       (= (count graph) (count (stepHd graph (conj clojure.lang.PersistentQueue/EMPTY root) (conj #{} root)))))))
 
 (defn graph-tour [ edges ]
-  (letfn [(nbmap [col]  
+  (letfn [(nbmap [col]
                  ;; collection of edges [[a b] [c d]]
                  (let [bi-edges (into col (map (fn [e] [(second e) (first e)]) col))]
                    (reduce (fn [ret e]
@@ -323,6 +326,9 @@
 ;   (lazy-cat [trees] (mapcat DP (getChildren trees)))  ; bfs cons hd
 ; when apply fn to one item will gen a list, use mapcat to merge intermediate result.
 ;   (lazy-cat (mapcat DP (getChildren hd)) [hd])  ; dfs conj hd
+;
+; lazy-cat, lazy-seq cons hd build seq top down from head recursive to infinity.
+; dfs, permutation, powerset is break down to bottom, then up back to root
 ;
 ; map reduce is to distribute fn and merge results. break-down merge-sort.
 ;   lazy-cat, mapcat, (lazy-seq cons)

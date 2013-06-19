@@ -605,7 +605,7 @@
       ; and take only the content from it, and form the final seq.
       (concat pret
               (map (fn [col] (conj col head)) pret)
-              (vector (conj #{} head))))))   
+              (vector (conj #{} head))))))
 
 ;;
 ;; k-comb, powerset filter at len k.
