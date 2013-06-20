@@ -418,8 +418,26 @@
 ;; use future to submit tasks to executor pool.
 ;; task is an expr to be evaled; the expr is a closure that wraps some computation. Closure contains task's args 
 ;; you de-ref the future, will be blocked if future not calculated. Otherwise, you get the result back.
-;; future<T> f = executor.submit(new Callable<T>(){public T call(){}})
+;; Future<T> f = executor.submit(new Callable<T>(){public T call(){}})
 ;; f.get()
+;
+; to close over args to call, use a class to encapsulate.
+; public class DoPing implements Callable<String>{
+;    private final String ipToPing;
+;    public DoPing(String ipToPing) { this.ipToPing = ipToPing; }
+;    public String call() throws Exception {
+;        InetAddress ipAddress = InetAddress.getByName(ipToPing); } }
+;
+; ExecutorService.submit(new DoPing("google.com"))
+
+;
+; In clojure, all fn is callable, just wrap fn, which is a closure over args, into future,
+; which is auto submit to executor to run, and return FutureTask to de-ref
+; (map-indexed
+;   (fn [image i]  ; wrap blocking io into future, run in separate thread
+;     (future (upload-image image (format "myimage-%s.jpg" i))))
+;   images)))
+;
 
 (def a-promise (promise))
 (deliver a-promise :fred)

@@ -445,3 +445,28 @@
   (take 10))
 
 ;=> (5 4 3 2 1 0 -1 -2 -3 -4)
+
+
+;
+; deftype creates a java class and bring into current ns.
+; (deftype name [& fields] & opts+specs)
+; when using deftype to encapsulate, remember to return instantiated original object.
+;
+(deftype CloseableSeq [delegate-seq close-fn]
+  clojure.lang.ISeq
+    ; next ret a IPersistentCollection
+    (next [this]
+      (if-let [n (next delegate-seq)]
+        (CloseableSeq. n close-fn)
+        (.close this)))
+    (first [this] (if-let [f (first delegate-seq)] f (.close this)))
+    (more [this] (if-let [n (next this)] n '()))
+    ; cons also ret the IPersistentCollection, hence, you need to call constructor.
+    (cons [this obj] (CloseableSeq. (cons obj delegate-seq) close-fn))
+    (count [this] (count delegate-seq))
+    (empty [this] (CloseableSeq. '() close-fn))
+    (equiv [this obj] (= delegate-seq obj))
+  clojure.lang.Seqable 
+    (seq [this] this)
+  java.io.Closeable
+    (close [this] (close-fn)))

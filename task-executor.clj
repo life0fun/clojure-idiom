@@ -143,8 +143,9 @@
     f))
 
 
-<<<<<<< HEAD
 ; sleeping barbar, use Q to connect producer-consumer.
+; A queue to tie up producer and consumer. Use ref to sequence the access to queue.
+; or deque/ringbuffer, producers lock on write idx, consumers on read idx.
 ; 1. use wait-notify
 ; 2. LinkedBlockingQueue, wont blocking if queue is empty. LinkedBlockingQueue will block.
 ; 3. clojure.lang.PersistentQueue/EMPTY for FIFO Q, ref fence it.
@@ -169,31 +170,8 @@
       (debug "(s) turning away customer" a))))
 
 
-(defn the-barber [st q]
-  ; consumer, wait wake lock update notify
-=======
-
-;; sleeping barbar simulate
-;; A queue to tie up producer and consumer. Use ref to sequence the access to queue.
-; I 1 queue, producers-consumers sequencing on either get/put.
-; II deque/ringbuffer, producers lock on write idx, consumers on read idx.
-(def queue (ref (with-meta
-                 clojure.lang.PersistentQueue/EMPTY
-                 {:tally 0})))
-(def seats  3)  ; the capability of the queue
-
-(defn debug [_ msg n]  ; unamed argument, not used
-  (println msg (apply str (repeat (- 35 (count msg)) \space)) n)
-  (flush))
-
-(defn the-shop [a]  ; sequencing the enqueue 
-  (debug "(c) entering shop" a)
-  (dosync
-    (if (< (count @queue) seats)
-      (alter queue conj a)  ; update state with update fn
-      (debug "(s) turning away customer" a))))
-
 ; Pattern: sync, peek, pop, set
+; consumer, wait wake lock update notify
 (defn the-barber [st q]
   (Thread/sleep (+ 100 (rand-int 600)))
   (dosync
