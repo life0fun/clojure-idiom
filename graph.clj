@@ -86,6 +86,7 @@
 ; lazy-cat, lazy-seq cons hd build seq top down from head recursive to infinity.
 ; dfs, permutation, powerset is break down to bottom, then up back to root
 
+(def fib (lazy-seq (concat [0 1] (lazy-seq (map + fib (rest fib))))))
 (def fib (lazy-cat [0 1] (map + fib (rest fib))))
 
 ;; factorial with recur

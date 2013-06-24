@@ -199,6 +199,16 @@
           [hd]
           (mapcat #(inject-each-pos hd %) subp))))))
 
+;; cons each head to each tail, which is recur result of list without header
+(defn all-permutations [things]
+  (if (= 1 (count things))
+    (list things)
+    (for [head things
+          tail (all-permutations (disj (set things) head))]
+      (do
+        (cons head tail)))))
+(all-permutations '(a b c))
+
 ;
 ; mutual recursion is idea for state machine transition
 

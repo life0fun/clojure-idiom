@@ -186,6 +186,7 @@
 (add-watcher queue :send (agent 'barber) the-barber)
 (add-watch queue :customer-ready the-barber)
 (add-watcher queue :send (agent 'barber) the-barber)
+(add-watch queue :send (fn [k queue os ns] (prn k queue os ns)))
 
 (doseq [customer (range 1 20)]
   ; (Thread/sleep (+ 100 (rand-int 200)))
