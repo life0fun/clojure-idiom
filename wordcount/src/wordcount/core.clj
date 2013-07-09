@@ -36,7 +36,7 @@
 ;; emit tuple is a list of key value pairs.
 ;;   {"logevent" "Apr 21 01:00:08 haijin-mac kernel[0]: image 2166576128"}
 ;;
-(defspout sentence-spout ["logevent"]  ; output stream has logevent key.
+(defspout sentence-spout ["logevent"]  ; output stream has tuples with logevent field.
   [conf context collector]
   (let [logs [
             "Apr 21 01:00:08 haijin-mac kernel[0]: image 2166576128, uncompressed 5045297152 (183186), compressed 2155141936 (42%), sum1 6c67ac3, sum2 72119025"
@@ -84,7 +84,8 @@
 ;; default output stream, reduce to a vector of output field rather than a output map.
 ;;
 (defbolt filter-sentence ["sentence"] ;; output map = a vector of fields(keyword)
-  {:params [keywords] :prepare false} ;; take keywords param from topology bolt spec when creating the bolt.
+  ; params to the bolt in :params, passed in when assembling bolt in topology.
+  {:params [keywords] :prepare false} 
   [tuple collector] ;; for non-prepared bolt, impl fn (execute [tuple collector]) 
   (let [ sentence (.getStringByField tuple "logevent")  ;; the first string in tuple string list is sentence.
          words (.split sentence " ")
@@ -130,7 +131,8 @@
 ;; atom to store intermediate states, @atom to de-ref to get state.
 ;; swap! to update state.
 ;;
-(defbolt word-count ["word" "count"] {:prepare true}
+(defbolt word-count ["word" "count"] 
+  {:prepare true}
   [conf context collector]  ;; prepared bolt impl takes conf, context, collector
   (let [counts (atom {})]   ;; word count map
     (bolt
@@ -143,7 +145,8 @@
 ;;
 ;; combiner get input from stream 2 of split-sentence. Tuple has two fields, word/count
 ;;
-(defbolt combiner ["word" "count"] {:prepare true}
+(defbolt combiner ["word" "count"] 
+  {:prepare true}
   [conf context collector]
   (let [counts (atom {})]
     (bolt
@@ -174,7 +177,7 @@
     ;; stream id = [==component id== ==stream id==]
     ;; stream grp ["id" "name"]: subscribes with a fields grouping on the specified fields
     {"3" (bolt-spec {"2" :shuffle}  ; input component 2, shuffle grouping
-                    (filter-sentence ["Link" "channel"])
+                    (filter-sentence ["Link" "channel"])  ; filter bolt take a list of keyword to filter
                     :p 2)
 
      "4" (bolt-spec {"3" :shuffle}   ;; input from component 3, shuffle grouping

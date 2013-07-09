@@ -5,6 +5,19 @@
   ;; refer only in 1.4 (:require clojure.string :refer [ join ] :as string))
   (:require clojure.string))
 
+; '(2 3) is quote, so we can write list with (3 4), () viewed as list, not fn.
+; `(2 3) is syntax quoting. fully qualify all eles in the list. 
+;  `(a :b 3 "x") => (user/a :b 3 "x")  primitive keep the same. var expand to fully qualified name.
+; ~x syntax unqote, so do not expand var, must use within the scope of syntax quote.
+(def x (* 3 4))
+`(x) -> (user/x)
+`(~x) -> ((* 3 5))
+`(~@x) -> (* 3 5)
+
+`(1 2 (list 3 4))    =>  (1 2 (clojure.core/list 3 4))
+`(1 2 ~(list 3 4))   =>  (1 2 (3 4))
+`(1 2 ~@(list 3 4))  =>  (1 2 3 4)
+
 ;;
 ;; syntax quote unquote demythfied.
 ;;  http://www.learningclojure.com/2010/11/syntax-quote-kata-for-confused.html
