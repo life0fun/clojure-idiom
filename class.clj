@@ -67,7 +67,6 @@
       :method (let [[method-name] args]
                 (find-method method-name methods)))))
 
-
 ; use def inside macro to force evaluation of fns fn map {:fname (fn [] (* 2 4))}
 ;
 (defmacro defclass [class-name & specs]
@@ -95,5 +94,66 @@
 (def shelly (Person :new))
 (shelly :age)
 (shelly :greet "Nancy")
+
+; macro is ask compiler to generate code for you.
+; quote unquote only affect variables, no effect on other keywords, including ' quote.
+; quote unquoting `( '~x ), ' symbol is quote, return quoted substituded x value
+;
+; `(quote) to skip evaluation. quote entire expr inside () to avoid quote each item individually.
+; ~(unquote) to substitude the value. similar to string intrapolate. 
+; if var is a form, (* 3 4), unquote it will cause it being evaluated.
+; ~() unquote entire () to avoid unquote each one. ~(eval ~x)
+; 
+; `( '~var-name) intrapolate form, but do not eval.
+; ~@var-name (unquote-splicing):  remove the list ().
+;
+(defmacro dbg [fn-name args & body]
+  `(defn ~fn-name ~args
+    (println "dbg ...")
+    ~@body))
+
+; when passing '(* 2 3) to macro, it will not be evalued b/c macro syntax quote.
+; however, put it inside let bindings inside macro will force it evaluate.
+(defn gen-map [nm spec] {(keyword nm) spec})
+(defmacro fnmacro [name] (let [m (gen-map name '(fn [n] (* 2 n)))] `(prn ~m) `~m))
+(fnmacro age)
+
+; arg is task name and spec, not in list data struture, pass to macro and return a 
+; task map where key is fn name and val is fn closure
+(defmacro fnmacro [name spec] (let [m (gen-map name spec)] `(prn ~m) `~m))
+(apply ((fnmacro foo (fn [n] (* 2 n))) :foo) [4])
+
+; if fn body is in quoted list data structure, directly eval the data structure.
+(def spec '(age [n] (* 2 n)))
+(defn fnw [sexpr]
+  (eval (conj spec 'fn)))
+(apply (fnw spec) [4])
+
+; if fn body is code, not list data structure, pass to defmacro to wrap it.
+(defmacro fn-wrapper [fname args & body]
+  `(defn ~fname ~args
+      (prn "calling " '~fname '~args '~@body) ; when prn, use substituded val, quote to non-evaluated form.
+      ~@body))
+(fn-wrapper foo [n] (* 2 n))
+(foo 4)
+
+; dbg macro take a form, and prn it and its evaluated result.
+; because (eval "x") eval to itself, we can always add eval without side effect, so
+; the macro can take both (quote (* 2 3)) as well as (* 2 3)
+(defmacro dbg [sexpr]
+  (prn sexpr)
+  `~sexpr)
+
+(dbg (* 2 4))
+(dbg '(* 2 4))
+
+(defmacro dbg-ev [sexpr]
+  (prn sexpr)
+  `~(eval sexpr))
+
+(dbg-ev (* 2 4))
+(dbg '(* 2 4))
+(let [f (dbg-ev '(fn [n] (* 2 n)))] (f 3))
+
 
 

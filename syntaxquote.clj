@@ -26,14 +26,14 @@
 (def y (* 3 5))
 x
 y
-(list 'println x (eval x) y)
-(list `println x (eval x) y)
-`(list println x (eval x) y)
-`(println x (eval x) y)
-`(println ~x (eval x) y)
-`(println ~x ~(eval x) y)
-`(println ~x ~(eval x) ~y)
-`(println ~x ~(eval x) ~y ~@x)
+(list 'println x (eval x) y)  ==  (println (* 3 5) 15 15) ; ' <- raw form
+(list `println x (eval x) y)  ==  (clojure.core/println (* 3 5) 15 15)
+`(list println x (eval x) y)  ==  (clojure.core/list clojure.core/println user/x (clojure.core/eval user/x) user/y)
+`(println x (eval x) y)       ==  (clojure.core/println user/x (clojure.core/eval user/x) user/y)
+`(println ~x (eval x) y)      ==  (clojure.core/println (* 3 5) (clojure.core/eval user/x) user/y)
+`(println ~x ~(eval x) y)     ==  (clojure.core/println (* 3 5) 15 user/y)
+`(println ~x ~(eval x) ~y)    ==  (clojure.core/println (* 3 5) 15 15)
+`(println ~x ~(eval x) ~y ~@x) == (clojure.core/println (* 3 5) 15 15 * 3 5)
 
 
 ;;
@@ -45,7 +45,8 @@ y
 ;; bounce outside the syntax-quoted form and evaluate the form in that context, 
 ;; inserting the result back where the tilde was.
 
-;; quote unquoting `( '~x ), just unquoting the form, do not eval it.
+;; quote unquote only affect variables, no effect on other keywords, include ' quote.
+;; quote unquoting `( '~x ), ' symbol is quote, return quoted substituded x value
 
 ;; splicing unquote `(max ~@(shuffle (range 10) )) unroll/flatten a colletion into multiple exprs.
 ;; except that it allows multiple forms to be inserted in the place of a single unquote-splicing form:
@@ -55,9 +56,9 @@ y
 
 (defmacro dbg-1 [s]
   (let [x# s]
-    `(println '~s ~s ~x#)))
+    `(println '~s ~s ~x#)))  ; '~s not evaled, ~s evaled, let binding will eval.
 
-(dbg-1 (* 3 4))
+(dbg-1 (* 3 4))  ; == (* 3 4) 12 12
 
 (defmacro dbg-2 [s]
   (let [x# s]
@@ -68,7 +69,7 @@ y
 
 (dbg-2 (* 3 4))
 
-;; quote unquote, `( '~x)  vs `( ~'x)
+; quote unquote, `( '~x)  vs `( ~'x)
 `[:a ~(+ 1 1) c]    ;; #user/c
 `[:a ~(+ 1 1) 'c]   ;; (quote user/c)
 ;`[:a ~(+ 1 1) ~c]   ;; unqote tries to eval c, unable to resolve symbol c
