@@ -37,9 +37,11 @@
                   (str "Hello there, " visitor))))
 
 ; a new object is just a closure with instance state
+(declare this)    ; give a dynamic var so that fn can be executed under the bindings of this.
+
 (defn new-object [klass]
   (let [state (ref {})]
-    (fn [command & args]
+    (fn thiz [command & args]  ; give closure an explicit name(thiz), so we can bind it to this.
       (condp = command
         :class klass
         :class-name (klass :name)
@@ -52,8 +54,9 @@
         (let [method (klass :method command)]
           (if-not method
             (throw (RuntimeException.
-               (str "Unable to respond to " command))))
-          (apply method args))))))
+              (str "Unable to respond to " command))))
+          (binding [this thiz]
+            (apply method args)))))))
 
 ; a new class is a closure on methods
 (defn find-method [method-name instance-methods]
@@ -77,7 +80,9 @@
         (method age []
           (* 2 10))
         (method greet [visitor]
-          (str "Hello there, " visitor)))
+          (str "Hello there, " visitor))
+        (method about [diff]                ; invoke :age method in the same closure by binding to this.
+          (str "I was born about " (+ diff (this :age)) " years ago")))
 
 ;
 ; after parsing method specs, we got fns
@@ -154,6 +159,49 @@
 (dbg-ev (* 2 4))
 (dbg '(* 2 4))
 (let [f (dbg-ev '(fn [n] (* 2 n)))] (f 3))
+
+; fn composition with defmacro defn
+(defmacro fn-wrapper [name arg alg data-list]
+  (let [bd (conj data-list alg)]
+    `(defn ~name ~arg ~bd)))
+
+; create a fn that map algebra to a list of data
+(fn-wrapper double [n] * (2 n))
+
+
+; macro examples
+(defmacro declare [ & names]
+  `(do
+    ~@(map #(list 'def %) names)))
+(macroexpand-1  '(declare add multiply subtract divide))
+
+; and is just another macro
+(defmacro my-and 
+  ([] true)
+  ([x] x)
+  ([x & next]
+    `(if ~x
+      (and ~@next)
+      ~x)))
+
+(defmacro my-and 
+  ([] true)
+  ([x] x)
+  ([x & next]
+    `(let [and# ~x]
+      (if and#
+        (and ~@next)
+        and#))))
+
+; time (* 1234 12345)
+(defmacro time [expr]
+  `(let [start# (System/nanotime)
+         ret# ~expr]
+    (prn
+      (str "Elapsed time :"
+        (/ (double (- (System/nanotime) start#)) 1000000.0)
+        " msecs"))
+    ret#))
 
 
 
