@@ -44,8 +44,8 @@
 ;;     pivot = l[beg]
 ;;     i, j = beg + 1, end
 ;;
-;;     while i <= j:
-;;         while i < end and l[i] <= pivot:
+;;     while i <= j:   ; apply logic even when i == j, one item case.
+;;         while i < end and l[i] <= pivot:  ; do not i+1 if i=end, so i < end
 ;;             i += 1
 ;;         while j > beg and l[j] > pivot:
 ;;             j -= 1
@@ -55,12 +55,12 @@
 ;;             i += 1
 ;;             j -= 1
 ;;         else:
-;;             break
+;;             break  ; when break out, i >= j
 ;;
-;;     # swap pivot to j as i was manually moved for pivot
+;;     # when break out, i >= j, j is first ele <= pivot. so swap pivot to j.
 ;;     swap(l, beg, j)
-;;     qsort(l, beg, i-1)
-;;     qsort(l, j+1, end)
+;;     qsort(l, beg, i-1)  ; [beg, i-1] are all <= pivot
+;;     qsort(l, j+1, end)  ; [j+1, end] j+1 is starting point of all 
 ;;
 ;; in fn lang, focus on result by transform list from [head rest] into [smaller pivot higher].
 ;; then what left is just recursion.

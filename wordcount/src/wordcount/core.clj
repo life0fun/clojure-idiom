@@ -26,7 +26,8 @@
 ;; output map reduced to a vector of fields iff default stream.
 ;; unprepared spout only defines nextTuple method.
 ;;
-(defspout sentence-spout-parameterized ["word"] {:params [sentences] :prepare false}
+(defspout sentence-spout-parameterized ["word"] 
+  {:params [sentences] :prepare false}
   [collector]
     (Thread/sleep 500)
     (emit-spout! collector [(rand-nth sentences)]))
@@ -86,16 +87,18 @@
 (defbolt filter-sentence ["sentence"] ;; output map = a vector of fields(keyword)
   ; params to the bolt in :params, passed in when assembling bolt in topology.
   {:params [keywords] :prepare false} 
-  [tuple collector] ;; for non-prepared bolt, impl fn (execute [tuple collector]) 
-  (let [ sentence (.getStringByField tuple "logevent")  ;; the first string in tuple string list is sentence.
-         words (.split sentence " ")
-         wordset (into #{} words) ]
-    ;;(pprint tuple)   ;; what's inside a tuple.
-    ;;(pprint sentence)   ;; what's inside a tuple.
-    ;; only emit sentence that has keywords
-    (if (some (set keywords) wordset) ;; (clojure.set/intersection wordset (set keywords))
-      (emit-bolt! collector [sentence] :anchor tuple)   ;; anchored tuple ensure replay if lost in downstreams.
-    (ack! collector tuple) )))   ;; ack the upstream this tuple has been processed.
+
+  ; for non-prepared bolt, impl fn (execute [tuple collector]) 
+  [tuple collector] 
+    (let [ sentence (.getStringByField tuple "logevent")  ;; the first string in tuple string list is sentence.
+           words (.split sentence " ")
+           wordset (into #{} words) ]
+      ;(pprint tuple)   ;; what's inside a tuple.
+      ;(pprint sentence)   ;; what's inside a tuple.
+      ; only emit sentence that has keywords
+      (if (some (set keywords) wordset) ;; (clojure.set/intersection wordset (set keywords))
+        (emit-bolt! collector [sentence] :anchor tuple)   ;; anchored tuple ensure replay if lost in downstreams.
+      (ack! collector tuple) )))   ;; ack the upstream this tuple has been processed.
 
 ;;
 ;; (defbolt name output-declare option-map % impl)
@@ -106,35 +109,37 @@
 ;; partition streams with grping: shuffle, fields, global, direct
 ;;
 (defbolt split-sentence
-  { "1" ["word"]          ; output stream 1, output tuple has only one field "word" 
-    "2" ["word" "index"]} ;; out stream 2, output tuple has two fields "word" and "index"
-  {:prepare true}
-  [conf context collector] ;; prepared bolt impl takes conf, context, collector
-  (let [index (atom 0) ]  ;; counter is global state
+  { "1" ["word"]          ; out stream 1, output tuple has only one field "word" 
+    "2" ["word" "index"]} ; out stream 2, output tuple has two fields "word" and "index"
+  {:prepare true}         ; prepare bolt, topology will call prepare(stormConf, ctx)
+  [conf context collector] ; prepared bolt impl takes conf, context, collector
+  (let [index (atom 0) ]  ; index is atomic counter
     (bolt    ;; impl execute fn for bolt IF.
+      (prepare [conf context]  ; prepare fn takes conf and context
+        (prn "creating table inside prepare"))
+
       (execute [tuple]
         (let [ nprocessed (swap! index inc)
                words (.split (.getStringByField tuple "sentence") " ")]   ;; split tuple's string content
-          ;;(pprint words)
+          ;(pprint words)
           (if (odd? nprocessed)
-            (doseq [w words]  ;; odd line to stream 1
+            (doseq [w words]  ; odd line to stream 1
               (emit-bolt! collector [w] :anchor tuple :stream "1"))
-            (doseq [w words]  ;; even line to stream 2 with line no.
+            (doseq [w words]  ; even line to stream 2 with line no.
               (emit-bolt! collector [w nprocessed] :anchor tuple :stream "2")))  ;; emit tuple to stream 2. with :id x
         (ack! collector tuple))))))
 
 ;;
-;; prepared bolt stores states locally for join and stream aggregation.
-;; state is stored in the closure in a mutable map collection.
-;;
-;; using atom to store mutable state inside clojure.
-;; atom to store intermediate states, @atom to de-ref to get state.
-;; swap! to update state.
-;;
+; prepared bolt stores states locally for join and stream aggregation.
+; state is stored in the closure in a mutable map collection.
+;
+; using atom to store mutable state inside clojure.
+; atom to store intermediate states, @atom to de-ref to get state.
+; swap! to update state.
 (defbolt word-count ["word" "count"] 
   {:prepare true}
-  [conf context collector]  ;; prepared bolt impl takes conf, context, collector
-  (let [counts (atom {})]   ;; word count map
+  [conf context collector]  ; prepared bolt impl takes conf, context, collector
+  (let [counts (atom {})]   ; concurrent hash map to store cnt for each word
     (bolt
      (execute [tuple]       ; input tuple has field word
        (let [word (.getStringByField tuple "word")]

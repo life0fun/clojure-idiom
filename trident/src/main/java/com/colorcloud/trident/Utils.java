@@ -1,0 +1,110 @@
+package com.colorcloud.trident;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+
+import storm.trident.operation.BaseFunction;
+import storm.trident.operation.CombinerAggregator;
+import storm.trident.operation.Filter;
+import storm.trident.operation.TridentCollector;
+import storm.trident.operation.TridentOperationContext;
+import storm.trident.tuple.TridentTuple;
+import backtype.storm.tuple.Values;
+
+/**
+ * Misc. util classes that can be used for implementing some stream processing.
+ */
+public class Utils {
+
+	/**
+	 * A filter that filters nothing but prints the tuples it sees. Useful to test and debug things.
+	 */
+	@SuppressWarnings({ "serial", "rawtypes" })
+	public static class PrintFilter implements Filter {
+
+		@Override
+		public void prepare(Map conf, TridentOperationContext context) {
+		}
+		@Override
+		public void cleanup() {
+		}
+
+		@Override
+		public boolean isKeep(TridentTuple tuple) {
+			System.out.println("--: " + tuple);
+			return true;
+		}
+	}
+
+	/**
+	 * Given a hashmap with string keys and integer counts, returns the "top" map of it. 
+	 * "n" specifies the size of the top to return.
+	 */
+	public final static Map<String, Integer> getTopNOfMap(Map<String, Integer> map, int n) {
+		List<Map.Entry<String, Integer>> entryList = new ArrayList<Map.Entry<String, Integer>>(map.size());
+		entryList.addAll(map.entrySet());
+		Collections.sort(entryList, new Comparator<Map.Entry<String, Integer>>() {
+			@Override
+			public int compare(Entry<String, Integer> arg0, Entry<String, Integer> arg1) {
+				return arg1.getValue().compareTo(arg0.getValue());
+			}
+		});
+		
+		Map<String, Integer> toReturn = new HashMap<String, Integer>();
+		for(Map.Entry<String, Integer> entry: entryList.subList(0, Math.min(entryList.size(), n))) {
+			toReturn.put(entry.getKey(), entry.getValue());
+		}
+		return toReturn;
+	}
+	
+	/**
+	 * fn to process each tuple, sum two fields.
+	 */
+	public static class AddAndMultiply extends BaseFunction {
+	   public void execute(TridentTuple tuple, TridentCollector collector) {
+	       int i1 = tuple.getInteger(0);
+	       int i2 = tuple.getInteger(1);
+	       collector.emit(new Values(i1 + i2, i1 * i2));
+	   }
+	}
+
+	/**
+	 * emit a single tuple for each group of tuple, this combiner aggregator always used after groupBy() 
+	 * to distinct count of duplicate tuples with same field.
+	 *  .each(new Fields("followers"), new ExpandList(), new Fields("follower"))
+     *  .groupBy(new Fields("follower"))
+     *  .aggregate(new One(), new Fields("one"))
+	 */
+	public class One implements CombinerAggregator<Integer> {
+	   public Integer init(TridentTuple tuple) {
+	       return 1;
+	   }
+
+	   public Integer combine(Integer val1, Integer val2) {
+	       return 1;
+	   }
+
+	   public Integer zero() {
+	       return 1;
+	   }        
+	}
+	
+	public class MovingAvg implements CombinerAggregator<Integer> {
+	   public Integer init(TridentTuple tuple) {
+	       return 1;
+	   }
+
+	   public Integer combine(Integer val1, Integer val2) {
+	       return 1;
+	   }
+
+	   public Integer zero() {
+	       return 1;
+	   }        
+	}
+}
