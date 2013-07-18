@@ -289,6 +289,26 @@
     {} amap))
 
 
+; juxt, output is a seq of results from each fn
+((just filter remove) even? (range 10))
+
+; use juxt to select a list of columns from a map rather than 
+(->> [{:name "jay fields", :current-city "new york", :employer "drw.com"}
+      {:name "john dydo", :current-city "new york", :employer "drw.com"}
+      {:name "mike ward", :current-city "chicago", :employer "drw.com"}
+      {:name "chris george", :current-city "new york", :employer "thoughtworks.com"}]
+  (map (juxt :employer (comp list :name)))   ; slice out one column from map, get a sequence
+  (map (partial apply hash-map))             ; convert back to hash map
+  (apply merge-with concat))                 ; merge a list of maps into one map
+
+; filter map where :current-city is "new york"
+; first, use colname to select the column out, then set match value to filter out.
+(filter (comp #{"new york"} :current-city)
+        [{:name "jay fields", :current-city "new york", :employer "drw.com"}
+         {:name "john dydo", :current-city "new york", :employer "drw.com"}
+         {:name "mike ward", :current-city "chicago", :employer "drw.com"}
+         {:name "chris george", :current-city "new york", :employer "thoughtworks.com"}])
+
 ;; any intersection among a seq of sets
 ;; first, convert sets into a list, then find items with cnt > 2
 (defn any-intersection [& sets]
