@@ -156,7 +156,7 @@ y
 ;; macro used for resource management.
 ;; (with-open [page stream]  (body) will close stream in try/catch/finally clause.
 ;; generic resource manage that delegate resource release fn to close-fn that passed in as an argument.
-defmacro with-resource [binding close-fn & body]   ;; take resource, resource-release-fn, and exec body.
+(defmacro with-resource [binding close-fn & body]   ;; take resource, resource-release-fn, and exec body.
   `(let ~binding
     (try
       (do ~@body)

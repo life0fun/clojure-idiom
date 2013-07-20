@@ -17,9 +17,6 @@ import backtype.storm.generated.StormTopology;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
 
-import com.colorcloud.trident.FakeTweetsBatchSpout;
-import com.colorcloud.trident.Utils;
-
 /**
  * This example shows the usage of aggregate() method for aggregating the WHOLE batch of Tuples.
  * <p>

@@ -36,7 +36,7 @@ public class Utils {
 
 		@Override
 		public boolean isKeep(TridentTuple tuple) {
-			System.out.println("--: " + tuple);
+			System.out.println("-- tuple : " + tuple);
 			return true;
 		}
 	}

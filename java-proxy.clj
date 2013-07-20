@@ -107,21 +107,21 @@
 ; clojure namespace as package name.  specify whatever you
 ; We have only on single ﬁeld available called – surprise! – state.
 (ns some.namespace
-  (:gen-class
-    :name joy.gui.DynaFrame
-    :extends javax.swing.JFrame
+  (:gen-class   ; convert a clojure ns to a java class, with private state, init, getter/setter
+    :name joy.gui.DynaFrame      ; class name of generated class
+    :extends javax.swing.JFrame  ; 
     :implements [clojure.lang.IMeta]
-    :prefix df-
-    :state state    ;; deﬁnes a method which will return the object's state.
+    :prefix df-     ; find the correct fn to compile to class
+    :state state    ; deﬁnes a method which will return the object's state.
     :init init
     :constructors {[String] [String]}
     :methods [[display [java.awt.Container] void]    ;; public method
               ^{:static true} [version [] String]])  ;; static method
 
-  (:import (javax.swing JFrame JPanel)
-           (java.awt BorderLayout Container)))
+(:import (javax.swing JFrame JPanel)
+         (java.awt BorderLayout Container)))
 
-(in-ns 'joy.gui.DynaFrame')
+(in-ns 'joy.gui.DynaFrame')   ; class name specified by gen-class :name prop
 (defn df-init [title]
   [[title] (atom {::title title})])
 

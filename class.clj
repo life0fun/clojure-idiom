@@ -147,14 +147,14 @@
 ; the macro can take both (quote (* 2 3)) as well as (* 2 3)
 (defmacro dbg [sexpr]
   (prn sexpr)
-  `~sexpr)
+  `~sexpr)  ; sexpr when passed into defmacro, is un-evalued. quote unquote restore and eval the form.
 
 (dbg (* 2 4))
 (dbg '(* 2 4))
 
 (defmacro dbg-ev [sexpr]
   (prn sexpr)
-  `~(eval sexpr))
+  `~(eval sexpr)) ; quote unquote restore and eval the form. 
 
 (dbg-ev (* 2 4))
 (dbg '(* 2 4))
@@ -181,10 +181,10 @@
   ([x] x)
   ([x & next]
     `(if ~x
-      (and ~@next)
+      (my-and ~@next)
       ~x)))
 
-(defmacro my-and 
+(defmacro and 
   ([] true)
   ([x] x)
   ([x & next]
@@ -196,7 +196,7 @@
 ; time (* 1234 12345)
 (defmacro time [expr]
   `(let [start# (System/nanotime)
-         ret# ~expr]
+         ret# ~expr]  ; unquote expr, trigger evaluation of expr.
     (prn
       (str "Elapsed time :"
         (/ (double (- (System/nanotime) start#)) 1000000.0)

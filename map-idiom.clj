@@ -290,7 +290,7 @@
 
 
 ; juxt, output is a seq of results from each fn
-((just filter remove) even? (range 10))
+((juxt filter remove) even? (range 10))
 
 ; use juxt to select a list of columns from a map rather than 
 (->> [{:name "jay fields", :current-city "new york", :employer "drw.com"}

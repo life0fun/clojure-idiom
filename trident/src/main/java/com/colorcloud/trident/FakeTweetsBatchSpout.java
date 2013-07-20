@@ -90,6 +90,9 @@ public class FakeTweetsBatchSpout implements IBatchSpout {
 		return new Config();
 	}
 
+	/**
+	 * override this to define spout output columns.
+	 */
 	@Override
 	public Fields getOutputFields() {
 		return new Fields("id", "text", "actor", "location", "date");

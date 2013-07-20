@@ -13,9 +13,6 @@ import backtype.storm.LocalDRPC;
 import backtype.storm.generated.StormTopology;
 import backtype.storm.tuple.Fields;
 
-import com.colorcloud.trident.FakeTweetsBatchSpout;
-import com.colorcloud.trident.Utils;
-
 /**
  * This example is useful for understanding how parallelism and partitioning works. parallelismHit() is applied down
  * until the next partitioning operation. Therefore here we have 5 processes (Bolts) applying a filter and 2 processes
