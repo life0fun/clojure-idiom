@@ -18,6 +18,10 @@ A simple demo of data processing using storm. We create a topology to transform 
 
 My solutions to 4clojure puzzels. Currently ranked 162 out of 14099 users.
 
+## Trident
+
+This repo contains example of creating storm trident for processing logs with filter and aggregation. We illustrate with two implmenetations, one with java and one with clojure. 
+
 ## others
 
 Other small modules contains examples of idiomatic clojure programming, e.g., graph algorithm, qsort in 5 lines, defmacro, etc.

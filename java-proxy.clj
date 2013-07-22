@@ -102,9 +102,8 @@
 (.submit (Executors/newSingleThreadExecutor) myr)
 
 
-; gen-class, need AOT compiler to gen java class before hand.
+; gen-class, need AOT compiler in project.clj to gen java class before hand.
 ; (compile 'joy.gui.DynaFrame')
-; clojure namespace as package name.  specify whatever you
 ; We have only on single ﬁeld available called – surprise! – state.
 (ns some.namespace
   (:gen-class   ; convert a clojure ns to a java class, with private state, init, getter/setter
@@ -113,22 +112,73 @@
     :implements [clojure.lang.IMeta]
     :prefix df-     ; find the correct fn to compile to class
     :state state    ; deﬁnes a method which will return the object's state.
-    :init init
+    :init init      ; init method ret a [], first arg for super class init, second is state
     :constructors {[String] [String]}
-    :methods [[display [java.awt.Container] void]    ;; public method
-              ^{:static true} [version [] String]])  ;; static method
+    :methods [ [display [java.awt.Container] void]     ; public method
+               #^{:static true} [version [] String]])  ; class static method
 
 (:import (javax.swing JFrame JPanel)
          (java.awt BorderLayout Container)))
 
 (in-ns 'joy.gui.DynaFrame')   ; class name specified by gen-class :name prop
+; init method return a vector.
+; the first element of which is a vector of arguments for the superclass constructor
+; The second element of the vector is the state for the instance. 
 (defn df-init [title]
-  [[title] (atom {::title title})])
+  [[title] (atom {:title title})])
 
+; to access state
+(swap! @(.state this) merge {:test "test"})
 
-; override toString fn with first arg as this.
-(defn -toString [this]
-  "Hello, World!")
+;
+; another example
+(ns  #^{:doc "A simple class with instance vars"
+    :author "David G. Durand"}
+   com.tizra.example)
+
+(gen-class
+  :name com.tizra.example.Demo
+  :state state
+  :init init
+  :prefix "-"
+  :main false
+  :methods [[setLocation [String] void]
+            [getLocation [] String]]
+)
+
+(defn -init []
+  "store our fields as a hash"
+  [[] (atom {:location "default"})])
+
+(defmacro setfield
+  [this key value]
+  `(swap! (.state ~this) into {~key ~value}))
+
+(defmacro getfield
+  [this key]
+  `(@(.state ~this) ~key))
+
+(defn -setLocation [this ^java.lang.String loc]
+  (setfield this :location loc))
+
+(defn ^String -getLocation
+  [this]
+  (getfield this :location))
+
+=> (com.tizra.example.Demo.)
+#<Demo com.tizra.example.Demo@673a95af>
+
+=> (def ex (com.tizra.example.Demo.))
+#'user/ex
+
+=> (.getLocation ex)
+"default"
+
+=> (.setLocation ex "time")
+nil
+
+=> (.getLocation ex)
+"time"
 
 ;;
 ;; the difference between gen-class and proxy
