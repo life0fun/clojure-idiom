@@ -21,7 +21,7 @@
 ; instantiate a fake tweet spout
 (defn fake-tweet-spout
   [batch-size]
-  (prn " >>> fake tweet spout <<<")
+  (prn " >>> creating fake tweet spout <<<")
   (com.colorcloud.trident.TweetSpout.))  ; just ret fake batch spout default constructor
 
 ; build a storm top by config the passed in trident top
@@ -33,7 +33,8 @@
     (-> trident-top
       (.newStream "spout" tweet-spout)
       (.each (Fields. ["location"]) dbstore-bolt (Fields. ["duploc"]))
-      (.each (Fields. ["id" "text" "actor" "duploc"]) prnfilter))))
+      (.each (Fields. ["id" "text" "actor" "duploc"]) prnfilter)))
+    trident-top)  ; return configurated trident top
 
 (defn run-local-topology
   [config drpc]

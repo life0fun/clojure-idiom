@@ -14,6 +14,7 @@
 (defn -prepare      ; gen-class method prefix by -
   " called once, better for init global var and db conn "
   [this conf context]
+  (prn "LocAggregator prepare once")
   (def redis-db (redis/init :url "redis://localhost")))  ; shall use dynamic binding
 
 (defn -execute  ; 
@@ -21,6 +22,6 @@
   [this ^storm.trident.tuple.TridentTuple tuple ^TridentCollector collector]
   (let [loc (.getString tuple 0)]
     (prn "TweetAggregator : execute " loc)
-    (redis/hset redis-db "location" loc)
-    (redis/rpush "tweetloc" loc)
-    (.emit collector (Values. "test"))))
+    ;(redis/hset redis-db "location" loc)
+    (redis/rpush redis-db "tweetloc" loc)
+    (.emit collector (Values. (to-array ["test"])))))
