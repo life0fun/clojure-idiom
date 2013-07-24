@@ -13,8 +13,10 @@
   ; downstream to projects that deps on your proj.
   ; use with-profile to select certain profile to run on.
   :profiles {:dev 
-              {:dependencies [[storm "0.9.0-wip15"]
-                      [org.clojure/clojure "1.4.0"]]}}
+              {:dependencies 
+                [[storm "0.9.0-wip15"]
+                [org.clojure/clojure "1.4.0"]
+                [org.clojure/clojure-contrib "1.2.0"]]}}
   ; to run lein do clean, with-profile dev compile, with-profile dev run.
   :main trident-clj.core
   :warn-on-reflection true

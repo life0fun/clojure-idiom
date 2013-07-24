@@ -23,6 +23,5 @@
 (defn -isKeep  ; 
   "process each tuple, predicate to decide whether to keep"
   [this ^storm.trident.tuple.TridentTuple tuple]
-  (prn " <tuple> " tuple)
   true)
     
