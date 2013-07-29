@@ -8,6 +8,7 @@
     [korma "0.3.0-RC5"]    ; awesome korm
     [clj-redis "0.0.12"]   ;
     [org.clojure/data.json "0.2.2"]    ; json package
+    [clj-time "0.5.1"]
   ]
   ; activate profiles to config projects. settings in certain profile is not propagated
   ; downstream to projects that deps on your proj.

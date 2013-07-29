@@ -61,11 +61,13 @@
   (let [pk-value (str-join separator values)]
     (map #(str pk-value separator %) keys)))
 
+
 (defn check-key-validity [key redis-type string-attribs list-attribs]
   (if-not (some #(= % key) string-attribs)
     (if-not (some #(= % key) list-attribs)
       (throw (RuntimeException. (str "Attempt to use unknown key " key " in redis-object of type " (redis-type :name))))))
   true)
+
 
 ; model type metadata. closure with condp = accessor
 (defn new-redis-type [name separator format primary-keys string-attribs list-attribs]
@@ -81,7 +83,7 @@
                     (check-key-validity key redis-type string-attribs list-attribs))
       
       ; usage : (redis-type :string-keys pk-values)
-      ; pk-value already in a list, and being wraped into args list again, de-list.
+      ; pk-value already in a list, and being wraped into args list again when passed in here, de-list.
       :string-keys (let [[values] args]
                      (keys-for string-attribs separator values))
       :list-keys (let [[values] args]

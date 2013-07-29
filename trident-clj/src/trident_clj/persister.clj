@@ -7,13 +7,13 @@
   (:require [clojure.string :as str]
             [clojure.tools.logging :as log])
   (:require [clj-redis.client :as redis])     ; bring in redis namespace
-  (:gen-class
+  (:gen-class  ; gen-class method prefix by -
     :name com.colorcloud.trident.Persister  ; convert this ns to class Tweet
     :implements [storm.trident.operation.Function 
                  storm.trident.operation.Filter]))  ; this ns impl Function
 
-
-(defn -prepare      ; gen-class method prefix by -
+; 
+(defn -prepare
   "called once, better for init global var and db conn "
   [this conf context]
   (def redis-db (redis/init :url "redis://localhost")))  ; shall use dynamic binding

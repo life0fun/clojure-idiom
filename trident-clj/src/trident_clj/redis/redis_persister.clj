@@ -51,12 +51,13 @@
 })
 
 ; fetchers for different types. get for key type, lrange for list type.
+; key = "1##doug##:id"
 (def fetchers {
-  :string-type (fn [key] 
-                  {key {:value (redis/get key) 
+  :string-type (fn [key]
+                  {key {:value (redis/get redis-db key) 
                         :key-type :string-type}})
   :list-type (fn [key]
-                {key {:value (redis/lrange key 0 (redis/llen key)) 
+                {key {:value (redis/lrange redis-db key 0 (redis/llen redis-db key)) 
                       :key-type :list-type}})})
 
 ; serialize a map with a seq of k,v pairs into redis. 
@@ -106,6 +107,10 @@
 ; retrive from redis obj based on redis-type name and p key values 
 ; (def d (consumer :find "adi" "14")))
 ; each obj(row) has n keys(cols), maps to n keys in redis (pkv1+pkv2+k1, pkv1+pkv2+k2, ...)
+; pk-values ("105" "ted") string-keys ("105##ted##:id" "105##ted##:actor" "105##ted##:location" "105##ted##:text" "105##ted##:time") ("105##ted##:followers") 
+; { "105##ted##:time" {:value "\"2013-07-29T05:27:44.783Z\"", :key-type :string-type}, 
+;   "105##ted##:text" {:value "\"Wine glass heels are to be found in both high and semi-heights. \"", :key-type :string-type}, 
+;   "105##ted##:location" {:value "\"USA\"", :key-type :string-type}, "105##ted##:actor" {:value "\"ted\"", :key-type :string-type}, "105##ted##:id" {:value "\"105\"", :key-type :string-type}}
 (defn find-by-primary-key [redis-type pk-values]
   (let [string-keys (redis-type :string-keys pk-values)
         list-keys (redis-type :list-keys pk-values)
@@ -114,6 +119,7 @@
         list-maps (apply merge (map #((fetchers :list-type) %) list-keys))
         serialized (merge string-maps list-maps)
         deserialized (deserialize-state serialized redis-type)]
+    (prn "Redis Mapper : " pk-values string-keys list-keys string-maps list-maps serialized deserialized)
     (if (empty? deserialized)
       nil
       (redis-type :new-with-state deserialized))))
