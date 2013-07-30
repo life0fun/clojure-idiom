@@ -14,6 +14,7 @@
   (:require [trident-clj.loc-aggregator]
             [trident-clj.tweet-spout]
             [trident-clj.prn-filter]
+            [trident-clj.persister]
             [clojure.tools.logging :as log])
   (:use [backtype.storm clojure config])
   (:gen-class))
@@ -35,12 +36,14 @@
         prnfilter (com.colorcloud.trident.PrintFilter.)]
     (-> trident-top
       (.newStream "spout" tweet-spout)
-      ; groupBy must be followed by aggregator
-      ; (.groupBy (Fields. ["location"]))
-      ; (.aggregate (Fields. []))
       (.each (Fields. ["id", "actor" "text" "location" "time"]) locaggregator (Fields. ["count" "batchcnt"]))
-      (.each (Fields. ["id" "actor" "text" "location" "count" "batchcnt"]) prnfilter)))
-    trident-top)  ; return configurated trident top
+      (.each (Fields. ["id" "actor" "text" "location" "count" "batchcnt"]) prnfilter)
+      ; groupBy must be followed by aggregator
+      (.groupBy (Fields. ["location"]))
+      (.aggregate (Fields. ["location"]) (storm.trident.operation.builtin.Count.) (Fields. ["aggcount"]))
+      (.aggregate (Fields. ["location" "aggcount"]) (com.colorcloud.trident.LocAggregator.) (Fields. ["location" "aggcount"]))
+      (.each (Fields. ["location"]) prnfilter))
+    trident-top))  ; return configurated trident top
 
 ; give a config, build a top and run it on a cluster
 (defn run-local-topology

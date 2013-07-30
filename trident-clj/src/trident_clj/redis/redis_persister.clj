@@ -111,6 +111,8 @@
 ; { "105##ted##:time" {:value "\"2013-07-29T05:27:44.783Z\"", :key-type :string-type}, 
 ;   "105##ted##:text" {:value "\"Wine glass heels are to be found in both high and semi-heights. \"", :key-type :string-type}, 
 ;   "105##ted##:location" {:value "\"USA\"", :key-type :string-type}, "105##ted##:actor" {:value "\"ted\"", :key-type :string-type}, "105##ted##:id" {:value "\"105\"", :key-type :string-type}}
+; {"36##ted##:followers" {:value ("\"tedfollower-2\"" "\"ted-follower-1\"" "\"tedfollower-2\"" "\"ted-follower-1\""), :key-type :list-type}} 
+; {:id "36", :actor "ted", :location "USA", :text "xx", :followers ("tedfollower-2" "ted-follower-1" "tedfollower-2" "ted-follower-1")}
 (defn find-by-primary-key [redis-type pk-values]
   (let [string-keys (redis-type :string-keys pk-values)
         list-keys (redis-type :list-keys pk-values)
@@ -119,7 +121,7 @@
         list-maps (apply merge (map #((fetchers :list-type) %) list-keys))
         serialized (merge string-maps list-maps)
         deserialized (deserialize-state serialized redis-type)]
-    (prn "Redis Mapper : " pk-values string-keys list-keys string-maps list-maps serialized deserialized)
+    ;(prn "Redis Mapper : " pk-values string-keys list-keys string-maps list-maps serialized deserialized)
     (if (empty? deserialized)
       nil
       (redis-type :new-with-state deserialized))))
