@@ -9,10 +9,9 @@
   (:require [trident-clj.redis.redis-datamapper :refer :all])
   (:require [trident-clj.redis.redis-persister :refer :all])
   (:gen-class
-    ; should extends BaseAggregator
     :extends storm.trident.operation.BaseAggregator
     :name com.colorcloud.trident.LocAggregator  ; convert this ns to class Tweet
-    ]))  ; this ns impl Function
+    ))  ; this ns impl Function
 
 
 ; create redis model tweet-rant to store aggregated for each tweet
@@ -57,30 +56,32 @@
   (def batch-cnt (atom 0)))
   
 (defn -cleanup
-  []
+  [this]
   (prn "loc aggregation clean up"))
 
 (defn -init
-  [batch-id collector]
+  [this batch-id collector]
   (prn "init aggregator called for batch " batch-id)
   ; reset batch counter
   (reset! batch-cnt 0)
   loc-map)  ; ret loc-state
 
+; aggregator after grouping, only contains grouping key and other keys emitted from upstream.
 (defn -aggregate
   "given global state, aggregate current tuple into global state, ret void"
-  [loc-map tuple collector]
-  (prn "aggregating for tuple " @loc-map tuple)
+  [this loc-map tuple collector]
   (let [loc (keyword (.getString tuple 3))
+        rediskey (.getValueByField tuple "rediskey")
         cnt @batch-cnt
         sum (@loc-map loc)  ; ret nil when map does not have key
         incsum ((fnil inc 0) sum)]  ; in case first time, replace nil by 0
     ; now update tot
+    (prn "aggregating for tuple " loc cnt sum incsum tuple)
     (swap! batch-cnt inc)   ; incr cnt within the batch
     (swap! loc-map (fn [m] (merge-with + m {loc incsum})))
-    (.emit collector (Values. (to-array [tuple incsum])))))
+    (.emit collector (Values. (to-array [sum])))))
 
 (defn -complete
-  [loc-map collector]
-  (prn "aggregator batch completed ")
-  (.emit collector (Values. (to-array @loc-map))))
+  [this loc-map collector]
+  (prn "aggregator batch completed " (first @loc-map)))
+  ;(.emit collector (Values. (to-array @loc-map))))

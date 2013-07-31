@@ -9,7 +9,6 @@
   (:require [trident-clj.redis.redis-datamapper :refer :all])
   (:require [trident-clj.redis.redis-persister :refer :all])
   (:gen-class
-    ; should extends BaseAggregator
     :name com.colorcloud.trident.Persister  ; convert this ns to class Tweet
     :implements [storm.trident.operation.Function]))  ; this ns impl Function
 
@@ -46,11 +45,12 @@
     ;(prn text " -- " (db-tweet :get :followers) (db-tweet :get-state))))
     (prn text " -- " (db-tweet :get-state))))
 
+
 ; prepare called once on start. init global state here.
 (defn -prepare      ; gen-class method prefix by -
   " perpare : init global var and db conn "
   [this conf context]
-  (prn "LocAggregator prepare once")
+  (prn "Persister prepare once")
   ; init redis connection to db within redis data mapper
   (init-redis-db)
   (create-tweet-model))
@@ -68,4 +68,4 @@
     ;(prn "TweetAggregator : execute " id actor text loc tm)
     (store-tweet id actor text loc ts 1)
     (verify-tweet id actor text loc ts)
-    (.emit collector (Values. (to-array [1 id])))))
+    (.emit collector (Values. (to-array [(vector id actor)]))))) ; pk-val within one list

@@ -32,16 +32,19 @@
 (defn bld-tweet-top
   [trident-top]
   (let [tweet-spout (fake-tweet-spout 100)  ; spout
-        locaggregator (com.colorcloud.trident.LocAggregator.)  ; loc aggregator
+        counter (storm.trident.operation.builtin.Count.)
+        persister (com.colorcloud.trident.Persister.)  
+        locaggregator (com.colorcloud.trident.LocAggregator.) ; loc aggregator
         prnfilter (com.colorcloud.trident.PrintFilter.)]
     (-> trident-top
       (.newStream "spout" tweet-spout)
-      (.each (Fields. ["id", "actor" "text" "location" "time"]) locaggregator (Fields. ["count" "batchcnt"]))
-      (.each (Fields. ["id" "actor" "text" "location" "count" "batchcnt"]) prnfilter)
-      ; groupBy must be followed by aggregator
+      (.each (Fields. ["id" "actor" "text" "location" "time"]) persister (Fields. ["rediskey"]))
+      (.each (Fields. ["id" "actor" "text" "location" "time" "rediskey"]) prnfilter)
+      ; groupBy create virtual streams grouped to next, must followed by aggregator
+      ; grouped stream, after aggregation, only contains grouping key and other fields emitted from aggregator.
       (.groupBy (Fields. ["location"]))
-      (.aggregate (Fields. ["location"]) (storm.trident.operation.builtin.Count.) (Fields. ["aggcount"]))
-      (.aggregate (Fields. ["location" "aggcount"]) (com.colorcloud.trident.LocAggregator.) (Fields. ["location" "aggcount"]))
+      ;(.aggregate (Fields. ["location"]) counter (Fields. ["count"])) ; [grp-key other-key]
+      (.aggregate (Fields. ["id" "actor" "text" "location" "time" "rediskey"]) locaggregator (Fields. ["count"]))
       (.each (Fields. ["location"]) prnfilter))
     trident-top))  ; return configurated trident top
 

@@ -64,10 +64,11 @@
 ; just map insert fn, which redis/rpush k,v into redis.
 (defn insert-into-redis [persistable]
   (let [inserter (fn [[k v]]
-    (prn "insert-into-redis" k v (v :key-type) "v:value" (v :value))
-      (cond
-        (= (v :key-type) :string-type) ((inserters :string-type) redis-db k (v :value))
-        (= (v :key-type) :list-type) (doall (map #((inserters :list-type) redis-db k %) (v :value)))))]
+    ;(prn "insert-into-redis" k v (v :key-type) "v:value" (v :value))
+    ; "3##rose##:id" {:value "\"3\"", :key-type :string-type} :string-type "v:value" "\"3\""
+    (cond
+      (= (v :key-type) :string-type) ((inserters :string-type) redis-db k (v :value))
+      (= (v :key-type) :list-type) (doall (map #((inserters :list-type) redis-db k %) (v :value)))))]
     (doall (map inserter persistable))))
 
 
