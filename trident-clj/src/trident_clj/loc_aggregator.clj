@@ -23,7 +23,6 @@
     (format :json)
     (key-separator "##")))
 
-
 ; create a data object to persist data into redis
 (defn store-tweet [id actor text location ts cnt]
   (let [tweet (tweet-rant :new)]
@@ -40,11 +39,11 @@
 (defn find-tweet [id actor]
   (tweet-rant :find id actor))
 
-
 (defn verify-tweet [id actor text loc ts]
   (let [db-tweet (find-tweet id actor)]
     ;(prn text " -- " (db-tweet :get :followers) (db-tweet :get-state))))
     (prn text " -- " (db-tweet :get-state))))
+
 
 ; prepare operation called once on start. init global state here.
 (defn -prepare      ; gen-class method prefix by -
@@ -66,11 +65,13 @@
   (reset! batch-cnt 0)
   loc-map)  ; ret loc-state
 
-; aggregator after grouping, only contains grouping key and other keys emitted from upstream.
+; aggregate values in bucket after grouping. 
 (defn -aggregate
   "given global state, aggregate current tuple into global state, ret void"
   [this loc-map tuple collector]
-  (let [loc (keyword (.getString tuple 3))
+  (let [id (.getString tuple 0)
+        actor (.getString tuple 1)
+        loc (keyword (.getString tuple 3)) ; incoming tuple []
         rediskey (.getValueByField tuple "rediskey")
         cnt @batch-cnt
         sum (@loc-map loc)  ; ret nil when map does not have key
@@ -78,10 +79,10 @@
     ; now update tot
     (prn "aggregating for tuple " loc cnt sum incsum tuple)
     (swap! batch-cnt inc)   ; incr cnt within the batch
-    (swap! loc-map (fn [m] (merge-with + m {loc incsum})))
-    (.emit collector (Values. (to-array [sum])))))
+    (swap! loc-map (fn [m] (merge-with + m {loc 1})))
+    (.emit collector (Values. (to-array [id actor incsum rediskey])))))
 
 (defn -complete
   [this loc-map collector]
-  (prn "aggregator batch completed " (first @loc-map)))
+  (prn "aggregator batch completed "  @loc-map))
   ;(.emit collector (Values. (to-array @loc-map))))

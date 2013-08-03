@@ -37,6 +37,7 @@ public class GroupAggregate {
 		private static final String TAG = "GroupTotal :";
 		Map<String, Long> result = new HashMap<String, Long>();
 		protected JedisDB jedis;
+		int batchcnt = 0;
 		
 		/**
 		 * prepare only called once when creating object. Put any initiation code here.
@@ -53,6 +54,7 @@ public class GroupAggregate {
 		@Override
 		public Map<String, Long> init(Object batchId, TridentCollector collector) {
 			System.out.println(TAG + "init : batchId : " + batchId); 
+			batchcnt = 0;
 			return result;
 		}
 	
@@ -65,8 +67,10 @@ public class GroupAggregate {
 		@Override
 		public void aggregate(Map<String, Long> val, TridentTuple tuple, TridentCollector collector) {
 			System.out.println(TAG + "aggregate :" + tuple);
-			String loc = tuple.getString(0);
-			long cnt = tuple.getLong(1);
+			String loc = tuple.getString(3);
+			//long cnt = tuple.getLong(1);
+			batchcnt += 1;
+			long cnt = batchcnt;
 			long totcnt = 0;
 			if( val.get(loc) != null ){
 				totcnt = val.get(loc);
@@ -74,7 +78,7 @@ public class GroupAggregate {
 			val.put(loc, cnt+totcnt);
 			List<Object> v = tuple.getValues();
 			//v.add(totcnt);
-			collector.emit(new Values(tuple, cnt, totcnt));
+			collector.emit(new Values(cnt, totcnt));
 		}
 	
 		/**
@@ -84,7 +88,7 @@ public class GroupAggregate {
 		public void complete(Map<String, Long> val, TridentCollector collector) {
 			System.out.println(TAG + "complete :" + val);
 			jedis.storeMap("loc-cnt", val);
-			collector.emit(new Values(val));
+			//collector.emit(new Values(val));
 		}	         
 	}
 	
@@ -136,13 +140,14 @@ public class GroupAggregate {
 		storm.trident.operation.builtin.Count counter = new storm.trident.operation.builtin.Count();
 		
 		// check field and tuple section in trident tutorial data model.
+		// grouped stream, after aggregation, only contains grouping key and other fields emitted from aggregator. 
 		TridentTopology topology = new TridentTopology();
 		topology.newStream("spout", spout) 		// topology src stream point to tweet spout
 			.groupBy(new Fields("location"))    // for each location fields, a virtual stream is created
-			.aggregate(new Fields("location"), counter, new Fields("count"))  // aggregation on each location stream
+			//.aggregate(new Fields("location"), counter, new Fields("count"))  // aggregation on each location stream
 			//.aggregate(new Fields("location", "count"), grpTotal, new Fields("location", "batch_count", "sum"))
-			.aggregate(new Fields("location", "count"), grpTotal, new Fields("location", "count", "sum"))
-			.each(new Fields("location"), new Utils.PrintFilter());  // after aggregation, emits aggregation result.
+			.aggregate(spout.getOutputFields(), grpTotal, new Fields("count", "sum"))
+			.each(new Fields("location", "count", "sum"), new Utils.PrintFilter());  // after aggregation, emits aggregation result.
 		
 		// you can add more source spout stream as you like.
 //		FakeTweetsBatchSpout spout2 = new FakeTweetsBatchSpout(10);  // create spout as the source for the topology

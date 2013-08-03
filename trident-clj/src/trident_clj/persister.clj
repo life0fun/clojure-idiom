@@ -67,5 +67,5 @@
         ts (.getString tuple 4)]
     ;(prn "TweetAggregator : execute " id actor text loc tm)
     (store-tweet id actor text loc ts 1)
-    (verify-tweet id actor text loc ts)
+    ;(verify-tweet id actor text loc ts)
     (.emit collector (Values. (to-array [(vector id actor)]))))) ; pk-val within one list

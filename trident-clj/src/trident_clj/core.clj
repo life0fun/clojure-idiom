@@ -1,4 +1,5 @@
 (ns trident-clj.core
+  "trident in clj example"
 	(:require [clojure.string :as str])
   (:import [java.io FileReader]
            [java.util Map Map$Entry List ArrayList Collection Iterator HashMap])
@@ -39,13 +40,13 @@
     (-> trident-top
       (.newStream "spout" tweet-spout)
       (.each (Fields. ["id" "actor" "text" "location" "time"]) persister (Fields. ["rediskey"]))
-      (.each (Fields. ["id" "actor" "text" "location" "time" "rediskey"]) prnfilter)
+      ;(.each (Fields. ["id" "actor" "text" "location" "time" "rediskey"]) prnfilter)
       ; groupBy create virtual streams grouped to next, must followed by aggregator
       ; grouped stream, after aggregation, only contains grouping key and other fields emitted from aggregator.
       (.groupBy (Fields. ["location"]))
       ;(.aggregate (Fields. ["location"]) counter (Fields. ["count"])) ; [grp-key other-key]
-      (.aggregate (Fields. ["id" "actor" "text" "location" "time" "rediskey"]) locaggregator (Fields. ["count"]))
-      (.each (Fields. ["location"]) prnfilter))
+      (.aggregate (Fields. ["id" "actor" "text" "location" "time" "rediskey"]) locaggregator (Fields. ["id" "actor" "count" "rediskey"]))
+      (.each (Fields. ["id" "actor" "location" "count" "rediskey"]) prnfilter))
     trident-top))  ; return configurated trident top
 
 ; give a config, build a top and run it on a cluster

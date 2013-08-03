@@ -147,9 +147,9 @@
          (emit-bolt! collector [word (@counts word)] :anchor tuple)
          (ack! collector tuple))))))
 
-;;
-;; combiner get input from stream 2 of split-sentence. Tuple has two fields, word/count
-;;
+;
+; combiner get input from stream 2 of split-sentence. Tuple has two fields, word/count
+;
 (defbolt combiner ["word" "count"] 
   {:prepare true}
   [conf context collector]
