@@ -32,6 +32,10 @@
 (with-open [rdr (clojure.java.io/reader "/Users/e51141/tmp/x")]
   (printf "%s\n" (clojure.string/join "\n" (line-seq rdr))))
 
+(require '[clojure.java.io :only [reader] :refer [reader]]')
+(with-open [rdr (reader "/Users/e51141/tmp/x")]
+  (doseq [l (line-seq rdr)]
+    (prn l)))
 
 ; output stream convert a file to byte output stream.
 (:use [clojure.java.io :only [output-stream]])
