@@ -4,20 +4,24 @@
   :source-paths ["src"]  ; where the namespace directory starts
   :test-paths ["test"]
   :dependencies [       ; lein2, all deps is under maven repo, $HOME/.m2/repository
+    [org.clojure/clojure "1.4.0"]
+    [org.clojure/clojure-contrib "1.2.0"]
     [org.clojure/tools.logging "0.2.6"]     ; logging
     [korma "0.3.0-RC5"]    ; awesome korm
     [clj-redis "0.0.12"]   ;
     [org.clojure/data.json "0.2.2"]    ; json package
     [clj-time "0.5.1"]
+    [storm "0.9.0-wip15"]
   ]
   ; activate profiles to config projects. settings in certain profile is not propagated
   ; downstream to projects that deps on your proj.
   ; use with-profile to select certain profile to run on.
   :profiles {:dev 
               {:dependencies 
-                [[storm "0.9.0-wip15"]
-                [org.clojure/clojure "1.4.0"]
-                [org.clojure/clojure-contrib "1.2.0"]]}}
+                [
+                ]}}
+  ; to enure uberjar works by not deleting non project classes
+  :keep-non-project-classes true
   ; to run lein do clean, with-profile dev compile, with-profile dev run.
   :main trident-clj.core
   :warn-on-reflection true
