@@ -30,6 +30,26 @@
 
 (defstruct cell :food :pher) ;may also have :ant and :home
 
+
+; we want to create a set of ants, so each ant belongs to a cell in the map.
+; so both ant and cell have mutable states establish this bi-direction binding.
+; when ant moves, both states need to be update atomically.
+; use a ref var and Agent to encapsulate cell's state and ant's state.
+; alter ref's state(cell's state) and send fn to Agent to change ant's state.
+;
+; 1. create a map with cells. those cells has fixed x, y. cell x,y is used to index mutable ant belong/own the cell.
+; 2. each cell holds a container points to mutable of which object belongs(own) this cell.
+; 3. an ant is an object state map contains mutable features and attributes.
+; 4. the association between which cell own which ant is bi-directional.
+; 5. so cell contains refed mutable map with ant key to find ant object belongs to the cell.
+; 6. ant is an object with mutable attributes in a dict map. 
+; 7  Use Agent to ref guard the mutable of ant object state map. So ant's state is refed by as Agent's state/
+; 8. to update Agent's state(ant's state), send a fn to the agent to update it.
+; 9. inside fn send to agent, find new cell ant can move to, update cell's state.
+; 10. return the new cell at the end of fn that sent to Agent. This update Agent's state, which is ant's state.
+; 11. for conitnuous move, send fn to Ant's Agent to change ant's state. inside fn, send the fn to agent again. 
+
+
 ;world is a 2d vector of refs to cells
 (def world 
      (apply vector 
