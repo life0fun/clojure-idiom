@@ -336,3 +336,50 @@
 (send-off evaporator evaporation)
 
 ;; )
+
+
+;;
+;; nodejs version
+;;
+; class Ant
+  
+;   constructor: (@name, @loc, @options) ->
+;     @interval = 1000
+;     @totcnt = 0
+;     console.log "Ant construction at #{ @loc } "
+
+;   @create: (name, loc, opts) ->
+;     console.log 'creating Ant' 
+;     return new Ant(name, loc)
+
+
+;   setAntTimeout : ->
+;     self = @   # when fn invoked, this passed, cache it to self.
+
+;     # on push timeout closes context var pushIdx
+;     onAntTimeout = =>
+;       self.totcnt += 1
+;       @totcnt += 1  # use fat arrow together with @
+;       #console.log 'onAntTimeout #{ self.totcnt }', self.totcnt
+;       console.log "onAntTimeout #{ self.totcnt }", @totcnt
+;       if @totcnt > 10
+;         console.log 'timed out done !'
+;         return
+
+;       # reset the timer in timeout handler
+;       setTimeout onAntTimeout, self.interval
+
+;     # setup timer
+;     console.log 'setting up timer every ', self.interval
+;     setTimeout onAntTimeout, self.interval
+
+;   run : ->
+;     console.log 'running....'
+;     @setAntTimeout()
+
+; exports.Ant = Ant
+; exports.create = Ant.create
+
+; ant = Ant.create("ant1", 1)
+; ant.run()
+
