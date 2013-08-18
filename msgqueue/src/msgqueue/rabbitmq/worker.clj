@@ -1,6 +1,7 @@
 ;;
-;; workers on the server side, get msg from queue, and apply fn to the 
-;; data(args) extracted from the queue. Send result back thru callback queue.
+; workers on the server side, get msg from queue, and apply fn to the 
+; data(args) extracted from the queue. Send result back thru callback queue.
+;  full fledged version is https://github.com/amitrathore/swarmiji
 ;;
 (ns msgqueue.rabbitmq.worker
   (:use msgqueue.rabbitmq.rabbitmq)
@@ -26,6 +27,7 @@
   (doseq [req swarm-requests]
     (req :disconnect)))
 
+
 ; spin until all requests completed.
 (defn wait-until-completion [swarm-requests allowed-time]
   (loop [all-complete (all-complete? swarm-requests)
@@ -38,6 +40,7 @@
         (do
           (Thread/sleep 100)
           (recur (all-complete? swarm-requests) (+ elapsed-time 100)))))))
+
 
 ; wait for all requests completion, and execute post worker completion
 (defmacro from-swarm [swarm-requests & expr]
@@ -87,6 +90,7 @@
     (throw (RuntimeException. "Worker has errors!")))
   (worker-internal-data attrib-name))
 
+
 ; dispatch the worker to msg queue. first creates a ref to store ret value(async call).
 ; then create a listener for response, listener wrapped in a future, update ret value(closure)
 ; ret a closure that wraps the result and exposes getter accessor fn.
@@ -100,11 +104,13 @@
         :status (@worker-data :status)
         :disconnect (disconnect-worker worker-transport)))))
 
+
 ; on-swarm dispatch the worker computation request to remote thru rabbitmq queue 
 (defmacro worker-runner [worker-name should-return worker-args]
   `(fn ~worker-args
      (if ~should-return
        (on-swarm ~worker-name ~worker-args))))
+
 
 ; def a var with root binding to fn named service-name with args and expr as body, 
 ; most importantly, add fn object to workers map to make it namespace closure. 
@@ -114,9 +120,9 @@
 (defmacro defworker [service-name args & exprs]
   `(let [worker-name# (keyword '~service-name)] ; name to keyword, :name
      (dosync 
-       ; workers is global map of worker name to fn object.
-       ; store service fn form into workers map, remote worker can retrieve it and perform the fn.
-       (alter workers assoc worker-name# (fn ~args (do ~@exprs))))
+       ; workers is global map of worker name to fn object. Entire fn object form expression is stored.
+       ; remote worker can retrieve the fn body expression, then evaluate the expr(execute the fn) with passed in args directly.
+       (alter workers assoc worker-name# (fn ~args (do ~@exprs)))) ; do evalue the fn body expr
      ; def a var with root binding to the fn service-name(args, body)
      (def ~service-name (worker-runner worker-name# true ~args))))
 
@@ -125,9 +131,11 @@
   (let [request-object (request-envelope worker-name-keyword args)]
     (send-message WORKER-QUEUE request-object)))
 
+
 ; dispatch a request to run worker-name fn without asking for ret value.
 (defmacro fire-and-forget [worker-symbol args]
   `(run-worker-without-return (keyword '~worker-symbol) ~args))
+
 
 ; bcast requests to all queues asking for executing worker fn.
 (defn run-worker-on-all-servers [worker-name-keyword args]
