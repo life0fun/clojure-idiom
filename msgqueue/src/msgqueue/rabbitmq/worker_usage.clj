@@ -1,6 +1,7 @@
 ;
 ; use worker macro create a set of workers to execute computations
 ; in async mode.
+; full fledged version is https://github.com/amitrathore/swarmiji
 ;
 (ns msgqueue.rabbitmq.worker-usage
 	(:use msgqueue.rabbitmq.rabbitmq)

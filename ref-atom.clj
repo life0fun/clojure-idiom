@@ -473,9 +473,10 @@
         (future (upload-image image (format "myimage-%s.jpg" i))))
       images)))
 
-;; submit the future and wait for the result.
+; submit the future, jvm internally submit the fn object to executor 
+; and ret a FutureTask object. De-ref the AsyncTask will block until result is available.
 (def f (upload-images images))
-(map deref f)
+(map deref f)  ; def FutureTask will block until result is  available.
 
 
 ;;
