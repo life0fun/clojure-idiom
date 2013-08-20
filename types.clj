@@ -222,17 +222,18 @@
 
 (-> "Works" upp rev)  ;; SKROW
 
-;; clojure does not encourage inheritance. Use object map literal mix-in with extend function.
-;; You can use a map with name maps to fn, and each Type extend the protocol impl map.
-;; def a map with name to fn mapping, the same as JS mixins with object literal.
-;;
+;
+; clojure does not encourage inheritance. Use object map literal mix-in with extend function.
+; You can use a map with name maps to fn, and each Type extend the protocol impl map.
+; def a map with name to fn mapping, the same as JS mixins with object literal.
+; The first args to protocol is the target fn itself, the fn object that recvd the impl
 (def tree-node-fixo
-  {:fixo-push (fn [node value]
+  {:fixo-push (fn [node value]   ; [this value]
                 (xconj node value))
-   :fixo-peek (fn [node]
+   :fixo-peek (fn [node]   ; [this]
                 (if (:l node)
                   (recur (:l node)) (:val node)))
-   :fixo-pop (fn [node]
+   :fixo-pop (fn [node]   ; [this]
                 (if (:l node)
                   (TreeNode. (:val node) (fixo-pop (:l node)) (:r node)) (:r node)))})
 
@@ -470,3 +471,60 @@
     (seq [this] this)
   java.io.Closeable
     (close [this] (close-fn)))
+
+;
+; =======================================
+; expression problem : test the expressiveness of the lang.
+; define a datatype by cases, do two things, without recompiling, while retain static type safety
+;   add new cases to datatype, and add new fn over datatype, 
+; for fn lang with pattern match, we can easily add fn without recompiling, hard to add new type.
+; for oo with subtype polymorphism, we can easily add types, hard to add new fn.
+; danile spiewak http://vimeo.com/user18356272/review/66548717/3531875329
+;
+; example, for an algebra s-expression, we can add various fn to it based on pattern match.
+; each fn knows all the cases(+. -)
+(defmulti value :op)  ; pattern match fn is get map's :op attribute
+(defmulti value :+ [expr] (+ (get expr :left-op) (get expr :right-op)))
+(defmulti value :- [expr] (- (get expr :left-op) (get expr :right-op)))
+; To add new fn, we just need to write new multi fn, has new pattern match, 
+(defmulti pprint :op)
+(defmulti pprint :+ [expr] (prn "pprint +" expr))
+(defmulti pprint :- [expr] (prn "pprint -" expr))
+; however, it is hard to add new type. If we want to add multiplication, 
+; we need modify both value fn and pprint fn.
+;
+; on the other hand, for subtype polymorphism, each type knows all the fns. 
+; class Add // Sub  // Multi  <-- easy to add subtype
+;   private int l, r
+;   pub int value() {return l+r;} // return l-r  
+;   pub void pprint() {}  <== hard to add new fn.
+;
+;
+; it is easy to add new type multiplication, as each type knows all fns.
+; however hard to add new fn, to add pprint fn, we need to modify all subtypes.
+
+;
+; protocol is a way to enable add fns to subtype by extend type to protocol impl easily in fn lang.
+; you can keep extending tyoe to new protocols _dynamically_ without modifying existing code. Yeah !
+; The first args to protocol is the target fn itself, the fn object that recvd the impl
+(defprotocol Eval   ; Eval protocol spec only have value fn.
+  (value [this]))
+; now each type can extend the protocol, so it is enable types knows all fns.
+(deftype Add [e1 e2]
+  (Eval 
+    (value [this] (+ (value e1) (value e2)))))
+
+(deftype Sub [e1 e2]
+  (Eval
+    (value [this] (- (value e1) (value e2)))))
+
+; to make type knows another fn, just extend-type with protocol.
+(defprotocol Pprint
+  (pprint [this]))
+(def add-pprint {:pprint (fn [this] (prn "add-pprint"))})
+(def sub-pprint {:pprint (fn [this] (prn "sub-pprint"))})
+; now easily extend the type to a new protocol of fns.
+; now you can just keep extending types to new protocol, without need to modify existing types.
+(extend Add Pprint add-pprint)
+(extend Sub Pprint sub-pprint)
+; =======================================
