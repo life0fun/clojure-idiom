@@ -288,11 +288,14 @@
       (assoc m v (conj existing k))))
     {} amap))
 
-
-; juxt, output is a seq of results from each fn
+; function composition, horizontal or vertical.
+; (comp f g h) <- ret a composite fn, seralize args left <- right. (f (g (h args)))
+; (juxt f g h) <- ret a composite fn, parallel args,(f g h)*args. [(f arg) (g arg) (h arg)]
 ((juxt filter remove) even? (range 10))
 
-; use juxt to select a list of columns from a map rather than 
+; relation algebra = set operation, (join, select, project, union, difference, intersection)
+; map is tuple(row) in a collection.
+; use juxt to project columns from map tuple. (select-keys map [:1 K2])
 (->> [{:name "jay fields", :current-city "new york", :employer "drw.com"}
       {:name "john dydo", :current-city "new york", :employer "drw.com"}
       {:name "mike ward", :current-city "chicago", :employer "drw.com"}
