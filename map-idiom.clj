@@ -3,8 +3,8 @@
 ;; (load-file "map-idiom.clj")
 ;;
 (ns ns-map-idiom
-  ;;(:require clojure.string :refer [join] :as string))
-  (:require clojure.string))
+  ;;(:require [clojure.string :refer [join] :as string]))
+  (:require [clojure.string]))
 
 ;; function programming : focus on result, no precedure.
 ;; what is the input, A map or a list of map,
@@ -288,13 +288,39 @@
       (assoc m v (conj existing k))))
     {} amap))
 
+; =====================================================
+; relation algebra = set theory, (join, select, project, union, difference, intersection)
+; rel algebra has 6 primitive operators, set union and difference, rename, selection, project and cross product.
+; Relation    Table(association)    set-like operation
+; tuple       Row(record)           map-like operation
+
+; select, like filter, ret a set of element for which pred is true.
+(select odd? #{1 2 3 4})
+; project like select-key, juxt, ret a set contains only projected cols.
+(project #{{:name "betsy" :id 33} {:name "panda" :id 34}} [:name])
+; cross product rets every possible combination of rows in different tables.
+(defn perm [things]  ; for each ele, divide the list into 2 sets, cross-product the two sets.
+  (if (= 1 (count things))
+    (list things)
+    ; use for to cross-product all sets in the for list.
+    (for [head things
+          tail (perm (disj (set things) head))]
+      (do (cons head tail)))))
+
+; join two sets on shared key, or a keymap to map keys between sets.
+; you can use select to find all requiems, join them, and project to narrow the result.
+(project 
+  (join (select #(= (:name %) "Requiem") 
+    #{{:name "requiem" :composer "W.A"}} 
+    #{{:composer "W.A" :country "Aus"}}))
+  [:country]))
+
+
 ; function composition, horizontal or vertical.
 ; (comp f g h) <- ret a composite fn, seralize args left <- right. (f (g (h args)))
 ; (juxt f g h) <- ret a composite fn, parallel args,(f g h)*args. [(f arg) (g arg) (h arg)]
 ((juxt filter remove) even? (range 10))
 
-; relation algebra = set operation, (join, select, project, union, difference, intersection)
-; map is tuple(row) in a collection.
 ; use juxt to project columns from map tuple. (select-keys map [:1 K2])
 (->> [{:name "jay fields", :current-city "new york", :employer "drw.com"}
       {:name "john dydo", :current-city "new york", :employer "drw.com"}
@@ -334,8 +360,7 @@
       (.add ret (afn e)))
     ret ))
 
-;; iter over map with type hint.
-;;
+; iter over map with type hint.
 (defmacro fast-map-iter [[bind amap] & body]
   `(let [iter# (map-iter ~amap)]
     (while (iter-has-next? iter#)

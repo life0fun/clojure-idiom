@@ -31,23 +31,24 @@
 (defstruct cell :food :pher) ;may also have :ant and :home
 
 
-; we want to create a set of ants, so each ant belongs to a cell in the map.
-; so both ant and cell have mutable states establish this bi-direction binding.
-; when ant moves, both states need to be update atomically.
+; Send action to agent, the action takes in agent's current state(x, y), make agent 
+; to do some computation, and use that result to update agent's state(x, y)
+
+; the word is a map of cells, with each cell addressable by x,y and holds state of 
+; which ant in it. Each ant is an agent whose state indicates which cell it is in.
+; we create a list of ants belong to cells. Bi-direction refers between cells and ants.
+; when sending action to ant agent to move it(update its x,y), atomically update (cell, ant) state.
 ; use a ref var and Agent to encapsulate cell's state and ant's state.
 ; alter ref's state(cell's state) and send fn to Agent to change ant's state.
 ;
-; 1. create a map with cells. those cells has fixed x, y. cell x,y is used to index mutable ant belong/own the cell.
-; 2. each cell holds a container points to mutable of which object belongs(own) this cell.
-; 3. an ant is an object state map contains mutable features and attributes.
-; 4. the association between which cell own which ant is bi-directional.
-; 5. so cell contains refed mutable map with ant key to find ant object belongs to the cell.
-; 6. ant is an object with mutable attributes in a dict map. 
-; 7  Use Agent to ref guard the mutable of ant object state map. So ant's state is refed by as Agent's state/
-; 8. to update Agent's state(ant's state), send a fn to the agent to update it.
-; 9. inside fn send to agent, find new cell ant can move to, update cell's state.
-; 10. return the new cell at the end of fn that sent to Agent. This update Agent's state, which is ant's state.
-; 11. for conitnuous move, send fn to Ant's Agent to change ant's state. inside fn, send the fn to agent again. 
+; 1. A map with cells addressable by x, y. word[x,y] IS a ref state that holds ref to ant.
+; 2. an ant is an Agent whose state is ant's coord(x,y). from x,y, find the cell that ant's props stored.
+; 3. ant agent has x,y, store ant's prop map at cell[x,y].
+; 4. from cell[x,y], get the ant prop. can not or no need to get ref to ant agent.
+; 5. to change ant prop, just send action to ant agent, from agent x,y, can access ref state at the cell.
+; 6. inside action fn send to agent, find new cell ant can move to, update cell's state.
+; 7. return the new cell at the end of fn that sent to Agent. This update Agent's state, which is ant's state.
+; 8. for conitnuous move, send fn to Ant's Agent to change ant's state. inside fn, send the fn to agent again. 
 
 
 ;world is a 2d vector of refs to cells
@@ -64,7 +65,7 @@
 (defstruct ant :dir) ;may also have :food
 
 (defn create-ant 
-  "create an ant at the location, returning an ant agent on the location"
+  "create ant an at the location, returning an ant agent on the location"
   [loc dir]
     (sync nil
       (let [p (place loc)
