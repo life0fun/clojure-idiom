@@ -8,31 +8,33 @@
            [java.util Calendar TimeZone]
            [java.io OutputStream FileOutputStream]))
 
-;; Clojure can do java bettern than java. Proxy is meant strictly for interoperability.
-;; Proxy extend concrete class while reify abstracts type, protocol and interface.
-;; extend only those instances where interoperability demands it.
-;; instance reted from proxy is a proper proxy that does method dispatch based on look up map.
+; Where Proxy shines ? whenever you have to extend concrete class in the framework.
+; proxy extends concrete class dynamically while reify abstracts type, protocol and interface.
 
-;; To extend a class, create a proxy stub of the class, and then wrap the proxy stub inside the clj fn. The clj fn rets the proxy stub object.
-;; The object instantiated by proxy gets stubs for the methods which just look up usual clojure functions in a map.
-;; This means proxy-methods are normal (though anonymous) clojure functions and in particular they close over their environment.
-;; If a method is not found in the proxy's map the stub throws an UnsupportedOperationException or calls the super's method.
+; To extend a class, create a proxy stub with a spec map of the class, and wrap it inside proxy macro.
+; The object instantiated by proxy is an instance of extended class and delegate fn based on spec map.
+; This means proxy-methods are lambda function closures closed over their context.
+; If a method is not found in the proxy's map the stub throws an UnsupportedOperationException or calls the super's method.
 
-;; java object member function is not high order fn. use macro memfn to convert.
-(map #(.getBytes %) ["amit" "rob" "kyle"])
-(map (memfn getBytes) ["amit" "rob" "kyle"])
-
-(.subSequence "Clojure" 2 5)
-((memfn subSequence start end) "Clojure" 2 5)
-
-; clojure generates a proxy for a class in which each method looks up the function implementing a method in a map.
-; Based on the method name, the corresponding function is retrieved from a map and invoked with the this reference and the argument(s)
-; proxy just intercepts method calls and wraps it with extra info or dispatch it to delegates.
-
-; proxy macro used to gen obj that impl IF and extend base class on the fly.
 ; (proxy [baseclass-name] [baseclass-constructor-parameters]
 ;   (method-redefinition-name [parameters]
 ;       method-body))
+
+(def d (proxy [Date] [] 
+    (toString [] "Proxy-date-to-string-changed-to-hello")))
+
+(.toString d) ; <= "Proxy-date-to-string-changed-to-hello"
+
+; clojure proxy extends a class with a spec map. Proxy macro gen bytecode impl IF to extend base class on demand on the fly.
+; Based on the method name, the corresponding function is retrieved from a map and invoked with the this reference and the argument(s)
+; proxy just intercepts method calls and wraps it with extra info or dispatch it to delegates.
+; you can use (update-prox proxy mappings) to dynamically assoc spec maps to proxy. 
+; so dynamically create closure to extend any class at runtime.
+
+(update-proxy d {"toString" (fn [this] "update-proxy-date-to-string")})
+(.toString d) ; <= "update-proxy-date-to-string"
+
+
 (defn streaming-filter [os]
   (proxy [FilterOutputStream] [os]  ; args or base class ctor args
     (write [b]
@@ -182,7 +184,7 @@ nil
 
 ;;
 ;; the difference between gen-class and proxy
-;; gen-class creates a named class while proxy wraps an existing concrete java class.
+;; gen-class creates a named class while proxy extends an existing concrete java class.
 ;; gen-class taks an object as first arg, proxy capture this symbol the java way. Do not rebind this symbol.
 ;;
 
@@ -249,3 +251,9 @@ nil
 
 
 
+;; java object member function is not high order fn. use macro memfn to convert.
+(map #(.getBytes %) ["amit" "rob" "kyle"])
+(map (memfn getBytes) ["amit" "rob" "kyle"])
+
+(.subSequence "Clojure" 2 5)
+((memfn subSequence start end) "Clojure" 2 5)
