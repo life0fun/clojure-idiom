@@ -104,18 +104,26 @@
 (.submit (Executors/newSingleThreadExecutor) myr)
 
 
-; gen-class, need AOT compiler in project.clj to gen java class before hand.
+; ns defines a namespace, with gen-class, also defines a class, that simply contains stubs to 
+; map java class methods calls to ns functions.
+; gen-class, need AOT compiler in project.clj to gen java class before hand. AOT tie gened files to clj version.
 ; (compile 'joy.gui.DynaFrame')
-; We have only on single ﬁeld available called – surprise! – state.
+; gen-class creates a class that's a delegate for the vars (prefixed fn), contains state.
+; clj gen a set of classes for each fn in a namespace at location classpath.
+; java class has many fields, here we only have single class field, called state. use (atom {}) as field map.
+; use require to resolve class dependency.
 (ns some.namespace
   (:gen-class   ; convert a clojure ns to a java class, with private state, init, getter/setter
-    :name joy.gui.DynaFrame      ; class name of generated class
+    :name com.colorcloud.MyClass      ; this ns impls this class.
     :extends javax.swing.JFrame  ; 
     :implements [clojure.lang.IMeta]
-    :prefix df-     ; find the correct fn to compile to class
-    :state state    ; deﬁnes a method which will return the object's state.
-    :init init      ; init method ret a [], first arg for super class init, second is state
-    :constructors {[String] [String]}
+    :prefix df-     ; method prefix with df- is class method, first arg is this pointer.
+                    ; (defn df-foo ...), called by (.foo class-instance-object)
+    :state state    ; define a method which will return the object's state.
+    :init init      ; called when obj initiation. ret a [], first arg is a vec of args for super class. 
+                    ; second is object's state. init ret the state of object and called when obj instantiate.
+    :constructors {[String] [String]} ; map the args of Klz constructor to the args to super klz constructor.
+                                      ; to determine which constructor to call.
     :methods [ [display [java.awt.Container] void]     ; public method
                #^{:static true} [version [] String]])  ; class static method
 
@@ -123,16 +131,16 @@
          (java.awt BorderLayout Container)))
 
 (in-ns 'joy.gui.DynaFrame')   ; class name specified by gen-class :name prop
-; init method return a vector.
-; the first element of which is a vector of arguments for the superclass constructor
-; The second element of the vector is the state for the instance. 
+; init called when obj instantiate, :constructors decide when super klz constructor to call, and init object state.
+; the first element is an arg vector to super klz to determine which super constructor to call.
+; The second element of the vector is the state for the instance. use (atom {}) as concurmap storing mutable state.
 (defn df-init [title]
   [[title] (atom {:title title})])
 
-; to access state
+; to access object state, use (.state this)
 (swap! @(.state this) merge {:test "test"})
 
-;
+
 ; another example
 (ns  #^{:doc "A simple class with instance vars"
     :author "David G. Durand"}
