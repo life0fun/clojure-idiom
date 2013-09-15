@@ -26,7 +26,6 @@ public class Utils {
 	 */
 	@SuppressWarnings({ "serial", "rawtypes" })
 	public static class PrintFilter implements Filter {
-
 		@Override
 		public void prepare(Map conf, TridentOperationContext context) {
 		}
@@ -73,6 +72,18 @@ public class Utils {
 	   }
 	}
 
+	public static class TextProcessor extends BaseFunction{
+		@Override
+		public void prepare(Map conf, TridentOperationContext context) {
+		}
+
+		@Override
+		public void execute(TridentTuple tuple, TridentCollector collector) {
+			String v = (String) tuple.getValue(0);
+			collector.emit(new Values(v + " : TextProcessor-ed"));
+		}
+	}
+	
 	/**
 	 * emit a single tuple for each group of tuple, this combiner aggregator always used after groupBy() 
 	 * to distinct count of duplicate tuples with same field.

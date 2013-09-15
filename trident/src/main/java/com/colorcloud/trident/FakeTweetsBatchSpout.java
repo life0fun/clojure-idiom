@@ -102,13 +102,22 @@ public class FakeTweetsBatchSpout implements IBatchSpout {
 	// SimpleDateFormat is not thread safe!
 	private SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss aa");
 
-	private Values getNextTweet() {
+	public Values getNextTweet() {
 		int actorIndex = randomIndex(activityDistribution, randomGenerator);
 		String author = ACTORS[actorIndex];
 		String text = sentences[randomGenerator.nextInt(sentences.length)].trim() + " #"
 		    + SUBJECTS[randomIndex(subjectInterestDistribution[actorIndex], randomGenerator)];
 		return new Values(++tweetId + "", text, author, LOCATIONS[actorIndex], DATE_FORMAT.format(System
 		    .currentTimeMillis()));
+	}
+	
+	public String getNextTweetString() {
+		int actorIndex = randomIndex(activityDistribution, randomGenerator);
+		String author = ACTORS[actorIndex];
+		String text = sentences[randomGenerator.nextInt(sentences.length)].trim() + " #"
+		    + SUBJECTS[randomIndex(subjectInterestDistribution[actorIndex], randomGenerator)];
+		
+		return ++tweetId + " : " + text + " : " + author + " : " + LOCATIONS[actorIndex] + " : " + DATE_FORMAT.format(System.currentTimeMillis());
 	}
 
 	/**

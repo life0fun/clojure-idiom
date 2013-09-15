@@ -29,6 +29,8 @@ import com.colorcloud.trident.storage.JedisDB;
  * and we can use the simple Count() aggregator.
  */
 public class GroupAggregate {
+	public static final String TOPNAME = "location_groupaggregate";
+	
 	/**
 	 * batch processing treats every batch process as a transaction.
 	 */
@@ -142,7 +144,9 @@ public class GroupAggregate {
 		// check field and tuple section in trident tutorial data model.
 		// grouped stream, after aggregation, only contains grouping key and other fields emitted from aggregator. 
 		TridentTopology topology = new TridentTopology();
-		topology.newStream("spout", spout) 		// topology src stream point to tweet spout
+		// if using top.newDRPCStream(topName, drpc), we can get result of processing tuple result = drpc.execute(topName, tuple);
+		topology.newDRPCStream(TOPNAME, drpc)
+		//topology.newStream("spout", spout) 		// topology src stream point to tweet spout
 			.groupBy(new Fields("location"))    // for each location fields, a virtual stream is created
 			//.aggregate(new Fields("location"), counter, new Fields("count"))  // aggregation on each location stream
 			//.aggregate(new Fields("location", "count"), grpTotal, new Fields("location", "batch_count", "sum"))
@@ -158,11 +162,41 @@ public class GroupAggregate {
 		return topology.build();
 	}
 
+	public static StormTopology buildDRPCTopology(LocalDRPC drpc) throws IOException {
+		FakeTweetsBatchSpout spout = new FakeTweetsBatchSpout(100);  // create spout as the source for the topology
+		Function stateStore = new DBWriteBolt();
+		Aggregator<Map<String, Long>> grpTotal = new GroupTotal();
+		storm.trident.operation.builtin.Count counter = new storm.trident.operation.builtin.Count();
+		
+		// check field and tuple section in trident tutorial data model.
+		// grouped stream, after aggregation, only contains grouping key and other fields emitted from aggregator. 
+		TridentTopology topology = new TridentTopology();
+		// if using top.newDRPCStream(topName, drpc), we can get result of processing tuple result = drpc.execute(topName, tuple);
+		topology.newDRPCStream(TOPNAME, drpc)
+			.each(new Fields("args"), new Utils.TextProcessor(), new Fields("textprocessed"))
+			.project(new Fields("args", "textprocessed"));
+		
+		System.out.println(" >>>>>>>>>> build drpc topology");
+		return topology.build();
+	}
+
+	
 	public static void main(String[] args) throws Exception {
 		Config conf = new Config();
-
 		LocalDRPC drpc = new LocalDRPC();
 		LocalCluster cluster = new LocalCluster();
-		cluster.submitTopology("location_groupaggregate", conf, buildTopology(drpc));
+		
+		
+		//cluster.submitTopology(TOPNAME, conf, buildTopology(drpc));
+		
+		cluster.submitTopology(TOPNAME, conf, buildDRPCTopology(drpc));
+		System.out.println(" >>>>>>>>>> done cluster submit topology");
+		
+		Thread.sleep(5000); // give it some time to setup
+		
+		String result = drpc.execute(TOPNAME, "hello world");
+		System.out.println(">>>>>>>>>> drpc result :" + result);
+		result = drpc.execute(TOPNAME, "hello world from world");
+		System.out.println(">>>>>>>>>> drpc result :" + result);
 	}
 }

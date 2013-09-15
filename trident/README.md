@@ -22,12 +22,13 @@ This is no project scaffolding for storm project. We need to create new project 
 
     java -cp ./bin:lib/*:lib/dev/*:src/main/resources com.colorcloud.trident.GroupAggregate
 
-
+    java -cp ./bin:lib/*:lib/dev/*:src/main/resources com.colorcloud.trident.DrpcStream
 
 ## Trident Notes.
 
 1. Each batch is a reliable transaction. 
-2. GroupBy and aggregation functions are invoked per batch, init and complete upon batch start, and aggregate on each trident tuple in the batch.
+2. drpc.execute(TOPNAME, text) is used to inject text stream into top.
+3. GroupBy and aggregation functions are invoked per batch, init and complete upon batch start, and aggregate on each trident tuple in the batch.
 
 
 ## Trident by Clojure.
