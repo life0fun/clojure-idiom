@@ -52,8 +52,8 @@
 ; give a config, build a top and run it on a cluster
 (defn run-local-topology
   [config drpc]
-  (let [cluster (LocalCluster.)   ; create a 
-        tweet-top (bld-tweet-top (TridentTopology.))]
+  (let [cluster (LocalCluster.)   ; create a cluster
+        tweet-top (bld-tweet-top (TridentTopology.))] ; build tweet topology
     ;(.setDebug cluster-config true)
     (.submitTopology cluster      ; submit top to cluster with the following config
       "location_groupaggregate"   ; top instance name
@@ -68,5 +68,6 @@
     (prn " >>>> starting dbconn.core main <<<<< ")
     (run-local-topology config drpc)
     (while true
-      (log/infof "Word count: %s" (.execute drpc "words" "baby"))
+      ; drpc execute function-name function-arg
+      (log/info "Word count: %s" (.execute drpc "words" "baby"))
       (Thread/sleep 1000))))
