@@ -15,7 +15,7 @@ public class LocationStateQuery extends BaseQueryFunction<LocationState, Long>{
 	@Override
 	public List<Long> batchRetrieve(LocationState state, List<TridentTuple> args) {
 		List<Long> loccnts = new ArrayList<Long>();
-		for(TridentTuple tuple : args){    // 
+		for(TridentTuple tuple : args){
 			String loc = (String) tuple.getValue(0);   // first field is location
 			long cnt = state.incrementAndGet(loc);
 			loccnts.add(cnt);
