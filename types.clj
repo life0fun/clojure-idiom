@@ -166,20 +166,25 @@
   (fixo-peek [fixo]))
 
 ;;
-;; Protocol is clojure style Mixin that impls polymorphism
-;; Protocols are implemented using extend forms: extend, extend-type, extend-protocol.
-;; extend-type : to impl inside JVM type.
-;; extend class-name protocol-name mixin-fn-map
-;; Protocol extends to class/type/IF with single dispatch of first arg, and extendible multiple dispatches.
-;; this is exactly as javascript augment object by adding fns in prototype object chain.
-;; Types extended to protocols.
-;; concrete type and protocol can be from 3rd party and we can extend without any adapters, wrappers, monkey patching
-;;
-;; Clojure polymorphism lives in the protocol(interface) functions, not in the classes, as compare to Monkey patch and Wrappers.
-;; Monkey patch, not polymorphism. Wrapper: need to define beforeHandle.
-;;  Monkey patch: TreeNode.fixo-push = function() {}
-;;  Wrapper : class TreeWrapper { private TreeNode, public fixo-push()}
-;; Protocol enables run-time polymorphism that can integrate 3rd lib easily.
+; Protocol is clojure style Mixin for OO style polymorphism. All protocol fn get 
+; first args as this ref to target. (defrecord, deftype, map, java obj) are OO.
+; Protocols are implemented using extend forms: extend, extend-type, extend-protocol.
+; extend-type : to impl inside JVM type.
+; extend class-name protocol-name mixin-fn-map
+; extend protocol to multiple types.
+; extend type to multiple protocols.
+; Protocol extends to class/type/IF with single dispatch of first arg, and extendible multiple dispatches.
+; this is exactly as javascript augment object by adding fns in prototype object chain.
+; Types extended to protocols.
+; concrete type and protocol can be from 3rd party and we can extend without any adapters, wrappers, monkey patching
+;
+; extension happens in the protocol fns, not in the types.
+; Clojure polymorphism lives in the protocol(interface) functions, not in the classes, as compare to Monkey patch and Wrappers.
+; Monkey patch, not polymorphism, namespace collision. 
+; Wrapper: need to define beforeHandle.
+; Monkey patch: TreeNode.fixo-push = function() {}
+; Wrapper : class TreeWrapper { private TreeNode, public fixo-push()}
+; Protocol enables run-time in-line polymorphism that can integrate 3rd lib easily.
 ;;
 
 ;; so we just simply import a JVM type, and start to extend it.
@@ -243,10 +248,18 @@
 (xseq (fixo-into (TreeNode. 5 nil nil) [2 4 6 7]))
 
 ;;
-;; reify macro brings together function closures and protocol extend into a single form.
-;; reify realizes a single instance of type, protocol, or interface, = abstractions.
-;; reify method arglists include the object itself. It’s idiomatic to use this to refer to object and _ to ignore its.
-;;
+; reify macro brings together function closures and protocol extend into a single form.
+; reify realizes a single instance of type, protocol, or interface, = abstractions.
+; reify method arglists include the object itself. It’s idiomatic to use this to refer to object and _ to ignore its.
+;
+; reify will instantiate an unamed type. This unamed type will impl 1+ protocols, and
+; close over context like fn.
+(let [x 42
+     r (reify AProtocol
+        (foo [this b] (prn "reify bar"))
+        (bar [this _] (prn "reify bar " x)))]
+  (bar r))   ; will print x using 42
+
 (defn fixed-fixo
   ([limit] (fixed-fixo limit []))
   ([limit vector]

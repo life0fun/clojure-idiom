@@ -119,7 +119,7 @@
     :implements [clojure.lang.IMeta]
     :prefix df-     ; method prefix with df- is class method, first arg is this pointer.
                     ; (defn df-foo ...), called by (.foo class-instance-object)
-    :state state    ; define a method which will return the object's state.
+    :state state    ; define a method that return the object's state. called as (swap ! (.state this) conj (.getValue ))
     :init init      ; called when obj initiation. ret a [], first arg is a vec of args for super class. 
                     ; second is object's state. init ret the state of object and called when obj instantiate.
     :constructors {[String] [String]} ; map the args of Klz constructor to the args to super klz constructor.
