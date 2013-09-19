@@ -248,12 +248,10 @@
 (xseq (fixo-into (TreeNode. 5 nil nil) [2 4 6 7]))
 
 ;;
-; reify macro brings together function closures and protocol extend into a single form.
-; reify realizes a single instance of type, protocol, or interface, = abstractions.
-; reify method arglists include the object itself. It’s idiomatic to use this to refer to object and _ to ignore its.
+; reify, like deftype and defrecord, instantiate an unamed type that impls 1+ protocols spec.
+; unlike deftype and defrecord, it does not take a name or a vector of fields;
+; datatype created by reify do not have explicit fields, relying instead on closures.
 ;
-; reify will instantiate an unamed type. This unamed type will impl 1+ protocols, and
-; close over context like fn.
 (let [x 42
      r (reify AProtocol
         (foo [this b] (prn "reify bar"))

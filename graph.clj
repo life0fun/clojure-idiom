@@ -364,7 +364,7 @@
 (defn dfs-lazyseq [root]  ; only take single arg, root, not a list of node !
   (when root
     (lazy-seq    ; ret a lazy-seq of conj root to the end of result root's children
-      (conj 
+      (conj
         (vec (mapcat dfs-lazyseq    ; map this fn recursively to each children, and merge results by concat into a single list
                 (->> (mapcat #(vector (% root)) [:left :right])  ; iterate each branch, and merge childrens into a list
                   (filter identity))))

@@ -31,6 +31,7 @@
        (mapcat method-spec)
        (apply hash-map)))
 
+; spec quoted as unevaled form.
 (method-specs '((method age []
                   (* 2 10))
                 (method greet [visitor]
@@ -100,16 +101,30 @@
 (shelly :age)
 (shelly :greet "Nancy")
 
-; macro is ask compiler to generate code for you.
-; quote unquote only affect variables, no effect on other keywords, including ' quote.
-; quote unquoting `( '~x ), ' symbol is quote, return quoted substituded x value
+
+;;;;;;;;;;;;;;;;;;;
+; macro is asking compiler to generate code for you. s-expr passed to defmacro is not evaled.
 ;
-; `(quote) to skip evaluation. quote entire expr inside () to avoid quote each item individually.
+; normal quote ' yields the unevaluated form.
+; Syntax-quote `, resolves the symbol, yielding a fully qualified name in the current context.
+; for s-expr, syntax-quote establishes a template of the corresponding data structure.
+; Syntax-unquote ~, inside syntax quote, resolve form to data structure and eval the data structure.
+;
+; so in order to convert unevaled s-expr in defmacro to data structure, we use syntax-quote to
+; establish a template of corresponding data structure. At the same time, we need to unqote
+; the s-expr inside syntax-quote to avoid s-expr symbol being resolved as user/s-expr.
+;
+; inside defmacro, if you donot unquote your s-expr, error with no such var user/s-expr 
+; once unquote inside syntax-quote, the s-expr resolved to data structure and it is evaled;
+; also, unquote must live inside quote, make sense, right.  otherwise, unquote is unbound error.
+;
+; syntax-quote unquote only resolve variables symbols, no effect on keywords and num, string literals. including ' quote.
+;
 ; ~(unquote) to substitude the value. similar to string intrapolate. 
 ; if var is a form, (* 3 4), unquote it will cause it being evaluated.
 ; ~() unquote entire () to avoid unquote each one. ~(eval ~x)
-; 
-; `( '~var-name) intrapolate form, but do not eval.
+; `( '~x ) : unquote resolve var data structure. the value is then quoted to unevaled form, so prn (* 2 3)
+;
 ; ~@var-name (unquote-splicing):  remove the list ().
 ;
 (defmacro dbg [fn-name args & body]
@@ -117,8 +132,7 @@
     (println "dbg ...")
     ~@body))
 
-; when passing '(* 2 3) to macro, it will not be evalued b/c macro syntax quote.
-; however, put it inside let bindings inside macro will force it evaluate.
+; when passing '(* 2 3) to macro, macro wont evaluate passed in forms.
 (defn gen-map [nm spec] {(keyword nm) spec})
 (defmacro fnmacro [name] (let [m (gen-map name '(fn [n] (* 2 n)))] `(prn ~m) `~m))
 (fnmacro age)
@@ -154,7 +168,7 @@
 
 (defmacro dbg-ev [sexpr]
   (prn sexpr)
-  `~(eval sexpr)) ; quote unquote restore and eval the form. 
+  `(eval ~sexpr)) ; eval a data structur from unquoting the formm
 
 (dbg-ev (* 2 4))
 (dbg '(* 2 4))
@@ -176,7 +190,7 @@
 (macroexpand-1  '(declare add multiply subtract divide))
 
 ; and is just another macro
-(defmacro my-and 
+(defmacro my-and
   ([] true)
   ([x] x)
   ([x & next]
