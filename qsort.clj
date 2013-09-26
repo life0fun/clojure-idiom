@@ -1,9 +1,33 @@
 ;; lazy qsort
 ;; (load-file "qsort.clj")
-
 (ns qsort
   (:import [java.util.collections])
   (:use clojure.set))
+
+
+; for seq comprehension Vs while loop to iterate over a seq with great control.
+;
+; public static int indexOfAny(String str, char[] searchChars) {
+;   if("".equals(str) || searchChars.length == 0){ return -1; }
+;   int i, j, strsz = str.length(), searchsz = searchChars.length;
+;   while(i < strsz){   // use while loop to move index at your own control.
+;       for(j=0; j<searchsz; j++){   // seq scan thru and will break once match.
+;           if(searchChars[j] == str.charAt(i))
+;               return i;
+;       }
+;       i += 1;
+;   }
+; }
+;
+; use when to validate input
+(defn indexOfAny 
+  "in s, search for any char in pattern array(set)"
+  [src pattern]
+  (when pattern
+    (let [srcindexed (map-indexed vector src)
+          matched (for [[idx v] srcindexed :when (pattern v)] idx)]
+    (take 1 matched))))
+
 
 ; take n from a random seq
 (defn nom [n] (take n (repeatedly #(rand-int n))))
@@ -12,7 +36,6 @@
 ; qsort, divide and conquer, pull apart work list, destructuring.
 ; pull work apart as two lists, for each list, again pull apart as pivot(head) and rest
 ;
-
 (defn sort-parts [work]
   (lazy-seq
     (loop [[part & parts] work]
