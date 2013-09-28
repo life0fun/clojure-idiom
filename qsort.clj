@@ -2,7 +2,7 @@
 ;; (load-file "qsort.clj")
 (ns qsort
   (:import [java.util.collections])
-  (:use clojure.set))
+  (:require clojure.set :refer :all))
 
 
 ; for seq comprehension Vs while loop to iterate over a seq with great control.

@@ -68,6 +68,6 @@
     (prn " >>>> starting dbconn.core main <<<<< ")
     (run-local-topology config drpc)
     (while true
-      ; drpc execute function-name function-arg
+      ; drpc execute function-name function-args
       (log/info "Word count: %s" (.execute drpc "words" "baby"))
       (Thread/sleep 1000))))
