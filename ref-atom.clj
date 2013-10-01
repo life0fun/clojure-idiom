@@ -469,7 +469,7 @@
 (defn upload-images [images]
   (doall
     (map-indexed
-      (fn [image i]  ; wrap blocking io into future, run in separate thread
+      (fn [i image]  ; wrap blocking io into future, run in separate thread
         (future (upload-image image (format "myimage-%s.jpg" i))))
       images)))
 
@@ -502,10 +502,10 @@
   (talk-to-guests)
   (train-wait-staff)
   (if-let [count (check-party-guest-count cnt)]
-  (prn (format "Total guest count is %s" count))
-  (do
-    (Thread/sleep 1000)
-    (manager-duties cnt))))
+    (prn (format "Total guest count is %s" count))
+    (do
+      (Thread/sleep 1000)
+      (manager-duties cnt))))
 
 ;;
 ;; locking macro
@@ -525,7 +525,7 @@
 (pummel A)
 
 ;; use java explicit lock if you do customize locking strategy, e.g., lock striping, etc.
-(import 'java.util.concurrent.locks.ReentrantLock')
+(import java.util.concurrent.locks.ReentrantLock)
 
 
 ;; Watching for mutation.
