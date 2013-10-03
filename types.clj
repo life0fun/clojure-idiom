@@ -118,7 +118,7 @@
 ;; Using multimethods and the UDP is an interesting way to build abstractions.
 ;; Multi- methods allowing for polymorphic dispatch based on arbitrary functions.
 ;; Clojure also provides a simpler model for creating abstractions and gaining 
-;; the benefits of polymorphism—types, protocols, and records
+;; the benefits of polymorphism types, protocols, and records
 
 ;; Clojure provides facilities for creating logically grouped polymorphic functions types, records, and protocols.
 ;; Clojure polymorphism lives in the protocol functions, not in the classes, as compare to Monkey patch and Wrappers.
@@ -488,8 +488,9 @@
 ; expression problem : test the expressiveness of the lang.
 ; define a datatype by cases, do two things, without recompiling, while retain static type safety
 ;   add new cases to datatype, and add new fn over datatype, 
-; for fn lang with pattern match, we can easily add fn without recompiling, hard to add new type.
-; for oo with subtype polymorphism, we can easily add types, hard to add new fn.
+;
+; for fn lang with pattern match, we can easily add fn without recompiling, as pattern match fn knows all patterns. hard to add new matches.
+; for oo with subtype polymorphism, we can easily add types as each subtype knows all function.  hard to add new fn.
 ; danile spiewak http://vimeo.com/user18356272/review/66548717/3531875329
 ;
 ; example, for an algebra s-expression, we can add various fn to it based on pattern match.
@@ -497,30 +498,38 @@
 (defmulti value :op)  ; pattern match fn is get map's :op attribute
 (defmulti value :+ [expr] (+ (get expr :left-op) (get expr :right-op)))
 (defmulti value :- [expr] (- (get expr :left-op) (get expr :right-op)))
-; To add new fn, we just need to write new multi fn, has new pattern match, 
+;
+; To add new fn, we just need to write new multi fn because pattern match fn knows all pattern match. Note that the same dispatch function.
+; dispatch function knows all sub functions for dispatching.
 (defmulti pprint :op)
 (defmulti pprint :+ [expr] (prn "pprint +" expr))
 (defmulti pprint :- [expr] (prn "pprint -" expr))
-; however, it is hard to add new type. If we want to add multiplication, 
-; we need modify both value fn and pprint fn.
+; however, it is hard to add new patterns (dispatch match type). because need to change pattern match function in all multimethods.
+; and if we'd extend dispatch fn, we need modify all multimethod where dispatch fn is used.
+; If we want to add multiplication, we need modify both value fn and pprint fn.
 ;
-; on the other hand, for subtype polymorphism, each type knows all the fns. 
+; on the other hand, for subtype polymorphism, each type knows all the fns, so you can add types.
+; if you'd add fn, need to change all types to know that function.
+;
+; OO model algebra, add/sub is a type of algebra. so + goes from operator in c, subtype of algebra, to fn in clojure.
 ; class Add // Sub  // Multi  <-- easy to add subtype
 ;   private int l, r
-;   pub int value() {return l+r;} // return l-r  
+;   pub int value() {return l+r;} // return l-r 
 ;   pub void pprint() {}  <== hard to add new fn.
 ;
-;
 ; it is easy to add new type multiplication, as each type knows all fns.
-; however hard to add new fn, to add pprint fn, we need to modify all subtypes.
+; however hard to add new fn, to add pprint fn, we need to extend all subtypes to know the new function.
 
+; In clojure, typed class(deftype, defrecord, reify) is a special OO class which stores fields in PersistentMap.
+; OO encapsulation, can not take generic approach to information processing. (class specific getter/setter)
+; defrecord put fields into map, you can map reduce, and extend protocol to type to achieve type-driven polymorphism.
 ;
 ; protocol is a way to enable add fns to subtype by extend type to protocol impl easily in fn lang.
 ; you can keep extending tyoe to new protocols _dynamically_ without modifying existing code. Yeah !
 ; The first args to protocol is the target fn itself, the fn object that recvd the impl
 (defprotocol Eval   ; Eval protocol spec only have value fn.
   (value [this]))
-; now each type can extend the protocol, so it is enable types knows all fns.
+; Add is a subtype of algebra, extend the protocol of Eval to subtype, so extend subtypes to knows all fns.
 (deftype Add [e1 e2]
   (Eval 
     (value [this] (+ (value e1) (value e2)))))
