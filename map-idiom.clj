@@ -36,7 +36,12 @@
 (binding [a 10] (.start (Thread. (fn [] (println a)))))
 (binding [a 10] (.start (Thread. (bound-fn [] (println a)))))
 
-;named arguments by destruct the rest of arg just like destruct a map
+;named arguments by destruct args into a map with {:keys [arg1 arg2]}
+; the destructure map must have key :keys and a vector of named args.
+(defn foo [x {:keys [k1]}] (str x " k1= " k1))
+(foo 1 {:k1 2})
+
+; to collect a list args, use & to reduce args to a vector of named args.
 (defn foo [x y & {:keys [key1 key2 key3] :or {key3 10}}] 
   (str x y key1 key2 key3))
 
