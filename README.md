@@ -1,6 +1,7 @@
 # clojure idioms
 
-This repo contains examples of idiomatic clojure.
+This repo contains patterns and examples of idiomatic clojure.
+This includes common clojure patterns for map reduce, best practice to connect to distributed components, utilize dependent libraries, DSL for other platforms, core.async examples, and some algorithms and puzzles in clojure.
 
 ## dbconn
 
@@ -28,4 +29,4 @@ Re-implement Trident example of log processing with grouping and aggregation usi
 
 ## others
 
-Other small modules contains examples of idiomatic clojure programming, e.g., graph algorithm, qsort in 5 lines, defmacro, etc.
+Other small modules contains examples of idiomatic clojure programming, e.g., core.async, graph algorithm, qsort in 5 lines, defmacro, etc.
