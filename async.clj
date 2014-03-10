@@ -329,15 +329,6 @@
 (defn add-dots-to-board [selector dots]
   (mapv #(append ($ selector) (:elem %)) dots))
 
-; user mousemove creats dot chain, a vec of [:dot-pos 2 :dot-pos 3 :end-dots]
-(defn get-dot-chain 
-  [state dot-ch first-dot-msg]
-  (go-loop [dot-chain []   ; dot chain is a vec of dot that selected by user
-            msg first-dot-msg]
-    (if (not= :dot-pos (first msg))  ; append :dot-pos to dot chain, or :end-dots done.
-      dot-chain
-      (recur (conj dot-chain (last msg)) (<! dot-ch)))))) 
-
 ; :dot-chain is a key of state map
 (defn dot-chain-getter
   [state dot-ch]
@@ -346,6 +337,59 @@
        (<! (get-dot-chain state dot-ch dot-msg))
        (recur (<! dot-ch))))))
 
+; selecting dots of same color, cur-col is the same as first selected dot.
+(defn dot-follows? [{:keys [board]} prev-dot cur-dot]
+  (let [prev-color (-> board (get prev-dot) :color)
+        cur-color (-> board (get cur-dot) :color)]
+    (or (nil? prev-dot)
+        (and (= prev-color cur-color)
+             (or (= cur-dot (inc prev-dot))
+                 (= cur-dot (dec prev-dot)))))))
+
+; user mousemove creats dot chain, a vec of [:dot-pos 2 :dot-pos 3 :end-dots]
+(defn get-dot-chain [state dot-ch first-dot-msg]
+  (go-loop [dot-chain []   ; dot chain is a vec of dot that selected by user
+            msg first-dot-msg]
+    (if (not= :dot-pos (first msg))  ; append :dot-pos to dot chain, or :end-dots done.
+      (do (erase-dot-chain state) dot-chain)
+      (recur (if (dot-follows? state (last dot-chain) (last msg))
+                (render-dot-chain state (conj dot-chain (last msg)))
+                dot-chain)
+              (<! dot-ch))))))
+
+(defn render-dot-chain [state dot-chain]
+  (let [color (-> state :board
+                  (get (first dot-chain))
+                  :color)
+        rends (map render-chain-element
+                   (butlast dot-chain)
+                   (rest dot-chain)
+                   (repeat color))]
+    (when (pos? (count dot-chain))
+      (inner ($ (str (state :selector) " .dot-chain-holder"))
+             (crate/html (concat [:div] rends)))
+      (append ($ (str (state :selector) " .dot-highlights"))
+              (crate/html (dot-highlight-templ (last dot-chain) color))))
+    dot-chain))
+
+(defn erase-dot-chain [state]
+  (inner ($ (str (state :selector) " .dot-chain-holder")) "")
+  (inner ($ (str (state :selector) " .dot-highlights")) ""))
+
+(defn render-chain-element [last-pos pos color]
+  (let [[top1 left] (dot-pos-to-center-position last-pos)
+        [top2 _] (dot-pos-to-center-position pos)
+        style (str "width: 4px; height: 24px; top:"
+                   (+ (min top1 top2) 11) "px; left: " ( - left 2) "px;")]
+    [:div {:style style :class (str "line " (name (or color :blue)))}]))
+
+(defn dot-highlight-templ [pos color]
+  (let [[top left] (dot-pos-to-corner-position pos)
+        style (str "top:" top "px; left: " left "px;")]
+    [:div {:style style :class (str "dot-highlight " 
+                                    (name (or color :blue)))}]))
+
+; game/app state map hold app context, purely clojure state machine.
 ; div has dot-chan(draw-chan), state has :dot-chain.
 ; block wait for dot-chain-getter to ret a dot-chain and render the dot-chain
 (defn game-loop [selector init-state]
@@ -409,4 +453,5 @@
      (<! (timeout 500))
      (move-dots-to-new-positions next-board))
     (assoc state :board (update-positions next-board))))
+
 
