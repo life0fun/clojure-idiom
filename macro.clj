@@ -5,6 +5,10 @@
   ;; refer only in 1.4 (:require clojure.string :refer [ join ] :as string))
   (:require clojure.string))
 
+; syntax quote/unquote are template to create list form to return from macro.
+; the list form reted from template is evaluated when reted.
+; the form returned from macroexpand is the one to be evaluated. 
+
 ; '(2 3) is quote, so we can write list with (3 4), () viewed as list, not fn.
 ; `(2 3) is syntax quoting. fully qualify all eles in the list. 
 ;  `(a :b 3 "x") => (user/a :b 3 "x")  primitive keep the same. var expand to fully qualified name.
@@ -236,3 +240,34 @@ y
 
 (with-rabbit ["localhost" "guest" "guest"]
   (send-message "chapter14-test" "chapter 14 test method"))
+
+;
+; syntax quote/unquote are form template. 
+; args to defmacro are not evaluated. does not matter whether inside template or not.
+; macro expand with fully qualified name to avoid name capture.
+; use auto-gensym to create local var inside let form.
+; to really capture this name, use ~'this pattern.
+; the data structure reted from macro expand will be evaluated.
+; so wrap with do if you need to evaluate the reted list.
+
+(defmacro unless [test & then]
+  `(if (not ~test) 
+    (do ~@then)))
+
+(defmacro log-fn [fn & arg] 
+  `(let [now# (System/currentTimeMillis)] 
+    (do (prn now#) 
+      (~fn ~@arg))))
+
+; ret a list of (def foo), and wrap by do form to execute.
+(defmacro my-declare [& symbols]
+  `(do
+     ~@(map #(list 'def %) symbols)))
+
+; macro expand to ret a form to be evaluated.
+(defmacro my-and 
+  ([] true)
+  ([x] x)
+  ([x & next]
+    `(let [and# ~x]
+       (if and# (my-and ~@next) and#))))
