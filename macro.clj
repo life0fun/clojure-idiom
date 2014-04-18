@@ -259,6 +259,18 @@ y
     (do (prn now#) 
       (~fn ~@arg))))
 
+(defmacro log-fn [fn & arg]
+  `(let [now# (System/currentTimeMillis)]
+     (do (prn now#) '(apply ~fn ~arg) (prn "time-is " (- (System/currentTimeMillis) now#)))))
+
+(defn timeit [f & args]
+  (let [st (System/currentTimeMillis)]
+    (try
+      (apply f args)
+      (finally
+        (println "Run time: " (- (System/currentTimeMillis) start) "ms")))))
+
+
 ; ret a list of (def foo), and wrap by do form to execute.
 (defmacro my-declare [& symbols]
   `(do
