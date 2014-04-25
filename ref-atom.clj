@@ -76,14 +76,6 @@
 
 (dothread! move-fn :threads 4 :times 10)
 
-;; create a ref type by name and init it to empty
-(def initial-board [[:- :k :-] [:- :- :-] [:- :K :-]])
-
-(defn board-map [f bd]
-  (vec (map #(vec (for [s %] (f s))) bd)))
-
-;; now create an ary of ref, with each inited to one row in board
-(def board (board-map ref initial-board))
 
 ;; mover generator requires sync take from pos and update into to position.
 ;; (alter ref fun & args) = (apply fn in-trans-val-of-ref args)
@@ -539,3 +531,42 @@
 (add-watch adi :adi-watcher on-change)
 (swap! adi inc)
 (remove-watch adi :adi-watcher)
+
+
+
+;; ------------------------------------------------------------------
+; STM write skew, use ensure to protect the read-only 
+; A transaction read some ref, write some ref. with snapshot isolation,
+; a transaction can not see changes made by other tx on refs it only read.
+; for each tx, commit will be fine but overall result can break the constraints.
+; For example, two acct, A, B, each has $100, each independent transaction can withdraw
+; $200 from A and B, but two transactions together can over-draw.
+; to avoid this, use ensure to protect only-read refs inside a transaction.
+;; ------------------------------------------------------------------
+(def account1 (ref 100))
+(def account2 (ref 100))
+
+; when account and other account combined has more than n dollar, with n $.
+(defn withdraw [account n other]
+  (dosync 
+    (if (>= (+ (- @account n) @other) 0)  ; read both refs as constrain condition.
+      (alter account - n))))
+
+; create a barrier object, let each thread wait on it before start, and wait on it before done.
+(def barrier (java.util.concurrent.CyclicBarrier. 6001))
+
+; create 3000 threads withdraw from A, 3000 withdraw from B
+(dotimes [_ 3000] (.start (Thread. #(do (.await  barrier) (withdraw account1 200 account2) (.await  barrier)))))
+(dotimes [_ 3000] (.start (Thread. #(do (.await  barrier) (withdraw account2 200 account1) (.await  barrier)))))
+
+(.await barrier)
+
+; 6001 waits, now releash all threads
+; wait for all thread done
+(.await barrier)
+
+(println @account1)
+(println @account2)
+
+
+
