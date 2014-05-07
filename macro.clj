@@ -283,3 +283,11 @@ y
   ([x & next]
     `(let [and# ~x]
        (if and# (my-and ~@next) and#))))
+
+; foreach macro
+; (foreach [x (range 10)] (prn x))
+(defmacro foreach [[symb coll] & body]
+  `(loop [coll# ~coll]
+    (when-let [[~symb & xs#] (seq coll#)]
+      ~@body
+      (recur xs#))))
