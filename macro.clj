@@ -5,6 +5,16 @@
   ;; refer only in 1.4 (:require clojure.string :refer [ join ] :as string))
   (:require clojure.string))
 
+
+; fn return evaluated data(value), or object, (fn objects).
+; macro returns clojure data structure, to be evaluated by compiler.
+; clj data structure: (map fn coll), (f args), (list map fn coll), the same as (eval (read-string "(* 3 4)))
+; syntax quote fn, takes a form, ret a list template data structure (list f args) to be evaled by compiler.
+; you do not need syntax quote if you can verbosely keep (list '+ 2 4).
+; syntax quote gives you a list form template, `(+ 2 3), so you can avoid (list ...) for each form in the chain.
+; because syntax quoto will quote symbols in current ns, `(x) => (user/x), inside macro, you want your param not 
+; be quoted, but eval-ed in-place. so you unquote ~x your param, effectly eval your symbol x in-place. 
+
 ; syntax quote/unquote are template to create list form to return from macro.
 ; the list form reted from template is evaluated when reted.
 ; the form returned from macroexpand is the one to be evaluated. 
@@ -14,7 +24,8 @@
 ;  `(a :b 3 "x") => (user/a :b 3 "x")  primitive keep the same. var expand to fully qualified name.
 ; ~x syntax unqote, so do not expand var, must use within the scope of syntax quote.
 (def x (* 3 4))
-`(x) -> (user/x)
+'x -> (quote x)
+`(x) -> (user/x)  ; quote in current ns.
 `(~x) -> ((* 3 5))
 `(~@x) -> (* 3 5)
 
@@ -45,33 +56,21 @@ y
 ;; so you use arg is unevaluated form.
 ;; to eval form, unquote it inside syntax quote.
 
-;; unquoting inside syntax quote: `( ~x )
-;; bounce outside the syntax-quoted form and evaluate the form in that context, 
-;; inserting the result back where the tilde was.
+;; quote unquoting `( '~s  ==> ~s ) (quote (* 2 3)) ==> 6 
 
-;; quote unquote only affect variables, no effect on other keywords, include ' quote.
-;; quote unquoting `( '~x ), ' symbol is quote, return quoted substituded x value
+(defmacro dbg-1 [s]  (let [x# s z :z]   `(prn ~z '~s ~s ~x#)))      ; if x# not in quote, unquote it inside quote. 
+(defmacro dbg-1 [s] `(let [x# ~s ~'z :z] (prn ~'z '~s ~s x#))) ; if x# inside quote, unquote args when assign to it.
+
+(clojure.core/println :z (quote (* 2 3)) (* 2 3) (* 2 3))
+(dbg-1 (* 2 3)  ; ==> :z (* 2 3) 6 6
+
+(let* [x__9440__auto__ (* 2 3) z :z] (clojure.core/prn z (quote (* 2 3)) (* 2 3) x__9440__auto__))
+
 
 ;; splicing unquote `(max ~@(shuffle (range 10) )) unroll/flatten a colletion into multiple exprs.
 ;; except that it allows multiple forms to be inserted in the place of a single unquote-splicing form:
 ;; like apply, splicing "unroll" a collection into multiple expressions.
 
-;; unquote operations are meaningless outside of syntax-quote forms
-
-(defmacro dbg-1 [s]
-  (let [x# s]
-    `(println '~s ~s ~x#)))  ; '~s not evaled, ~s evaled, let binding will eval.
-
-(dbg-1 (* 3 4))  ; == (* 3 4) 12 12
-
-(defmacro dbg-2 [s]
-  (let [x# s]
-    (do
-      (println "dbg-2 uneval form: " x# s)
-      `(println "unquote inside syntax-quote " '~s ~s ~x#)
-    )))
-
-(dbg-2 (* 3 4))
 
 ; quote unquote, `( '~x)  vs `( ~'x)
 `[:a ~(+ 1 1) c]    ;; #user/c
@@ -103,20 +102,6 @@ y
   (println i)
     (println (* i i)))
 
-;;
-;; def source to store func body inside function var's :source meta.
-;;
-(defmacro defsource
-  "Similar to clojure.core/defn, but saves the function's definition in the var's :source meta-data."
-  {:arglists (:arglists (meta (var defn)))}
-    [fn-name & defn-body]
-      `(do (defn ~fn-name ~@defn-body)
-           (alter-meta! (var ~fn-name) assoc :source (drop 1 (quote ~&form)))
-           (var ~fn-name)))
-
-(defsource foo [a b] (println "foo : " (+ a b)))
-(foo 3 5)
-(:source (meta #'foo))  ;; => (foo [a b] (+ a b))
 
 ;;
 ;; clojure static scoping and dynamic scoping.
