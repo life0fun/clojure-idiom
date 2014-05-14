@@ -276,3 +276,17 @@ y
     (when-let [[~symb & xs#] (seq coll#)]
       ~@body
       (recur xs#))))
+
+; (as-> {:a 1} ch (assoc ch :b 2) (update-in ch [:c] 3))
+; interleave put x as the binding of next form. 
+; (macroexpand '(as-> {:a 1} x (prn x) (assoc x :b 2)))
+;   (let* [x {:a 1} x (prn x) x (assoc x :b 2)] x)
+(defmacro as->
+  "Binds name to expr, evaluates the first form in the lexical context
+  of that binding, then binds name to that result, repeating for each
+  successive form, returning the result of the last form."
+  {:added "1.5"}
+  [expr name & forms]
+  `(let [~name ~expr
+         ~@(interleave (repeat name) forms)]
+     ~name))
