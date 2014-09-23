@@ -1,3 +1,27 @@
+;; java repl using lein repl
+
+lein repl
+
+; can not import entire package, has to import one class by one class
+(import '(java.util HashMap HashSet))
+(import '(java.util.regex Pattern Matcher))
+
+(.. System (getProperties) (get "os.name"))
+(-> (System/getProperties) (.get "os.name"))
+(doto (new java.util.HashMap) (.put "a" 1) (.put "b" 2))
+(doto (java.util.HashMap.) (.put "a" 1) (.put "b" 2))
+
+
+; compile a pattern, and use pattern to match against a string, catpure matcher groups.
+(let [p (Pattern/compile "hello (\\S+)")
+      m (.matcher p "hello world")]
+  (if (.find m)
+    (prn (.group m 1))))
+
+; simple string match
+(.matches "hello world" "hello \\S+")
+
+
 ;; java proxy
 ;; (load-file "java-proxy.clj")
 ;; http://kotka.de/blog/2010/03/proxy_gen-class_little_brother.html

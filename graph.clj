@@ -296,7 +296,8 @@
 (defstruct tree :val :left :right)   ; the downfall of defstruct as the field is hard requirement
 (def my-tree                         ; could not be removed by dissoc, use defrecord and deftype !
   (struct tree 1
-    (struct tree 2)
+    (struct tree 2
+      (struct tree 7))
     (struct tree 3
       (struct tree 4
         (struct tree 66))
@@ -315,6 +316,12 @@
 
 (map #(:val %) (bftrav my-tree))
 
+(defn bfs-lazycat 
+  [root] 
+  (let [children (filter identity (vector (:left root) (:right root)))] 
+    (lazy-cat children (mapcat bfs-lazycat children))))
+
+(map #(:val %) (bfs-lazycat my-tree))
 
 ; when co-recursion, the diff between bfs and dfs, is when lazy-cat parent result to child result.
 ; recursion is apply DP fn to header, and recursively apply DP fn to all header's children. then
@@ -349,7 +356,6 @@
 ; use mapcat to recursively apply fn to each of root's children.
 (defn dfs-lazyseq-mapcat [root]   ; only take one arg, root, as compared to prev
   (letfn [(get-children [root]
-            ;(filter identity (reduce (fn [ret cur] (conj ret (cur root))) [] [:left :right])))]
             (filter identity (mapcat #(vector (% root)) [:left :right])))]
     (if (empty? root)
       [(:val root)]   ; base, ret root val in a vec
@@ -373,6 +379,14 @@
 (dfs-lazyseq my-tree)
 
 
+; lazy-cat the result from the mapcat recursive to children.
+(defn dfs-lazycat 
+  [root] 
+  (let [children (filter identity (vector (:left root) (:right root)))] 
+    (lazy-cat (mapcat dfs-lazycat children) [root])))
+
+(map #(:val %) (dfs-lazycat my-tree))
+
 ; if the fn take a list of node as arg, we can use apply fn to the list of children,
 ; then use lazy-cat to merge the result. otherwise, we need to use map fn to each child.
 
@@ -387,6 +401,7 @@
       trees)))
 
 (map #(:val %) (dftrav my-tree))  ; my-tree is root node, not a list.
+
 
 (defn dfs-apply [ & nodes]   ; convert arg into list, so we can lazy-cat it to partial results.
   (when nodes
