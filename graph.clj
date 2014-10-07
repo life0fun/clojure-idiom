@@ -19,11 +19,36 @@
 ;;   and then call a trampoline function that repeatedly calls its result until it turnes into a real value instead of a function.
 ;;   memoizing the the case of fact this can really shorten the stack depth, though it is not generally applicable.
 
+;; recursive part of fn body : (lazy-seq (cons this_result (recursive-call (next iteration)))
 
-;; lazy-seq : replace recursive with laziness.
-;; wrap the recursive part of a function body with lazy-seq 
-;; to replace recursion with laziness.
-;; recursive part of fn body : (cons this_result (recursive-call (next iteration)))
+; when co-recursion, the diff between bfs and dfs, is when lazy-cat parent result to child result.
+; recursion is apply DP fn to header, and recursively apply DP fn to all header's children. then
+; concat the result.
+;
+; when taking head sequentially one by one from list, use lazy-seq cons root
+;   (lazy-seq (cons root (DP root)))
+; when head is a collection, map fn to each child and merge result with mapcat. 
+; then lazy-cat to add head collection to the result of head collection.
+;   (lazy-cat [trees] (mapcat DP (getChildren trees)))  ; bfs cons hd
+; when apply fn to one item will gen a list, use mapcat to merge intermediate result.
+;   (lazy-cat (mapcat DP (getChildren hd)) [hd])  ; dfs conj hd
+;
+; lazy-cat, lazy-seq cons hd build seq top down from head recursive to infinity.
+; (lazy-seq (cons (apply f head) (recur (rest list))))
+; at bottom, return the result of leaf single node, then bubble up ret back to root.
+;
+;
+; For tree, get child of head is header's child pointer
+; For list, get child of head is header's idx dec. List is a tree with only left children.
+; we unified graph traverse branch bound explore with list header recursion 
+; example:
+;  permutation, get hd, header's child is head idx-1, permu(childen), for each result, conj hd.
+;  subsetsum: get hd, child is head idx-1, apply subsetsum to children incl/excl head value.
+;  dfs : lazy-cat conj result of dfs header's children, with header
+;  bfs : mapcat getchild fn to each headers, apply bfs to all the children of cur headers.
+;        lazy-cat headers to the results of recursive bfs to the current headers.
+;        mapcat is map and concat, hence the fn must return a list for concat to peel off and cat.
+
 
 ;; lazy illustrated with fib seq
 ;; bad idea
@@ -323,34 +348,6 @@
 
 (map #(:val %) (bfs-lazycat my-tree))
 
-; when co-recursion, the diff between bfs and dfs, is when lazy-cat parent result to child result.
-; recursion is apply DP fn to header, and recursively apply DP fn to all header's children. then
-; concat the result.
-;
-; when taking head sequentially one by one from list, use lazy-seq cons root
-;   (lazy-seq (cons root (DP root)))
-; when head is a collection, map fn to each child and merge result with mapcat. 
-; then lazy-cat to add head collection to the result of head collection.
-;   (lazy-cat [trees] (mapcat DP (getChildren trees)))  ; bfs cons hd
-; when apply fn to one item will gen a list, use mapcat to merge intermediate result.
-;   (lazy-cat (mapcat DP (getChildren hd)) [hd])  ; dfs conj hd
-;
-; lazy-cat, lazy-seq cons hd build seq top down from head recursive to infinity.
-; dfs, permutation, powerset is break down to bottom, then up back to root
-;
-; map reduce is to distribute fn and merge results. break-down merge-sort.
-;   lazy-cat, mapcat, (lazy-seq cons)
-;
-; For tree, get child of head is header's child pointer
-; For list, get child of head is header's idx dec. List is a tree with only left children.
-; we unified graph traverse branch bound explore with list header recursion 
-; example:
-;  permutation, get hd, header's child is head idx-1, permu(childen), for each result, conj hd.
-;  subsetsum: get hd, child is head idx-1, apply subsetsum to children incl/excl head value.
-;  dfs : lazy-cat conj result of dfs header's children, with header
-;  bfs : mapcat getchild fn to each headers, apply bfs to all the children of cur headers.
-;        lazy-cat headers to the results of recursive bfs to the current headers.
-;        mapcat is map and concat, hence the fn must return a list for concat to peel off and cat.
 
 ; return a lazy-seq by conj root to the end of applying the same fn to root's children.
 ; use mapcat to recursively apply fn to each of root's children.
@@ -414,6 +411,62 @@
       nodes)))
 
 (map #(:val %) (dfs-apply my-tree))
+
+;; walk and post walk
+(defn walk 
+  [f form]
+  (let [pf (partial walk f)]
+    (if (coll? form)
+      (into (empty form) (map pf form))
+      (f form))))
+
+(defn walk
+  "Traverses form, an arbitrary data structure. inner and outer are functions. 
+   Applies inner to each element of form, building up a data structure of the same type,
+   then applies outer to the result. Recognizes all Clojure data structures except sorted-map-by. 
+   Consumes seqs as with doall."
+  [inner outer form]
+  (cond
+    (list? form) (outer (apply list (map inner form)))
+    (seq? form) (outer (doall (map inner form))) 
+    (vector? form) (outer (vec (map inner form)))
+    (map? form) (outer (into (if (sorted? form) (sorted-map) {}) (map inner form)))
+    (set? form) (outer (into if (sorted? form) (sorted-set) #{}) (map inner form)))
+    :else (outer form)))
+
+; the fn passed to postwalk will be applied to each leaf sub-form.
+; That fn do not need to care recursion.
+(defn postwalk
+  "Performs a depth-first, post-order traversal of form. Calls f on each sub-form,
+   uses f’s return value in place of the original."
+  [f form]
+  (walk (partial postwalk f) f form))
+
+(defn prewalk
+  "Like postwalk, but does pre-order traversal."
+  [f form]
+  (walk (partial prewalk f) identity (f form)))
+
+
+(defn keywordize-key 
+  [m] 
+  (let [kf (fn [[k v]] 
+              (let [newk (if (string? k) (keyword k) k) 
+                    newv (if (map? v) (keywordize-key v) v)]  ; apply recursion.
+                [newk newv]))
+        ]
+    ; into {} coerce seq into map
+    (into {} (map kf m))))
+
+; the fn passed to walk applied to each leaf sub-form. 
+; that fn do not need to care recursion.
+(defn keywordize-key
+  [m]
+  (let [; fn process leaf each sub-form. no worry of recursion. postwalk handles recursion.
+        keywdf (fn [[k v]] (if (string? k) [(keyword k) v] [k v]))
+        walkf (fn [entry] (if (map? entry) (into {} (map keywdf entry)) entry))
+       ]
+    (postwalk walkf m)))
 
 
 ;; for binary tree, in order traverse just recursively cons lchild, cur, rchild.
