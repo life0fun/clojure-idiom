@@ -18,21 +18,63 @@
       p)))
 
 
-; transducer is a function that takes a reducer step fn and 
-; return another reducer step fn.
+
+; transducer is a function that takes a normal fn that can be apply to cursor args during reduce step,
+; return a fn that transform/wraps A reducer step fn, and lead to the final 3-arity reduce step fn. 
 ; transducer fn must be 3-arity fn, 
 ;  0 - flow thru, 
 ;  1 - do nothing on result on this step, 
 ;  2 - reduce step result to final result.
 ;
-(defn map 
-  ([f]
-    (fn [reducer-step-f]
-      (fn
+(defn map                 ; without coll, (map f) return a transducer
+  ([f]	                  ; take f that apply to reduce cursor arg
+    (fn [reducer-step-f]  ; transform/wrap a reducer step fn
+      (fn                 ;  ret a reducer 3-arity step fn
         ([] (reducer-step-f))
         ([result] (reducer-step-f result))
         ([result input]
           (reducer-step-f result (f input)))))))
+
+
+;
+; filter pred without coll will ret transducer.
+(defn filter 
+  ([pred]
+    (fn [step-f]
+      (fn 
+        [] (step-f)
+        [result] (step-f result)
+        [result input] 
+          (if (pred input)
+            (step-f result input) 
+            result))))
+   ([pred coll]
+     (sequence (filter pred) coll)))
+
+
+;
+; without coll as last arg, ret a transducer.
+(defn take-with
+  [pred]
+  (fn [step-f]
+    (fn [tot cursor]
+      (if (pred cursor)
+        (step-f tot cursor)
+        (reduced tot)))))
+ 
+;
+; transducer with state, need to create state on every step
+(defn dropping-while
+  [pred]
+  (fn [stepf]
+    (let [dv (volatile! true)]
+      (fn [r x]
+        (let [drop? @dv]
+          (if (and drop? (pred x))
+            r
+            (do
+              (vreset! dv false)
+              (stepf r x))))))))
 
 
 ; transduce can be viewed as threading a seq, but independent of source of input(aseq) and job(lazy seq creation)
