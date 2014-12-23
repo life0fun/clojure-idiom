@@ -1,22 +1,35 @@
 (ns transducer.xform
   (:require [clojure.core.async :as async :refer [<!! !!>]]))
 
+; http://thecomputersarewinning.com/post/Transducers-Are-Fundamental/
+; transducer is lead a list of transform function pipeline functions across before final reduce.
+; (transduce xform final-reduce-step-fn init coll)
+;
+; why ? It is for composition of sequence-iterating function that decoupling from sequence.
+; 1. avoid incidental sequences in the middle. 
+; 2. composition fn logic can be used across things that are not necessarily sequences. core.reducers, channels.
+;
 
-(defn to-proc< [in]
-  (let [out (async/chan 1)]
-    (async/pipe in out)
-    out))
+;; use sequence to return a new transduced sequence.
+(sequence (map inc) (range 10))
 
-(defn pipeline< [desc c]
-  (let [p (partition 2 desc)]
-    (reduce (fn [prev-c [n f]]
-      (-> (dotime [_ n]
-            (async/map< f prev-c)
-            to-proc<)
-	  async/merge))
-      c
-      p)))
+; Step fn might want to do a final transofrmation of the value built up for completion process.
+; thus, all step functions must have an arity-1 variant that does not take an input
+; arity-2 is step operation, with total and cursor value.
+; arity-0 is init operation, the value 
+(defn mean-reducer 
+  ([] {:sum 0 :count 0})        ; init operation, arity-0, provide init value reduce build up.
+  ([memo] memo)  ; completion fn, do a final transformation of the value built up.
+  ([memo x] (-> memo (update-in [:sum] + x) (update-in [:count] inc)))) ; step operation, build up value at each step.
 
+
+;; trans/leads xform pipeline that apply to a sequence, before give list to final reduce func.
+(reduce mean-reducer {:sum 0 :count 0} (range 10))
+(transduce (map inc) mean-reducer {:sum 0 :count 0} (range 10))
+(transduce (map inc) mean-reducer (range 10))  ; with init operation, arity-0 support
+
+;; use into to populate new data structure without intermediate sequence
+(into [] (map inc) (range 10))
 
 
 ; transducer is a function that takes a normal fn that can be apply to cursor args during reduce step,
@@ -113,4 +126,21 @@
 (chan 1 xform)
 
 
+
+; --------------------------------------------------------
+; core.async/pipeline to parallel workload.
+(defn to-proc< [in]
+  (let [out (async/chan 1)]
+    (async/pipe in out)
+    out))
+
+(defn pipeline< [desc c]
+  (let [p (partition 2 desc)]
+    (reduce (fn [prev-c [n f]]
+      (-> (dotime [_ n]
+            (async/map< f prev-c)
+            to-proc<)
+	  async/merge))
+      c
+      p)))
 
