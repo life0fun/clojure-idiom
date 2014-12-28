@@ -1,5 +1,5 @@
 (ns transducer.xform
-  (:require [clojure.core.async :as async :refer [<!! !!>]]))
+  (:require [clojure.core.async :as async :refer [<! <!! >! >!!]]))
 
 ; http://thecomputersarewinning.com/post/Transducers-Are-Fundamental/
 ; transducer is lead a list of transform function pipeline functions across before final reduce.
@@ -40,7 +40,7 @@
 ;  2 - reduce step result to final result.
 ;
 (defn map                 ; without coll, (map f) return a transducer
-  ([f]	                  ; take f that apply to reduce cursor arg
+  ([reducer-step-f]	      ; take f that apply to reduce cursor arg
     (fn [reducer-step-f]  ; transform/wrap a reducer step fn
       (fn                 ;  ret a reducer 3-arity step fn
         ([] (reducer-step-f))
@@ -143,4 +143,48 @@
 	  async/merge))
       c
       p)))
+
+
+; test pipeline with mean-reducer
+(defn test-pipeline []
+  (let [in-ch (async/to-chan (range 10))
+        out-ch (async/chan)
+        mean-reducer 
+          (fn [step-f]
+            (fn
+              ([]
+                (prn "init called ") {:sum 0 :count 0}) ; init operation, arity-0, provide init value reduce build up.
+              ([memo]
+                ; (prn "complete " step-f memo)
+                memo)  ; completion fn, do a final transformation of the value built up.
+              ([memo x] 
+                ; (prn "step called " x memo step-f) 
+                ; (-> memo (update-in [:sum] + x) (update-in [:count] inc)))
+                (inc x))
+              ))
+        ; async fn must close the out-ch.
+        mean-reducer-async
+          (fn 
+            ([inputv out-ch]
+              (async/go
+                (async/>! out-ch (inc inputv))
+              (async/close! out-ch))))
+        sink 
+          (fn [ch]
+            (let [a (atom [])]
+              (async/go-loop []
+                (let [v (async/<! ch)]
+                  (when-not (nil? v)
+                    (swap! a conj v)
+                    (recur))))
+            a))
+        sink-atom (sink out-ch)
+       ]
+    (add-watch sink-atom :sink (fn [_ _ old new] (prn "sink-atom " new)))
+    (async/pipeline 1 out-ch mean-reducer in-ch)
+    ; (async/pipeline-async 4 out-ch mean-reducer-async in-ch)
+    ; (async/pipeline 4 out-ch (map inc) in-ch)
+    ; (let [[v c] (async/alts!! [out-ch])]
+    ;   (prn "sink atom " v " " @sink-atom))
+    ))
 
