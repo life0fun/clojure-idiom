@@ -25,23 +25,27 @@
 
 ;; trans/leads xform pipeline that apply to a sequence, before give list to final reduce func.
 (reduce mean-reducer {:sum 0 :count 0} (range 10))
+
+; transduce is transform + reduce a collection.
 (transduce (map inc) mean-reducer {:sum 0 :count 0} (range 10))
 (transduce (map inc) mean-reducer (range 10))  ; with init operation, arity-0 support
 
 ;; use into to populate new data structure without intermediate sequence
+; ret the chan that contains the single coll result. source chan must be close before into can output value.
 (into [] (map inc) (range 10))
 
 
 ; transducer is a function that takes a normal fn that can be apply to cursor args during reduce step,
-; return a fn that transform/wraps A reducer step fn, and lead to the final 3-arity reduce step fn. 
+; return a fn that is plugged into transducer pipeline, takes the pipeline reducer step fn, 
+; and lead to the final 3-arity reduce step fn. 
 ; transducer fn must be 3-arity fn, 
 ;  0 - flow thru, 
 ;  1 - do nothing on result on this step, 
 ;  2 - reduce step result to final result.
 ;
 (defn map                 ; without coll, (map f) return a transducer
-  ([reducer-step-f]	      ; take f that apply to reduce cursor arg
-    (fn [reducer-step-f]  ; transform/wrap a reducer step fn
+  ([f]	      ; take f that apply to each element in list.
+    (fn [reducer-f]  ; ret a fn that can be plug into transducer pipeline, take reduce-fn from pipeline
       (fn                 ;  ret a reducer 3-arity step fn
         ([] (reducer-step-f))
         ([result] (reducer-step-f result))
@@ -140,30 +144,29 @@
       (-> (dotime [_ n]
             (async/map< f prev-c)
             to-proc<)
-	  async/merge))
+	       async/merge))
       c
       p)))
 
 
-; test pipeline with mean-reducer
+; pattern: pipeline to parallel a series of transoforms, store result in out-ch.
+; use a reducer fn to aggregate the result from out-ch.
+; (pipeline xforms in-ch out-ch | reduce reduce-f out-ch)
 (defn test-pipeline []
   (let [in-ch (async/to-chan (range 10))
         out-ch (async/chan)
-        mean-reducer 
-          (fn [step-f]
-            (fn
-              ([]
-                (prn "init called ") {:sum 0 :count 0}) ; init operation, arity-0, provide init value reduce build up.
-              ([memo]
-                ; (prn "complete " step-f memo)
-                memo)  ; completion fn, do a final transformation of the value built up.
-              ([memo x] 
-                ; (prn "step called " x memo step-f) 
-                ; (-> memo (update-in [:sum] + x) (update-in [:count] inc)))
-                (inc x))
+        map-f
+          (fn [f]
+            (fn [pipeline-f]
+              (fn
+                ([] (pipeline-f)) ; init operation, arity-0, provide init value reduce build up.
+                ([result] 
+                  (pipeline-f result))  ; completion fn, do a final transformation of the value built up.
+                ([result x]
+                  (pipeline-f result (f x))))
               ))
         ; async fn must close the out-ch.
-        mean-reducer-async
+        inc-async
           (fn 
             ([inputv out-ch]
               (async/go
@@ -178,13 +181,31 @@
                     (swap! a conj v)
                     (recur))))
             a))
-        sink-atom (sink out-ch)
+        mean-reducer
+          (fn
+            ([] {:sum 0 :count 0})
+            ([result] result)  ; completion fn, do a final transformation of the value built up.
+            ([result x] (-> result (update-in [:sum] + x) (update-in [:count] inc)))) ; step operation, build up value at each step.
        ]
-    (add-watch sink-atom :sink (fn [_ _ old new] (prn "sink-atom " new)))
-    (async/pipeline 1 out-ch mean-reducer in-ch)
-    ; (async/pipeline-async 4 out-ch mean-reducer-async in-ch)
-    ; (async/pipeline 4 out-ch (map inc) in-ch)
-    ; (let [[v c] (async/alts!! [out-ch])]
-    ;   (prn "sink atom " v " " @sink-atom))
+    ; (add-watch (sink out-ch) :sink (fn [_ _ old new] (prn "sink-atom " new)))
+    (async/pipeline 4 out-ch (map-f inc) in-ch)
+    ; (async/pipeline-async 4 out-ch inc-async in-ch)
+
+    ; go block to read out-ch from pipeline.
+    (async/go
+      (let [
+            ; drain out-ch into out-col and apply tranducer to out-col
+            ;out-col (async/<! (async/into [] out-ch))
+            ;xd (transduce (map inc) mean-reducer out-col)
+
+            ; directly use async/reduce to reduce value in out-ch, return single coll in chan.
+            reduce-ch (async/reduce mean-reducer (mean-reducer) out-ch)
+            rd (async/<! reduce-ch)
+           ]
+        ; (prn "transduce " xd)
+        (prn "final reduce value " rd)
+        ))
     ))
+
+
 
