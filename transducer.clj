@@ -207,5 +207,189 @@
         ))
     ))
 
+; --------------------------------------------------------
+; Atlas task is a render task that contains a list of subtasks with only one overall deadline.
+; Parent task adds List<AtlasTasks> subtasks to completionService, and track their completions 
+; with Map<Future<Object>, Future<Object>> futureObjects.
+; when AtlasTask complete() called, block within timeout, iterate all subtasks.
+;
+; public <T> AsyncResponse<T> add(Callable<T> nonFinalService, long timeout){
+;    // Run the service asynchronously, returning an async response can use to get
+;    final AtlasTasks tasks = new AtlasTasks(this, timeout, unit); // tasks.subtasks.add(this);
+;    final Future<Object> completionServiceFuture = completionService.submit(
+;      TransactionLogger.wrapCallable(
+;        new Callable<Object>() {
+;          @Override public Object call() { 
+;            ATLAS_TASKS.set(tasks); 
+;            return service.call();}})
+;    );
+;    Future<Object> atlasTasksFuture = new Future<Object>() {
+;      public boolean cancel(boolean mayInterruptIfRunning) {
+;          return completionServiceFuture.cancel(mayInterruptIfRunning);
+;      }
+;      public boolean isCancelled() {
+;          return completionServiceFuture.isCancelled();
+;      }
+;      public boolean isDone() {
+;          return completionServiceFuture.isDone();
+;      }
+;      public Object get() throws InterruptedException, ExecutionException {
+;          try {
+;              return completionServiceFuture.get();
+;          } catch (InterruptedException originalException) {
+;              throw newException;
+;          }
+;      }
+;      public Object get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
+;          try {
+;              return completionServiceFuture.get(timeout, unit);
+;          } catch (TimeoutException originalException) {
+;              throw newException;
+;          }
+;      }
+;    };
+;    futureObjects.put(completionServiceFuture, atlasTasksFuture);
+;    return newAsyncResponse(atlasTasksFuture, tasks.getDeadlineMs());
+;  }
+; 
+;  // block caller on completion service poll when result is not available before timeout.
+;  public void complete() {
+;    for (AtlasTasks tasks : subtasks) { tasks.complete(); }
+;    while (hasNext()) {
+;      long timeout = getTimeoutMs();
+;      completionService.poll(timeout, TimeUnit.MILLISECONDS); 
+;    }
+;  public boolean hasNext() {
+;    long timeout = getTimeoutMs();
+;    if (timeout <= 0) { return false }
+;    synchronized (this) {
+;      if (!completionQueue.isEmpty()) { return true; }
+;      for (Future<Object> futureObject : futureObjects.values()) {
+;        if (!futureObject.isDone()) { return true; }
+;      }
+;      return false;
+;    }
+;  public Object next() throws Exception {
+;    long timeout = getTimeoutMs();
+;    if (timeout <= 0) { return null;}
+;    Future<Object> completionServiceFuture = completionService.poll(timeout, TimeUnit.MILLISECONDS);
+;    Future<Object> atlasTasksFuture = futureObjects.get(completionServiceFuture);
+;    return atlasTasksFuture.get();
+;  }
+;
+; --------------------------------------------------------
+; we can use async channel to dispatch and collect subtasks result.
+(defn execute-call 
+  ([^Callable f]
+    (execute-call f clojure.lang.Agent/pooledExecutor))
+
+  ([^Callable f executor]
+    (let [fut (.submit executor f)]
+      (reify
+       clojure.lang.IDeref
+        (deref [_] (.get fut))
+       java.util.concurrent.Future
+        (get [_] (.get fut))
+        (get [_ timeout unit] (.get fut timeout unit))
+        (isCancelled [_] (.isCancelled fut))
+        (isDone [_] (.isDone fut))
+        (cancel [_ interrupt?] (.cancel fut interrupt?)))))
+
+
+; TODO: error-handler, assoc task record with exception from future get result.
+(defn exec-callabe-chan
+  "run callable task inside the executor, return a chan contains the result, if timed out, null"
+  ([^java.util.concurrent.Callable task timeout]
+    (callable-chan task clojure.lang.Agent/pooledExecutor timeout))
+
+  ([^java.util.concurrent.Callable task ^java.util.concurrent.ExecutorService executor timeout]
+    (async/go
+      (let [out-ch (async/chan)
+            fut (execute-call task executor)
+            result (try (.get fut timeout) (catch Exception e e))
+            ]
+        (async/>! out-ch (.get fut timeout))
+        out-ch)))
+  )
+
+; one input chan, one output chan, parallel in between with (fn [x] (go (apply f x)))
+(defn pmax
+  "invoke f for values from in chan with at max n parallel, f ret a chan that contains
+   result, and it results will be put to out chan"
+  [max f in-chan out-chan]
+  (go-loop [tasks #{in-chan}]
+    (when (seq tasks)
+      (let [[value task] (alts! (vec tasks))]
+        (if (= task in-chan)
+          ; data avail from in-chan
+          (if (nil? value)
+            (recur (disj tasks task));
+            (recur (if (= max (count tasks))
+                      (disj tasks in-chan) ; get rid of in-chan when max
+                      tasks)
+                   (f value)  ; f ret a chan that contains the reuslt
+            ))
+          ; result from task chan avail, put into out-chan
+          (do 
+            (when-not (nil? value ) (async/>! out-chan value))
+            (recur (-> tasks (disj task) (conj in-chan))))
+        )))))
+
+
+; each subtask produce result in a chan, alts! on all subtasks result chan.
+(defrecord Task [task-id task-fn callable args executor timeout result ex])
+
+(defn create-task [task-id task-fn args]
+  (assoc (->Task) 
+    :task-id task-id :task-fn task-fn :args args :timeout 1000
+    :callable (fn [] (prn "task " task-id " arg " x) (apply task-fn args))))
+
+; fake 10 tasks
+(def tasks (map (fn [id] #(create-task % inc (vector %)) (range 10)))
+
+;
+(defn exec-task-chan
+  [task]
+  (let [ch (exec-callabe-chan (:callable task) (:timeout task))
+        out-ch (asyn/chan)
+        result (async/<! ch)]
+        task (if (instance? clojure.lang.ExceptionInfo result)
+              (assoc task :ex result)
+              (assoc task :result result))
+    (async/>! out-ch task)
+    out-ch))
+
+
+; go-block park the execution on chan read. We do not need completionService.poll() to block caller
+; when result is not available before timeout.
+(defn run-tasks
+  ([]
+    (run-tasks tasks))
+  
+  ([task-specs]
+    (let [out-ch (async/chan)
+          timeout-ch (async/timeout 1000)
+          ; with this map, lost control on max thread created.
+          task-chans (map exec-task-chan task-specs)
+          ]
+      ; alts on all subtasks output chan.
+      (go-loop [tasks #{task-chans}]
+        (when (seq tasks)
+          (let [[task port] (async/alts! (vec (conj task timeout-ch)) :priority true)]
+            (if (not= port timeout-ch)
+              (if-not (nil? task)
+                (do
+                  (async/>! out-ch task)  ; send task to out-chan
+                  (recur (-> task-chans (disj port)))))
+              (do
+                (prn "timed out")
+                ))))))))
+
+
+(defn all-complete? [tasks]
+  "all tasks completed by exam :result or :ex attr"
+  (every? #(or (not= nil (:result %) (not= nil (:ex %))) tasks)))
+
+
 
 
