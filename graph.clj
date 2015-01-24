@@ -341,6 +341,7 @@
 
 (map #(:val %) (bftrav my-tree))
 
+; bfs needs a list/q as arg, so better collect it into [& args] 
 (defn bfs-lazycat 
   [root] 
   (let [children (filter identity (vector (:left root) (:right root)))] 
@@ -387,6 +388,7 @@
 ; if the fn take a list of node as arg, we can use apply fn to the list of children,
 ; then use lazy-cat to merge the result. otherwise, we need to use map fn to each child.
 
+; dfs with list of args is bad !
 ; by collecting args into list, we can call apply fn during recursion.
 (defn dftrav [& trees]  ; collect args into a list, so we can apply fn to a list, otherwise, we need to map fn to each child.
   (when trees
@@ -411,6 +413,17 @@
       nodes)))
 
 (map #(:val %) (dfs-apply my-tree))
+
+
+; tree-seq, lazy-seq cons root map walk to recur.
+(defn tree-seq
+  [branch? children root]
+  (let [walk (fn walk [node]
+               (lazy-seq
+                 (cons node
+                   (when (branch? node)
+                     (mapcat walk (children node))))))]
+     (walk root)))
 
 ;; walk and post walk
 (defn walk 

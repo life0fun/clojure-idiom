@@ -8,9 +8,8 @@
 ;                  [org.clojure/core.async "0.1.256.0-1bf8cf-alpha"]])
 
 
-
-(ns com.colorcloud.parallel
-  (:require [clojure.core.async :refer [go go-loop <! >! alts! close!]]))
+(ns com.colorcloud.async
+  (:require [clojure.core.async :as async :refer [go go-loop <! >! alts! close!]]))
 
 (defn parallel
   "Processes values from input channel in parallel on n 'go' blocks.
