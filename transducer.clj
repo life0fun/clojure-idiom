@@ -2,13 +2,16 @@
   (:require [clojure.core.async :as async :refer [<! <!! >! >!!]]))
 
 ; http://thecomputersarewinning.com/post/Transducers-Are-Fundamental/
-; transducer is lead a list of transform function pipeline functions across before final reduce.
-; (transduce xform final-reduce-step-fn init coll)
+; 1. create a transducer by applying the fn as the lead/first fn to list. 
+; 2. transducer pipeline: (inner-fn input) -> reduce()
+;   (transduce (map inc) standard-mean-reducer {:sum 0 :count 0} (range 10))
+; 3. transduce fn can maintain state during data transformation.
+; 4. why ? to decouple list from creation of transform pipeline.
+;   (transduce inner-xform-fn final-reduce-step-fn init coll)
 ;
-; why ? It is for composition of sequence-iterating function that decoupling from sequence.
-; 1. avoid incidental sequences in the middle. 
-; 2. composition fn logic can be used across things that are not necessarily sequences. core.reducers, channels.
-;
+; 5. avoid incidental sequences in the middle. 
+; 6. composition fn logic can be used across things that are not necessarily sequences. core.reducers, channels.
+; 7. put the transducer into the channel !
 
 ;; use sequence to return a new transduced sequence.
 (sequence (map inc) (range 10))
@@ -17,41 +20,40 @@
 ; thus, all step functions must have an arity-1 variant that does not take an input
 ; arity-2 is step operation, with total and cursor value.
 ; arity-0 is init operation, the value 
-(defn mean-reducer 
+(defn standard-mean-reducer 
   ([] {:sum 0 :count 0})        ; init operation, arity-0, provide init value reduce build up.
   ([memo] memo)  ; completion fn, do a final transformation of the value built up.
   ([memo x] (-> memo (update-in [:sum] + x) (update-in [:count] inc)))) ; step operation, build up value at each step.
 
 
 ;; trans/leads xform pipeline that apply to a sequence, before give list to final reduce func.
-(reduce mean-reducer {:sum 0 :count 0} (range 10))
+(reduce standard-mean-reducer {:sum 0 :count 0} (range 10))
 
 ; transduce is transform + reduce a collection.
-(transduce (map inc) mean-reducer {:sum 0 :count 0} (range 10))
-(transduce (map inc) mean-reducer (range 10))  ; with init operation, arity-0 support
+(transduce (map inc) standard-mean-reducer {:sum 0 :count 0} (range 10))
+(transduce (map inc) standard-mean-reducer (range 10))  ; with init operation, arity-0 support
 
 ;; use into to populate new data structure without intermediate sequence
 ; ret the chan that contains the single coll result. source chan must be close before into can output value.
 (into [] (map inc) (range 10))
 
 
-; transducer is a function that takes a normal fn that can be apply to cursor args during reduce step,
+; transducer is fn that is called first in transducer pipeline before final reducer.
 ; return a fn that is plugged into transducer pipeline, takes the pipeline reducer step fn, 
 ; and lead to the final 3-arity reduce step fn. 
 ; transducer fn must be 3-arity fn, 
-;  0 - flow thru, 
-;  1 - do nothing on result on this step, 
-;  2 - reduce step result to final result.
+;  0-arity: reducer-fn, 
+;  1-arity: do nothing on result on this step, 
+;  2-arity: apply inner-fn to input then apply reducer to final.
 ;
-(defn map                 ; without coll, (map f) return a transducer
-  ([f]	      ; take f that apply to each element in list.
-    (fn [reducer-f]  ; ret a fn that can be plug into transducer pipeline, take reduce-fn from pipeline
+(defn map             ; without coll, (map f) return a transducer
+  ([inner-fn]	        ; inner-fn will apply to list element before reducing.
+    (fn [reducer-fn]  ; ret a fn that can be plug into transducer pipeline, take reduce-fn from pipeline
       (fn                 ;  ret a reducer 3-arity step fn
-        ([] (reducer-step-f))
-        ([result] (reducer-step-f result))
+        ([] (reducer-fn))
+        ([result] (reducer-fn result))
         ([result input]
-          (reducer-step-f result (f input)))))))
-
+          (reducer-fn result (inner-fn input)))))))
 
 ;
 ; filter pred without coll will ret transducer.
@@ -67,7 +69,6 @@
             result))))
    ([pred coll]
      (sequence (filter pred) coll)))
-
 
 ;
 ; without coll as last arg, ret a transducer.
@@ -109,9 +110,6 @@
       ;; finally, apply completing helper
       (xf ret))))
 
-;
-; application of transducer
-;
 
 ; lazily transform the data (one lazy sequence, not three as with composed sequence functions)
 (sequence xform data)
@@ -129,10 +127,97 @@
 ; this demonstrates the corresponding new capability of core.async channels - they can take transducers.
 (chan 1 xform)
 
+;
+; pid-transducer, 
+; 1. stateful transducer function with Pid record.
+; 2. pipeline head, apply calculate-pid from input and update Pid state 
+; 3. then put result to rest of reducer pipeline.
+; 4. put transducer pipeline into the chan.
+;
+; Sensor -- temp ---> PID Transducer ---> Heater ----> Sensor
+;
+(defrecord Pid [set-point k-p k-i k-d error-sum error-last output-max output])
 
+(defn make-pid
+  "Create a new PID-controller.
+   Requires: target temperature, kp, ki, kd gain.
+   Optional: output-max=100 (error-sum=0, error-last=0, output=0)"
+  [set-point k-p k-i k-d
+   & {:keys [error-sum error-last output-max output]
+      :or   {error-sum 0 error-last 0 output-max 100 output 0}}]
+  (Pid. set-point k-p k-i k-d error-sum error-last output-max output))
 
+(defn calculate-pid
+  "Calculate next PID iteration"
+  [{:keys [set-point error-last error-sum k-p k-i k-d output-max] :as pid} input]
+  (let [error     (- set-point input)
+        error-dv  (- error error-last)
+        error-sum (+ error-sum error)
+        output    (min output-max
+                       (+ (* k-p error)
+                          (* k-i error-sum)
+                          (* k-d error-dv)))]
+    (assoc pid :error-last error :error-sum error-sum :output output)))
+
+(defn pid-transducer [set-point k-p k-i k-d]
+  (fn [xf]
+    (let [pid (volatile! (make-pid set-point k-p k-i k-d))]
+      (fn
+        ([] (xf))
+        ([result] (xf result))
+        ([result input]
+           (vswap! pid (fn [p] (calculate-pid p input)))
+           (xf result (:output @pid)))))))
+
+;; Temperatures arrive via this channel
+(def temperatures (chan))
+
+;; This channel accepts temperatures, and supplies
+;; PID outputs, trying to achieve a temperature of 65C
+(def pid-output (chan 1 (pid-transducer 65 0.1 0.02 0.01)))
+
+;; This channel is used to ask the kettle for the next
+;; temperature sample (once our PID cycle is done.
+(def fetch-next (chan))
+
+;; We pipe temperatures into the pid-controller:
+(pipe temperatures pid-output)
+
+; heater go-loop in pid-output chan and send to fetch-next chan.
+(defn control-heater [pid-output fetch-next]
+  (go-loop []
+    (when-let [pid-time (<! pid-output)]
+      (let [time-on  (int (* 300 pid-time))
+            time-off (int (- 30000 time-on))]
+        (when (< 0 time-on)
+          (heater-on!)
+          (<! (timeout time-on))
+          (heater-off!))
+        (<! (timeout time-off))
+        (>! fetch-next :next)
+        (recur)))))
+
+(control-heater pid-output fetch-next)
+
+(zmq-send! conn {:system "power"
+                 :msgtype "command"
+                 :location "kitchen-water"
+                 :command "on"}
+;; Open serial port
+(def port (serial/open "/dev/tty.usbserial" 115200))
+
+;; Put values into the temperatures channel
+(serial/on-value port (partial >!! temperatures))
+
+;; Ask arduino for next temperature when we're ready for one..
+(go-loop [_ (<! fetch-next)]
+  (serial/write-str "next")
+  (recur (<! fetch-next)))
+
+;
 ; --------------------------------------------------------
 ; core.async/pipeline to parallel workload.
+; http://clojure.github.io/core.async/#clojure.core.async/pipeline
 (defn to-proc< [in]
   (let [out (async/chan 1)]
     (async/pipe in out)
@@ -206,6 +291,72 @@
         (prn "final reduce value " rd)
         ))
     ))
+
+; --------------------------------------------------------
+; Java 8 callable and Runnable
+; http://winterbe.com/posts/2015/04/07/java8-concurrency-tutorial-thread-executor-examples/
+; --------------------------------------------------------
+; Callable<Integer> task = () -> {
+;     try {
+;         TimeUnit.SECONDS.sleep(1);
+;         return 123;
+;     }
+;     catch (InterruptedException e) {
+;         throw new IllegalStateException("task interrupted", e);
+;     }
+; };
+;
+; ExecutorService executor = Executors.newFixedThreadPool(1);
+; Future<Integer> future = executor.submit(task);
+; System.out.println("future done? " + future.isDone());
+; Integer result = future.get();
+; System.out.println("future done? " + future.isDone());
+; System.out.print("result: " + result);
+
+; Future<Integer> future = executor.submit(() -> {
+;     try {
+;         TimeUnit.SECONDS.sleep(2);
+;         return 123;
+;     }
+;     catch (InterruptedException e) {
+;         throw new IllegalStateException("task interrupted", e);
+;     }
+; });
+; future.get(1, TimeUnit.SECONDS);
+
+; ExecutorService executor = Executors.newWorkStealingPool();
+; List<Callable<String>> callables = Arrays.asList(
+;         () -> "task1",
+;         () -> "task2",
+;         () -> "task3");
+
+; executor.invokeAll(callables)
+;     .stream()
+;     .map(future -> {
+;         try {
+;             return future.get();
+;         }
+;         catch (Exception e) {
+;             throw new IllegalStateException(e);
+;         }
+;     })
+;     .forEach(System.out::println);
+;
+;
+; Callable<String> callable(String result, long sleepSeconds) {
+;     return () -> {
+;         TimeUnit.SECONDS.sleep(sleepSeconds);
+;         return result;
+;     };
+; }
+; List<Callable<String>> callables = Arrays.asList(
+;     callable("task1", 2),
+;     callable("task2", 1),
+;     callable("task3", 3));
+
+; String result = executor.invokeAny(callables);
+; System.out.println(result);
+
 
 ; --------------------------------------------------------
 ; Atlas task is a render task that contains a list of subtasks with only one overall deadline.
