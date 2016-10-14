@@ -1,25 +1,32 @@
 ;; java repl using lein repl
+;; 
+; lein repl
+; => (load-file "java.proxy.clj")
 
-lein repl
-
+; require other clj namespace x_core.clj
+(require '[clojure.string :as string])
 ; can not import entire package, has to import one class by one class
-(import '(java.util HashMap HashSet))
-(import '(java.util.regex Pattern Matcher))
+(import (java.util.regex Pattern Matcher))
+(import '[java.util HashMap HashSet])
 
+
+; (-> (class.) (.memfn args))
 (.. System (getProperties) (get "os.name"))
-(-> (System/getProperties) (.get "os.name"))
-(doto (new java.util.HashMap) (.put "a" 1) (.put "b" 2))
+(-> (System/getProperties) (.get "os.name") (prn))
 (doto (java.util.HashMap.) (.put "a" 1) (.put "b" 2))
 
-
-; compile a pattern, and use pattern to match against a string, catpure matcher groups.
+; (.memfn obj args)
 (let [p (Pattern/compile "hello (\\S+)")
       m (.matcher p "hello world")]
   (if (.find m)
-    (prn (.group m 1))))
+    (prn (string/join ["match group -> " (.group m 1)]))))
 
-; simple string match
-(.matches "hello world" "hello \\S+")
+; ; simple string match
+(prn (.matches "hello world" "hello \\S+"))
+
+(java.net.URI. "http://clojure.org")  ; ⇒ #<URI http://clojure.org>
+(class (java.net.URI. "http://github.com"))  ; ⇒ java.net.URI
+(Class/forName "java.util.Date")  ; ⇒ java.util.Date
 
 
 ;; java proxy
@@ -280,7 +287,6 @@ nil
 
 ; create a closure that 
 (change-message p "Hello Dynamic!")
-
 
 
 ;; java object member function is not high order fn. use macro memfn to convert.
