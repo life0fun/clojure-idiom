@@ -9,6 +9,9 @@
 (import (java.util.regex Pattern Matcher))
 (import '[java.util HashMap HashSet])
 
+(require '[clojure.core.async :as async
+            :refer [>! <! >!! <!! go go-loop chan buffer close! thread
+                     alts! alts!! timeout]])
 
 ; (-> (class.) (.memfn args))
 (.. System (getProperties) (get "os.name"))
@@ -27,6 +30,42 @@
 (java.net.URI. "http://clojure.org")  ; ⇒ #<URI http://clojure.org>
 (class (java.net.URI. "http://github.com"))  ; ⇒ java.net.URI
 (Class/forName "java.util.Date")  ; ⇒ java.util.Date
+
+
+; to use core.async, do `lein new app test-async` and dep on [[org.clojure/core.async "0.2.395"]].
+; then rquire clojure.core.async with :refer []; lein repl (load-file "../x.clj"). N
+(def echo-chan (chan))
+(go (println (<! echo-chan)))
+(>!! echo-chan "ketchup to echo-chan")
+
+(def hi-chan (chan 1000))
+; doseq with go block, order is not guaranteed
+(doseq [n (range 10)]
+  (go (>! hi-chan (str "hi " n))))
+(go-loop []
+  (let [msg (<! hi-chan)]
+    ; (<! (timeout 1000))
+    (println msg)
+    (recur)))
+; go-loop, order is guaranteed
+(go-loop [n 10]
+  (when (> n 0)
+    (>! hi-chan (str "hi " n))
+    (recur (dec n))))
+(prn (.buf (.buf hi-chan))) ;; Get elements in buffer
+(go-loop []
+  (let [msg (<! hi-chan)]
+    (<! (timeout 100))
+    (println msg)
+    (recur)))
+
+;; future rets callable object that can be de-refed.
+(def task (future 
+  (println "[Future] started computation")
+  (Thread/sleep 1000) ;; running for 3 seconds
+  (println "[Future] completed computation")
+  42))
+(prn @task)
 
 
 ;; java proxy
