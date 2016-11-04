@@ -1,25 +1,71 @@
 ;; java repl using lein repl
+;; 
+; lein repl
+; => (load-file "java.proxy.clj")
 
-lein repl
-
+; require other clj namespace x_core.clj
+(require '[clojure.string :as string])
 ; can not import entire package, has to import one class by one class
-(import '(java.util HashMap HashSet))
-(import '(java.util.regex Pattern Matcher))
+(import (java.util.regex Pattern Matcher))
+(import '[java.util HashMap HashSet])
 
+(require '[clojure.core.async :as async
+            :refer [>! <! >!! <!! go go-loop chan buffer close! thread
+                     alts! alts!! timeout]])
+
+; (-> (class.) (.memfn args))
 (.. System (getProperties) (get "os.name"))
-(-> (System/getProperties) (.get "os.name"))
-(doto (new java.util.HashMap) (.put "a" 1) (.put "b" 2))
+(-> (System/getProperties) (.get "os.name") (prn))
 (doto (java.util.HashMap.) (.put "a" 1) (.put "b" 2))
 
-
-; compile a pattern, and use pattern to match against a string, catpure matcher groups.
+; (.memfn obj args)
 (let [p (Pattern/compile "hello (\\S+)")
       m (.matcher p "hello world")]
   (if (.find m)
-    (prn (.group m 1))))
+    (prn (string/join ["match group -> " (.group m 1)]))))
 
-; simple string match
-(.matches "hello world" "hello \\S+")
+; ; simple string match
+(prn (.matches "hello world" "hello \\S+"))
+
+(java.net.URI. "http://clojure.org")  ; ⇒ #<URI http://clojure.org>
+(class (java.net.URI. "http://github.com"))  ; ⇒ java.net.URI
+(Class/forName "java.util.Date")  ; ⇒ java.util.Date
+
+
+; to use core.async, do `lein new app test-async` and dep on [[org.clojure/core.async "0.2.395"]].
+; then rquire clojure.core.async with :refer []; lein repl (load-file "../x.clj"). N
+(def echo-chan (chan))
+(go (println (<! echo-chan)))
+(>!! echo-chan "ketchup to echo-chan")
+
+(def hi-chan (chan 1000))
+; doseq with go block, order is not guaranteed
+(doseq [n (range 10)]
+  (go (>! hi-chan (str "hi " n))))
+(go-loop []
+  (let [msg (<! hi-chan)]
+    ; (<! (timeout 1000))
+    (println msg)
+    (recur)))
+; go-loop, order is guaranteed
+(go-loop [n 10]
+  (when (> n 0)
+    (>! hi-chan (str "hi " n))
+    (recur (dec n))))
+(prn (.buf (.buf hi-chan))) ;; Get elements in buffer
+(go-loop []
+  (let [msg (<! hi-chan)]
+    (<! (timeout 100))
+    (println msg)
+    (recur)))
+
+;; future rets callable object that can be de-refed.
+(def task (future 
+  (println "[Future] started computation")
+  (Thread/sleep 1000) ;; running for 3 seconds
+  (println "[Future] completed computation")
+  42))
+(prn @task)
 
 
 ;; java proxy
@@ -280,7 +326,6 @@ nil
 
 ; create a closure that 
 (change-message p "Hello Dynamic!")
-
 
 
 ;; java object member function is not high order fn. use macro memfn to convert.
