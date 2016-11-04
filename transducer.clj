@@ -2,9 +2,8 @@
   (:require [clojure.core.async :as async :refer [<! <!! >! >!!]]))
 
 ; http://thecomputersarewinning.com/post/Transducers-Are-Fundamental/
-; 1. create a transducer by applying the fn as the lead/first fn to list. 
-; 2. transducer pipeline: (inner-fn input) -> reduce()
-;   (transduce (map inc) standard-mean-reducer {:sum 0 :count 0} (range 10))
+; 1. def a transducer by accepting a fn that will apply to each ele in the list.
+; 2. ret a fn that accept reducer-fn from pipeline, and apply inner-fn to each ele.
 ; 3. transduce fn can maintain state during data transformation.
 ; 4. why ? to decouple list from creation of transform pipeline.
 ;   (transduce inner-xform-fn final-reduce-step-fn init coll)
@@ -13,32 +12,8 @@
 ; 6. composition fn logic can be used across things that are not necessarily sequences. core.reducers, channels.
 ; 7. put the transducer into the channel !
 
-;; use sequence to return a new transduced sequence.
-(sequence (map inc) (range 10))
 
-; Step fn might want to do a final transofrmation of the value built up for completion process.
-; thus, all step functions must have an arity-1 variant that does not take an input
-; arity-2 is step operation, with total and cursor value.
-; arity-0 is init operation, the value 
-(defn standard-mean-reducer 
-  ([] {:sum 0 :count 0})        ; init operation, arity-0, provide init value reduce build up.
-  ([memo] memo)  ; completion fn, do a final transformation of the value built up.
-  ([memo x] (-> memo (update-in [:sum] + x) (update-in [:count] inc)))) ; step operation, build up value at each step.
-
-
-;; trans/leads xform pipeline that apply to a sequence, before give list to final reduce func.
-(reduce standard-mean-reducer {:sum 0 :count 0} (range 10))
-
-; transduce is transform + reduce a collection.
-(transduce (map inc) standard-mean-reducer {:sum 0 :count 0} (range 10))
-(transduce (map inc) standard-mean-reducer (range 10))  ; with init operation, arity-0 support
-
-;; use into to populate new data structure without intermediate sequence
-; ret the chan that contains the single coll result. source chan must be close before into can output value.
-(into [] (map inc) (range 10))
-
-
-; transducer is fn that is called first in transducer pipeline before final reducer.
+; transducer is fn site on top of normal reduce-fn, apply inner-xform to input.
 ; return a fn that is plugged into transducer pipeline, takes the pipeline reducer step fn, 
 ; and lead to the final 3-arity reduce step fn. 
 ; transducer fn must be 3-arity fn, 
@@ -46,39 +21,58 @@
 ;  1-arity: do nothing on result on this step, 
 ;  2-arity: apply inner-fn to input then apply reducer to final.
 ;
+
+; map takes inner-xform fn as arg, ret fn sit on top of pipeline's reducer-fn 
 (defn map             ; without coll, (map f) return a transducer
-  ([inner-fn]	        ; inner-fn will apply to list element before reducing.
-    (fn [reducer-fn]  ; ret a fn that can be plug into transducer pipeline, take reduce-fn from pipeline
+  ([inner-xform]	        ; inner-xform will apply to list element before reducing.
+    (fn [reducer-fn]  ; ret a fn takes reduce-fn from pipeline during reducing.
       (fn                 ;  ret a reducer 3-arity step fn
         ([] (reducer-fn))
-        ([result] (reducer-fn result))
-        ([result input]
-          (reducer-fn result (inner-fn input)))))))
+        ([result] (reducer-fn result))  ; final reducer
+        ([result input]                 ; transform each intermediant input element.
+          (reducer-fn result (inner-xform input)))))))
 
 ;
-; filter pred without coll will ret transducer.
+; filter inner-fn without coll will ret transducer.
 (defn filter 
-  ([pred]
-    (fn [step-f]
+  ([inner-xform]
+    (fn [reduce-fn]
       (fn 
-        [] (step-f)
-        [result] (step-f result)
+        [] (reduce-fn)
+        [result] (reduce-fn result)
         [result input] 
-          (if (pred input)
-            (step-f result input) 
+          (if (inner-fn input)
+            (reduce-fn result input) 
             result))))
    ([pred coll]
      (sequence (filter pred) coll)))
 
+; streaming-buffer buffer chunks and delimite last element
+; from chunk boundary.
+(defn- streaming-buffer []
+  (fn [inner-xform]  ;; reducer step fn apply to each ele during reducing.
+    (let [buff (atom "")]
+      (fn
+        ([result] (inner-xform result))
+        ([result element]
+         (let [json-lines (-> (str @buff element)
+                              (insert-newline)
+                              (str/split-lines))
+               to-process (butlast json-lines)]
+           (reset! buff (last json-lines))
+           (if to-process 
+            (reduce inner-xform result to-process)
+            result)))))))
+
 ;
 ; without coll as last arg, ret a transducer.
 (defn take-with
-  [pred]
-  (fn [step-f]
+  [inner-xform]
+  (fn [reducer-fn]
     (fn [tot cursor]
-      (if (pred cursor)
-        (step-f tot cursor)
-        (reduced tot)))))
+      (if (inner-xform cursor)
+        (reducer-fn tot cursor)
+        (reduced tot)))))  ; wrap tot in a way that a reduce will term with tot
  
 ;
 ; transducer with state, need to create state on every step
